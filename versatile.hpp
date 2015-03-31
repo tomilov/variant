@@ -215,7 +215,7 @@ public :
     versatile(versatile const & _rhs) noexcept(std::is_nothrow_copy_constructible< first >{} && std::is_nothrow_copy_constructible< tail >{})
     {
         if (_rhs.which() == size) {
-            ::new (&head_) head(_rhs.head_.value_);
+            ::new (&head_) head(static_cast< this_type const & >(_rhs.head_.value_));
         } else {
             ::new (&tail_) tail(_rhs.tail_);
         }
@@ -224,7 +224,7 @@ public :
     versatile(versatile & _rhs) noexcept(std::is_nothrow_copy_constructible< first >{} && std::is_nothrow_copy_constructible< tail >{})
     {
         if (_rhs.which() == size) {
-            ::new (&head_) head(_rhs.head_.value_);
+            ::new (&head_) head(static_cast< this_type & >(_rhs.head_.value_));
         } else {
             ::new (&tail_) tail(_rhs.tail_);
         }
@@ -233,7 +233,7 @@ public :
     versatile(versatile const && _rhs) noexcept(std::is_nothrow_move_constructible< first >{} && std::is_nothrow_move_constructible< tail >{})
     {
         if (_rhs.which() == size) {
-            ::new (&head_) head(std::move(_rhs.head_.value_));
+            ::new (&head_) head(static_cast< this_type const && >(std::move(_rhs.head_.value_)));
         } else {
             ::new (&tail_) tail(std::move(_rhs.tail_));
         }
@@ -242,7 +242,7 @@ public :
     versatile(versatile && _rhs) noexcept(std::is_nothrow_move_constructible< first >{} && std::is_nothrow_move_constructible< tail >{})
     {
         if (_rhs.which() == size) {
-            ::new (&head_) head(std::move(_rhs.head_.value_));
+            ::new (&head_) head(static_cast< this_type && >(std::move(_rhs.head_.value_)));
         } else {
             ::new (&tail_) tail(std::move(_rhs.tail_));
         }
@@ -297,7 +297,7 @@ public :
     operator = (versatile const & _rhs) & noexcept(std::is_nothrow_copy_assignable< first >{} && std::is_nothrow_copy_assignable< tail >{})
     {
         if (_rhs.which() == size) {
-            return operator = (static_cast< this_type >(_rhs.head_.value_));
+            return operator = (static_cast< this_type const & >(_rhs.head_.value_));
         }
         tail_ = _rhs.tail_;
         return *this;
@@ -308,7 +308,7 @@ public :
     operator = (versatile & _rhs) & noexcept(std::is_nothrow_copy_assignable< first >{} && std::is_nothrow_copy_assignable< tail >{})
     {
         if (_rhs.which() == size) {
-            return operator = (static_cast< this_type >(_rhs.head_.value_));
+            return operator = (static_cast< this_type & >(_rhs.head_.value_));
         }
         tail_ = _rhs.tail_;
         return *this;
@@ -319,7 +319,7 @@ public :
     operator = (versatile const && _rhs) & noexcept(std::is_nothrow_move_assignable< first >{} && std::is_nothrow_move_assignable< tail >{})
     {
         if (_rhs.which() == size) {
-            return operator = (static_cast< this_type >(std::move(_rhs.head_.value_)));
+            return operator = (static_cast< this_type const && >(std::move(_rhs.head_.value_)));
         }
         tail_ = std::move(_rhs.tail_);
         return *this;
@@ -330,7 +330,7 @@ public :
     operator = (versatile && _rhs) & noexcept(std::is_nothrow_move_assignable< first >{} && std::is_nothrow_move_assignable< tail >{})
     {
         if (_rhs.which() == size) {
-            return operator = (static_cast< this_type >(std::move(_rhs.head_.value_)));
+            return operator = (static_cast< this_type && >(std::move(_rhs.head_.value_)));
         }
         tail_ = std::move(_rhs.tail_);
         return *this;
