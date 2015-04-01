@@ -73,19 +73,14 @@ lvalueizer(L const & _lhs, R const &... _rhs) noexcept // Additional layer too a
     return (_lhs == apply_visitor(visitor{}, _rhs...));
 }
 
-#if 1
-#define CONTAINER variant::variant
-#else
-#define CONTAINER versatile::versatile
-#endif
 template< std::size_t ...M, std::size_t ...N >
 constexpr
 bool
 invoke(std::index_sequence< M... >, std::index_sequence< N... >) noexcept
 {
-    return lvalueizer(std::array< std::size_t, sizeof...(N) >{(N % sizeof...(M))...}, CONTAINER< T< M >... >{T< (N % sizeof...(M)) >{}}...);
+    return lvalueizer(std::array< std::size_t, sizeof...(N) >{(N % sizeof...(M))...}, variant::variant< T< M >... >{T< (N % sizeof...(M)) >{}}...);
 }
-#undef CONTAINER
+
 #pragma clang diagnostic pop
 
 template< std::size_t M, std::size_t N = M >
@@ -289,7 +284,7 @@ main()
         }
     }
     {
-        test< ROWS, COLS >(); // 2 seconds for "4" and 11 (16 for variant) seconds for "5" on Intel(R) Xeon(R) CPU E5-1650 0 @ 3.20GHz
+        assert((test< ROWS, COLS >())); // 9 seconds (Release build) for COLS=5 ROWS=5 on Intel(R) Xeon(R) CPU E5-1650 0 @ 3.20GHz
     }
     return EXIT_SUCCESS;
 }

@@ -17,9 +17,6 @@ HEADERS += \
 
 linux:OBJECTS_DIR = /tmp/
 
-QMAKE_CXXFLAGS_RELEASE += -gline-tables-only -fno-inline -fno-omit-frame-pointer -fno-optimize-sibling-calls
-QMAKE_LFLAGS_RELEASE   += -gline-tables-only
-
 QMAKE_CXXFLAGS_WARN_ON = \
     -W -Weverything -pedantic -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded \
     -ftemplate-backtrace-limit=0 -fdiagnostics-color=always
