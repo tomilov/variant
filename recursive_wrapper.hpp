@@ -15,15 +15,9 @@ struct recursive_wrapper
 
     using type = incomplete_type;
 
-    ~recursive_wrapper() noexcept = default;
-
-    template< typename first, typename ...rest >
-    recursive_wrapper(first && _first, rest &&... _rest)
-        : storage_(std::make_unique< type >(std::forward< first >(_first), std::forward< rest >(_rest)...))
-    { ; }
-
-    recursive_wrapper()
-        : storage_(std::make_unique< type >())
+    template< typename ...arguments >
+    recursive_wrapper(arguments &&... _arguments)
+        : storage_(std::make_unique< type >(std::forward< arguments >(_arguments)...))
     { ; }
 
     recursive_wrapper(recursive_wrapper const & _rhs)
@@ -35,67 +29,59 @@ struct recursive_wrapper
     { ; }
 
     recursive_wrapper(recursive_wrapper const && _rhs)
-        : recursive_wrapper(static_cast< type const && >(_rhs))
+        : recursive_wrapper(static_cast< type const && >(std::move(_rhs)))
     { ; }
 
     recursive_wrapper(recursive_wrapper && _rhs)
-        : recursive_wrapper(static_cast< type && >(_rhs))
+        : recursive_wrapper(static_cast< type && >(std::move(_rhs)))
     { ; }
 
-    recursive_wrapper &
-    operator = (recursive_wrapper const & _rhs) &
+    void
+    operator = (recursive_wrapper const & _rhs) & noexcept(std::is_nothrow_copy_assignable< type >{})
     {
         operator type & () = static_cast< type const & >(_rhs);
-        return *this;
     }
 
-    recursive_wrapper &
-    operator = (recursive_wrapper & _rhs) &
+    void
+    operator = (recursive_wrapper & _rhs) & noexcept(std::is_nothrow_assignable< type &, type & >{})
     {
         operator type & () = static_cast< type & >(_rhs);
-        return *this;
     }
 
-    recursive_wrapper &
-    operator = (recursive_wrapper const && _rhs) &
+    void
+    operator = (recursive_wrapper const && _rhs) & noexcept(std::is_nothrow_assignable< type &, type const && >{})
     {
-        operator type & () = static_cast< type const && >(_rhs);
-        return *this;
+        operator type & () = static_cast< type const && >(std::move(_rhs));
     }
 
-    recursive_wrapper &
-    operator = (recursive_wrapper && _rhs) &
+    void
+    operator = (recursive_wrapper && _rhs) & noexcept(std::is_nothrow_move_assignable< type >{})
     {
-        operator type & () = static_cast< type && >(_rhs);
-        return *this;
+        operator type & () = static_cast< type && >(std::move(_rhs));
     }
 
-    recursive_wrapper &
-    operator = (type const & _rhs) &
+    void
+    operator = (type const & _rhs) & noexcept(std::is_nothrow_copy_assignable< type >{})
     {
         operator type & () = _rhs;
-        return *this;
     }
 
-    recursive_wrapper &
-    operator = (type & _rhs) &
+    void
+    operator = (type & _rhs) & noexcept(std::is_nothrow_assignable< type &, type & >{})
     {
         operator type & () = _rhs;
-        return *this;
     }
 
-    recursive_wrapper &
-    operator = (type const && _rhs) &
+    void
+    operator = (type const && _rhs) & noexcept(std::is_nothrow_assignable< type &, type const && >{})
     {
         operator type & () = std::move(_rhs);
-        return *this;
     }
 
-    recursive_wrapper &
-    operator = (type && _rhs) &
+    void
+    operator = (type && _rhs) & noexcept(std::is_nothrow_move_assignable< type >{})
     {
         operator type & () = std::move(_rhs);
-        return *this;
     }
 
     void
@@ -169,7 +155,7 @@ template< typename general_type >
 struct unwrap_type< general_type, false >
 {
 
-    using type = general_type;
+    using type = general_type &&;
 
 };
 
@@ -185,5 +171,13 @@ struct unwrap_type< recursive_wrapper_type, true >
 
 template< typename type >
 using unwrap_type_t = typename recursive_wrapping::unwrap_type< type >::type;
+
+template< typename type >
+constexpr
+decltype(auto)
+unwrap(type && _value) noexcept
+{
+    return static_cast< unwrap_type_t< type > >(std::forward< type >(_value));
+}
 
 }

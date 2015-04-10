@@ -12,34 +12,6 @@
 namespace variant
 {
 
-template< std::size_t which = 0, typename type = void >
-struct indexed
-{
-
-    std::size_t which_ = which;
-    type value_;
-
-    template< typename ...arguments >
-    constexpr
-    indexed(arguments &&... _arguments) noexcept(std::is_nothrow_constructible< type, arguments... >{})
-        : value_(std::forward< arguments >(_arguments)...)
-    { ; }
-
-    ~indexed() noexcept
-    {
-        which_ = 0;
-    }
-
-};
-
-template< typename type >
-struct indexed< 0, type >
-{
-
-    std::size_t which_ = 0;
-
-};
-
 template< typename ...types >
 union versatile;
 
@@ -47,22 +19,10 @@ template<>
 union versatile<>
 {
 
-    using this_type = void;
+    template< std::size_t _which >
+    using at = void;
 
-    static constexpr std::size_t size = 0;
-
-private :
-
-    using head = indexed<>;
-
-    head head_{};
-
-public :
-
-    constexpr
-    versatile() noexcept = default;
-
-    template< typename type = this_type >
+    template< typename type = void >
     static
     constexpr
     std::size_t
@@ -71,40 +31,16 @@ public :
         return 0;
     }
 
-    template< std::size_t _which = 0 >
-    using at = this_type;
+    template< typename ...arguments >
+    using constructible_type = void;
 
+    template< typename ...arguments >
     static
     constexpr
     std::size_t
-    which() noexcept
+    index_of_constructible() noexcept
     {
         return 0;
-    }
-
-    static
-    constexpr
-    bool
-    empty() noexcept
-    {
-        return true;
-    }
-
-    template< typename type = this_type >
-    static
-    constexpr
-    bool
-    is_active() noexcept
-    {
-        return false;
-    }
-
-    static
-    constexpr
-    void
-    swap(versatile &) noexcept
-    {
-        return;
     }
 
 };
@@ -113,11 +49,11 @@ template< typename first, typename ...rest >
 union versatile< first, rest... >
 {
 
-    static constexpr std::size_t size = (1 + sizeof...(rest));
+    static constexpr std::size_t size = sizeof...(rest);
 
 private :
 
-    using head = indexed< size, first >;
+    using head = first;
     using tail = versatile< rest... >;
 
     head head_;
@@ -126,7 +62,7 @@ private :
     template< typename ...arguments >
     explicit
     constexpr
-    versatile(std::true_type, arguments &&... _arguments) noexcept(std::is_nothrow_constructible< first, arguments... >{})
+    versatile(std::true_type, arguments &&... _arguments) noexcept(std::is_nothrow_constructible< head, arguments... >{})
         : head_(std::forward< arguments >(_arguments)...)
     { ; }
 
@@ -139,7 +75,10 @@ private :
 
 public :
 
-    using this_type = unwrap_type_t< first >;
+    using this_type = unwrap_type_t< head >;
+
+    template< std::size_t _which = size >
+    using at = std::conditional_t< (_which == size), head, typename tail::template at< _which > >;
 
     template< typename type = this_type >
     static
@@ -154,104 +93,60 @@ public :
         }
     }
 
-    template< std::size_t _which = 0 >
-    using at = std::conditional_t< (_which == size), this_type, typename tail::template at< _which > >;
+    template< typename ...arguments >
+    using constructible_type = std::conditional_t< (std::is_constructible< this_type, arguments... >{}), head, typename tail::template constructible_type< arguments... > >;
 
+    template< typename ...arguments >
+    static
     constexpr
     std::size_t
-    which() const noexcept
+    index_of_constructible() noexcept
     {
-        return head_.which_;
-    }
-
-    constexpr
-    bool
-    empty() const noexcept
-    {
-        return (which() == 0);
-    }
-
-    template< typename type = this_type >
-    constexpr
-    bool
-    is_active() const noexcept
-    {
-        if (std::is_same< type, this_type >{}) {
-            return (which() == size);
+        if (std::is_constructible< this_type, arguments... >{}) {
+            return size;
         } else {
-            return tail_.template is_active< type >();
+            return tail::template index_of_constructible< arguments... >();
         }
     }
 
-    ~versatile() noexcept(std::is_nothrow_destructible< first >{} && std::is_nothrow_destructible< tail >{})
+    ~versatile() noexcept
     {
-        if (is_active()) {
-            head_.~head();
-        } else {
-            tail_.~tail();
-        }
+        tail_.~tail();
     }
 
+    explicit
     constexpr
-    versatile(this_type const & _rhs) noexcept(std::is_nothrow_copy_constructible< first >{})
+    versatile(head const & _rhs) noexcept(std::is_nothrow_copy_constructible< head >{})
         : head_(_rhs)
     { ; }
 
+    explicit
     constexpr
-    versatile(this_type & _rhs) noexcept(std::is_nothrow_copy_constructible< first >{})
+    versatile(head & _rhs) noexcept(std::is_nothrow_constructible< head, head & >{})
         : head_(_rhs)
     { ; }
 
+    explicit
     constexpr
-    versatile(this_type const && _rhs) noexcept(std::is_nothrow_move_constructible< first >{})
+    versatile(head const && _rhs) noexcept(std::is_nothrow_constructible< head, head const && >{})
         : head_(std::move(_rhs))
     { ; }
 
+    explicit
     constexpr
-    versatile(this_type && _rhs) noexcept(std::is_nothrow_move_constructible< first >{})
+    versatile(head && _rhs) noexcept(std::is_nothrow_move_constructible< head >{})
         : head_(std::move(_rhs))
     { ; }
 
-    versatile(versatile const & _rhs) noexcept(std::is_nothrow_copy_constructible< first >{} && std::is_nothrow_copy_constructible< tail >{})
-    {
-        if (_rhs.which() == size) {
-            ::new (&head_) head(static_cast< this_type const & >(_rhs.head_.value_));
-        } else {
-            ::new (&tail_) tail(_rhs.tail_);
-        }
-    }
-
-    versatile(versatile & _rhs) noexcept(std::is_nothrow_copy_constructible< first >{} && std::is_nothrow_copy_constructible< tail >{})
-    {
-        if (_rhs.which() == size) {
-            ::new (&head_) head(static_cast< this_type & >(_rhs.head_.value_));
-        } else {
-            ::new (&tail_) tail(_rhs.tail_);
-        }
-    }
-
-    versatile(versatile const && _rhs) noexcept(std::is_nothrow_move_constructible< first >{} && std::is_nothrow_move_constructible< tail >{})
-    {
-        if (_rhs.which() == size) {
-            ::new (&head_) head(static_cast< this_type const && >(std::move(_rhs.head_.value_)));
-        } else {
-            ::new (&tail_) tail(std::move(_rhs.tail_));
-        }
-    }
-
-    versatile(versatile && _rhs) noexcept(std::is_nothrow_move_constructible< first >{} && std::is_nothrow_move_constructible< tail >{})
-    {
-        if (_rhs.which() == size) {
-            ::new (&head_) head(static_cast< this_type && >(std::move(_rhs.head_.value_)));
-        } else {
-            ::new (&tail_) tail(std::move(_rhs.tail_));
-        }
-    }
+    versatile(versatile const & _rhs) = delete;
+    versatile(versatile & _rhs) = delete;
+    versatile(versatile const && _rhs) = delete;
+    versatile(versatile && _rhs) = delete;
 
     template< typename argument >
     constexpr
-    versatile(argument && _argument) noexcept(std::is_nothrow_constructible< tail, argument >{})
-        : tail_(std::forward< argument >(_argument))
+    versatile(argument && _argument) noexcept(std::is_nothrow_constructible< versatile, typename std::is_same< std::decay_t< argument >, this_type >::type, argument >{})
+        : versatile(typename std::is_same< std::decay_t< argument >, this_type >::type{}, std::forward< argument >(_argument))
     { ; }
 
     template< typename ...arguments >
@@ -261,96 +156,59 @@ public :
     { ; }
 
     constexpr
-    versatile &
-    operator = (this_type const & _rhs) & noexcept(std::is_nothrow_copy_assignable< first >{})
+    void
+    operator = (head const & _rhs) & noexcept(std::is_nothrow_copy_assignable< head >{})
     {
-        operator this_type & () = _rhs;
-        return *this;
+        operator head & () = _rhs;
     }
 
     constexpr
-    versatile &
-    operator = (this_type & _rhs) & noexcept(std::is_nothrow_copy_assignable< first >{})
+    void
+    operator = (head & _rhs) & noexcept(std::is_nothrow_assignable< head &, head & >{})
     {
-        operator this_type & () = _rhs;
-        return *this;
+        operator head & () = _rhs;
     }
 
     constexpr
-    versatile &
-    operator = (this_type const && _rhs) & noexcept(std::is_nothrow_move_assignable< first >{})
+    void
+    operator = (head const && _rhs) & noexcept(std::is_nothrow_assignable< head &, head const && >{})
     {
-        operator this_type & () = std::move(_rhs);
-        return *this;
+        operator head & () = std::move(_rhs);
     }
 
     constexpr
-    versatile &
-    operator = (this_type && _rhs) & noexcept(std::is_nothrow_move_assignable< first >{})
+    void
+    operator = (head && _rhs) & noexcept(std::is_nothrow_move_assignable< head >{})
     {
-        operator this_type & () = std::move(_rhs);
-        return *this;
+        operator head & () = std::move(_rhs);
     }
 
-    constexpr
-    versatile &
-    operator = (versatile const & _rhs) & noexcept(std::is_nothrow_copy_assignable< first >{} && std::is_nothrow_copy_assignable< tail >{})
-    {
-        if (_rhs.which() == size) {
-            return operator = (static_cast< this_type const & >(_rhs.head_.value_));
-        }
-        tail_ = _rhs.tail_;
-        return *this;
-    }
+    void operator = (versatile const & _rhs) = delete;
+    void operator = (versatile & _rhs) = delete;
+    void operator = (versatile const && _rhs) = delete;
+    void operator = (versatile && _rhs) = delete;
 
+    template< typename rhs >
     constexpr
-    versatile &
-    operator = (versatile & _rhs) & noexcept(std::is_nothrow_copy_assignable< first >{} && std::is_nothrow_copy_assignable< tail >{})
+    std::enable_if_t< std::is_same< std::decay_t< rhs >, this_type >{} >
+    operator = (rhs && _rhs) & noexcept(std::is_nothrow_assignable< tail &, rhs >{})
     {
-        if (_rhs.which() == size) {
-            return operator = (static_cast< this_type & >(_rhs.head_.value_));
-        }
-        tail_ = _rhs.tail_;
-        return *this;
-    }
-
-    constexpr
-    versatile &
-    operator = (versatile const && _rhs) & noexcept(std::is_nothrow_move_assignable< first >{} && std::is_nothrow_move_assignable< tail >{})
-    {
-        if (_rhs.which() == size) {
-            return operator = (static_cast< this_type const && >(std::move(_rhs.head_.value_)));
-        }
-        tail_ = std::move(_rhs.tail_);
-        return *this;
-    }
-
-    constexpr
-    versatile &
-    operator = (versatile && _rhs) & noexcept(std::is_nothrow_move_assignable< first >{} && std::is_nothrow_move_assignable< tail >{})
-    {
-        if (_rhs.which() == size) {
-            return operator = (static_cast< this_type && >(std::move(_rhs.head_.value_)));
-        }
-        tail_ = std::move(_rhs.tail_);
-        return *this;
+        operator head & () = std::forward< rhs >(_rhs);
     }
 
     template< typename rhs >
     constexpr
-    versatile &
+    std::enable_if_t< !std::is_same< std::decay_t< rhs >, this_type >{} >
     operator = (rhs && _rhs) & noexcept(std::is_nothrow_assignable< tail &, rhs >{})
     {
         tail_ = std::forward< rhs >(_rhs);
-        return *this;
     }
 
     explicit
     constexpr
-    operator this_type const & () const & noexcept
+    operator head const & () const & noexcept
     {
-        assert(is_active());
-        return static_cast< this_type const & >(head_.value_);
+        return head_;
     }
 
     template< typename type >
@@ -363,10 +221,9 @@ public :
 
     explicit
     constexpr
-    operator this_type & () & noexcept
+    operator head & () & noexcept
     {
-        assert(is_active());
-        return static_cast< this_type & >(head_.value_);
+        return head_;
     }
 
     template< typename type >
@@ -379,10 +236,9 @@ public :
 
     explicit
     constexpr
-    operator this_type const && () const && noexcept
+    operator head const && () const && noexcept
     {
-        assert(is_active());
-        return static_cast< this_type const && >(std::move(head_.value_));
+        return std::move(head_);
     }
 
     template< typename type >
@@ -390,15 +246,14 @@ public :
     constexpr
     operator type const && () const && noexcept
     {
-        return static_cast< type const && >(tail_);
+        return static_cast< type const && >(std::move(tail_));
     }
 
     explicit
     constexpr
-    operator this_type && () && noexcept
+    operator head && () && noexcept
     {
-        assert(is_active());
-        return static_cast< this_type && >(std::move(head_.value_));
+        return std::move(head_);
     }
 
     template< typename type >
@@ -406,67 +261,9 @@ public :
     constexpr
     operator type && () && noexcept
     {
-        return static_cast< type && >(tail_);
-    }
-
-    constexpr
-    void
-    swap(versatile & _other) noexcept(std::is_nothrow_move_constructible< versatile >::value && std::is_nothrow_move_assignable< versatile >::value)
-    {
-        assert(_other.which() == which());
-        if (is_active()) {
-            using std::swap;
-            swap(_other.head_.value_, head_.value_);
-        } else {
-            tail_.swap(_other.tail_);
-        }
+        return static_cast< type && >(std::move(tail_));
     }
 
 };
-
-template< typename type >
-struct is_versatile
-        : std::false_type
-{
-
-};
-
-template< typename ...types >
-struct is_versatile< versatile< types... > >
-        : std::true_type
-{
-
-};
-
-template< typename type, bool = is_versatile< std::remove_cv_t< std::remove_reference_t< type > > >{} >
-struct this_type;
-
-template< typename visitable >
-struct this_type< visitable, true >
-{
-
-    using type = copy_cv_reference_t< visitable, typename std::remove_reference_t< visitable >::this_type >;
-
-};
-
-template< typename general_type >
-struct this_type< general_type, false >
-{
-
-    using type = general_type &&;
-
-};
-
-template< typename type >
-using this_type_t = typename this_type< type >::type;
-
-template< typename ...types >
-constexpr
-void
-swap(versatile< types... > & _lhs, versatile< types... > & _rhs) noexcept
-{
-    assert(_lhs.which() == _rhs.which());
-    _lhs.swap(_rhs);
-}
 
 }
