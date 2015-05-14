@@ -90,18 +90,24 @@ main()
     {
         using namespace variant;
         {
+            using V = variant< int >;
+            assert(V{}.template active< int >());
+        }
+        {
             using V = variant< int, float, double, long double >;
-            assert(V{0}.which() == 4);
-            assert(V{1.0f}.which() == 3);
-            assert(V{2.0}.which() == 2);
-            assert(V{3.0L}.which() == 1);
+            assert(V{0}.active< int >());
+            assert(V{1.0f}.active< float >());
+            assert(V{1.0}.active< double >());
+            assert(V{1.0L}.active< long double >());
         }
         {
             struct A;
             struct B {};
             using V = variant< recursive_wrapper< A >, B >;
             struct A {};
-            assert(V{A{}}.which() == 2);
+            assert((V{}.active< A >()));
+            assert(!(V{}.active< B >()));
+            assert(!(V{}.active< recursive_wrapper< A > >()));
         }
     }
     {

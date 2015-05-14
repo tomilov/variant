@@ -22,18 +22,15 @@ struct variant
 
 private :
 
-    using storage_type = versatile< types... >;
+    using versatile = versatile< types... >;
+    using storage_type = std::unique_ptr< versatile >;
 
-    std::unique_ptr< storage_type > storage_;
-    std::size_t which_;
-
-    template< typename ...arguments >
-    using constructible_type = typename storage_type::template constructible_type< arguments... >;
+    storage_type storage_;
 
 public :
 
     template< std::size_t _which = size >
-    using at = typename storage_type::template at< _which >;
+    using at = typename versatile::template at< _which >;
 
     template< typename type = at<> >
     static
@@ -41,41 +38,26 @@ public :
     std::size_t
     index() noexcept
     {
-        return storage_type::template index< type >();
+        return versatile::template index< type >();
     }
 
     constexpr
     std::size_t
     which() const noexcept
     {
-        return which_;
+        if (!!storage_) {
+            return storage_->which();
+        } else {
+            return 0;
+        }
     }
 
     template< typename type = at<> >
     constexpr
     bool
-    is_active() const noexcept
+    active() const noexcept
     {
-        return (index< type >() == which_);
-    }
-
-private :
-
-    template< typename type >
-    static
-    void
-    destructor(storage_type & _destructible) noexcept(std::is_nothrow_destructible< type >{})
-    {/*
-        _destructible.destruct< type >();*/
-    }
-
-public :
-
-    ~variant() noexcept
-    {
-        using destructor_type = void (*)(storage_type & _destructible);
-        static constexpr destructor_type dispatcher_[size] = {variant::destructor< types >...};
-        dispatcher_[size - which_](*storage_);
+        return (index< type >() == which());
     }
 
 private :
@@ -103,9 +85,9 @@ public :
     apply_visitor(visitor && _visitor, arguments &&... _arguments) const &
     {
         using result_type = result_of< visitor, at<> const &, arguments... >;
-        using caller_type = result_type (*)(visitor && _visitor, storage_type const & _visitable, arguments &&... _arguments);
-        static constexpr caller_type dispatcher_[size] = {variant::caller< types const &, result_type, visitor, storage_type const &, arguments... >...};
-        return dispatcher_[size - which_](std::forward< visitor >(_visitor), *storage_, std::forward< arguments >(_arguments)...);
+        using caller_type = result_type (*)(visitor && _visitor, versatile const & _visitable, arguments &&... _arguments);
+        static constexpr caller_type dispatcher_[size] = {variant::caller< types const &, result_type, visitor, versatile const &, arguments... >...};
+        return dispatcher_[size - which()](std::forward< visitor >(_visitor), *storage_, std::forward< arguments >(_arguments)...);
     }
 
     template< typename visitor, typename ...arguments >
@@ -113,9 +95,9 @@ public :
     apply_visitor(visitor && _visitor, arguments &&... _arguments) &
     {
         using result_type = result_of< visitor, at<> &, arguments... >;
-        using caller_type = result_type (*)(visitor && _visitor, storage_type & _visitable, arguments &&... _arguments);
-        static constexpr caller_type dispatcher_[size] = {variant::caller< types &, result_type, visitor, storage_type &, arguments... >...};
-        return dispatcher_[size - which_](std::forward< visitor >(_visitor), *storage_, std::forward< arguments >(_arguments)...);
+        using caller_type = result_type (*)(visitor && _visitor, versatile & _visitable, arguments &&... _arguments);
+        static constexpr caller_type dispatcher_[size] = {variant::caller< types &, result_type, visitor, versatile &, arguments... >...};
+        return dispatcher_[size - which()](std::forward< visitor >(_visitor), *storage_, std::forward< arguments >(_arguments)...);
     }
 
     template< typename visitor, typename ...arguments >
@@ -123,9 +105,9 @@ public :
     apply_visitor(visitor && _visitor, arguments &&... _arguments) const &&
     {
         using result_type = result_of< visitor, at<> const &&, arguments... >;
-        using caller_type = result_type (*)(visitor && _visitor, storage_type const && _visitable, arguments &&... _arguments);
-        static constexpr caller_type dispatcher_[size] = {variant::caller< types const &&, result_type, visitor, storage_type const &&, arguments... >...};
-        return dispatcher_[size - which_](std::forward< visitor >(_visitor), std::move(*storage_), std::forward< arguments >(_arguments)...);
+        using caller_type = result_type (*)(visitor && _visitor, versatile const && _visitable, arguments &&... _arguments);
+        static constexpr caller_type dispatcher_[size] = {variant::caller< types const &&, result_type, visitor, versatile const &&, arguments... >...};
+        return dispatcher_[size - which()](std::forward< visitor >(_visitor), std::move(*storage_), std::forward< arguments >(_arguments)...);
     }
 
     template< typename visitor, typename ...arguments >
@@ -133,39 +115,23 @@ public :
     apply_visitor(visitor && _visitor, arguments &&... _arguments) &&
     {
         using result_type = result_of< visitor, at<> &&, arguments... >;
-        using caller_type = result_type (*)(visitor && _visitor, storage_type && _visitable, arguments &&... _arguments);
-        static constexpr caller_type dispatcher_[size] = {variant::caller< types &&, result_type, visitor, storage_type &&, arguments... >...};
-        return dispatcher_[size - which_](std::forward< visitor >(_visitor), std::move(*storage_), std::forward< arguments >(_arguments)...);
+        using caller_type = result_type (*)(visitor && _visitor, versatile && _visitable, arguments &&... _arguments);
+        static constexpr caller_type dispatcher_[size] = {variant::caller< types &&, result_type, visitor, versatile &&, arguments... >...};
+        return dispatcher_[size - which()](std::forward< visitor >(_visitor), std::move(*storage_), std::forward< arguments >(_arguments)...);
     }
 
 private :
 
-    template< typename type >
-    void
-    construct(type && _value)
-    {
-        ::new (storage_.get()) storage_type(std::forward< type >(_value));
-        which_ = storage_type::template index< std::decay_t< type > >();
-    }
-
-    template< typename ...arguments >
-    void
-    construct(arguments &&... _arguments)
-    {
-        ::new (storage_.get()) storage_type(std::forward< arguments >(_arguments)...);
-        which_ = storage_type::template index_of_constructible< arguments... >();
-    }
-
     struct constructor
     {
 
-        variant & destination_;
+        storage_type & storage_;
 
         template< typename type >
         void
         operator () (type && _value) const
         {
-            return destination_.construct(std::forward< type >(_value));
+            storage_ = std::make_unique< versatile >(std::forward< type >(_value));
         }
 
     };
@@ -173,35 +139,34 @@ private :
 public :
 
     constexpr
-    variant(variant const & _rhs) //noexcept((std::is_nothrow_copy_constructible< types >{} && ...))
+    variant(variant const & _rhs)
     {
-        _rhs.apply_visitor(constructor{*this});
+        _rhs.apply_visitor(constructor{storage_});
     }
 
     constexpr
-    variant(variant & _rhs) //noexcept((std::is_nothrow_constructible< types, types & >{} && ...))
+    variant(variant & _rhs)
     {
-        _rhs.apply_visitor(constructor{*this});
+        _rhs.apply_visitor(constructor{storage_});
     }
 
     constexpr
-    variant(variant const && _rhs) //noexcept((std::is_nothrow_constructible< types, types const && >{} && ...))
+    variant(variant const && _rhs)
     {
-        std::move(_rhs).apply_visitor(constructor{*this});
+        std::move(_rhs).apply_visitor(constructor{storage_});
     }
 
     constexpr
-    variant(variant && _rhs) //noexcept((std::is_nothrow_move_constructible< types >{} && ...))
+    variant(variant && _rhs)
     {
-        std::move(_rhs).apply_visitor(constructor{*this});
+        std::move(_rhs).apply_visitor(constructor{storage_});
     }
 
     template< typename ...arguments >
     constexpr
-    variant(arguments &&... _arguments) noexcept(std::is_nothrow_constructible< storage_type, arguments... >{})
-    {
-        construct(std::forward< arguments >(_arguments)...);
-    }
+    variant(arguments &&... _arguments)
+        : storage_(std::make_unique< versatile >(std::forward< arguments >(_arguments)...))
+    { ; }
 
     void
     swap(variant & _other) noexcept
@@ -214,7 +179,7 @@ private :
     struct assigner
     {
 
-        storage_type & destination_;
+        versatile & destination_;
 
         template< typename type >
         void
@@ -229,9 +194,9 @@ public :
 
     constexpr
     variant &
-    operator = (variant const & _rhs) & //noexcept((std::is_nothrow_copy_assignable< types >{} && ...))
+    operator = (variant const & _rhs) &
     {
-        if (which_ == _rhs.which_) {
+        if (which() == _rhs.which()) {
             _rhs.apply_visitor(assigner{*storage_});
         } else {
             variant(_rhs).swap(*this);
@@ -241,9 +206,9 @@ public :
 
     constexpr
     variant &
-    operator = (variant & _rhs) & noexcept(std::is_nothrow_copy_constructible< storage_type >{} && std::is_nothrow_copy_assignable< storage_type >{} && std::is_nothrow_destructible< storage_type >{})
+    operator = (variant & _rhs) &
     {
-        if (which_ == _rhs.which_) {
+        if (which() == _rhs.which()) {
             _rhs.apply_visitor(assigner{*storage_});
         } else {
             variant(_rhs).swap(*this);
@@ -253,9 +218,9 @@ public :
 
     constexpr
     variant &
-    operator = (variant const && _rhs) & noexcept(std::is_nothrow_move_constructible< storage_type >{} && std::is_nothrow_move_assignable< storage_type >{} && std::is_nothrow_destructible< storage_type >{})
+    operator = (variant const && _rhs) &
     {
-        if (which_ == _rhs.which_) {
+        if (which() == _rhs.which()) {
             std::move(_rhs).apply_visitor(assigner{*storage_});
         } else {
             variant(std::move(_rhs)).swap(*this);
@@ -265,9 +230,9 @@ public :
 
     constexpr
     variant &
-    operator = (variant && _rhs) & noexcept(std::is_nothrow_move_constructible< storage_type >{} && std::is_nothrow_move_assignable< storage_type >{} && std::is_nothrow_destructible< storage_type >{})
+    operator = (variant && _rhs) &
     {
-        if (which_ == _rhs.which_) {
+        if (which() == _rhs.which()) {
             std::move(_rhs).apply_visitor(assigner{*storage_});
         } else {
             variant(std::move(_rhs)).swap(*this);
@@ -278,13 +243,12 @@ public :
     template< typename rhs >
     constexpr
     variant &
-    operator = (rhs && _rhs) & noexcept(std::is_nothrow_assignable< storage_type &, rhs >{} && std::is_nothrow_constructible< storage_type, rhs >{} && std::is_nothrow_destructible< storage_type >{})
+    operator = (rhs && _rhs) &
     {
-        storage_type & lhs_storage_ = *storage_;
-        if (lhs_storage_.template is_active< rhs >()) {
-            lhs_storage_ = std::forward< rhs >(_rhs);
+        if (active< std::decay_t< rhs > >()) {
+            *storage_ = std::forward< rhs >(_rhs);
         } else {
-            toggle_storage(lhs_storage_, std::forward< rhs >(_rhs));
+            variant(std::forward< rhs >(_rhs)).swap(*this);
         }
         return *this;
     }
@@ -294,7 +258,7 @@ public :
     constexpr
     operator type const & () const & noexcept
     {
-        assert(*storage_.template is_active< type >());
+        assert(active< type >());
         return static_cast< type const & >(*storage_);
     }
 
@@ -303,7 +267,7 @@ public :
     constexpr
     operator type & () & noexcept
     {
-        assert(*storage_.template is_active< type >());
+        assert(active< type >());
         return static_cast< type & >(*storage_);
     }
 
@@ -312,7 +276,7 @@ public :
     constexpr
     operator type const && () const && noexcept
     {
-        assert(*storage_.template is_active< type >());
+        assert(active< type >());
         return static_cast< type const && >(*storage_);
     }
 
@@ -321,7 +285,7 @@ public :
     constexpr
     operator type && () && noexcept
     {
-        assert(*storage_.template is_active< type >());
+        assert(active< type >());
         return static_cast< type && >(*storage_);
     }
 

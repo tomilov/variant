@@ -125,20 +125,6 @@ private :
     head head_;
     tail tail_;
 
-    template< typename ...arguments >
-    explicit
-    constexpr
-    versatile(std::true_type, arguments &&... _arguments) noexcept(std::is_nothrow_constructible< head, arguments... >{})
-        : head_(std::forward< arguments >(_arguments)...)
-    { ; }
-
-    template< typename ...arguments >
-    explicit
-    constexpr
-    versatile(std::false_type, arguments &&... _arguments) noexcept(std::is_nothrow_constructible< tail, arguments... >{})
-        : tail_(std::forward< arguments >(_arguments)...)
-    { ; }
-
 public :
 
     using this_type = unwrap_type_t< first >;
@@ -210,10 +196,40 @@ public :
         }
     }
 
+private :
+
+    template< typename ...arguments >
+    explicit
+    constexpr
+    versatile(std::true_type, arguments &&... _arguments) noexcept(std::is_nothrow_constructible< head, arguments... >{})
+        : head_(std::forward< arguments >(_arguments)...)
+    { ; }
+
+    template< typename ...arguments >
+    explicit
+    constexpr
+    versatile(std::false_type, arguments &&... _arguments) noexcept(std::is_nothrow_constructible< tail, arguments... >{})
+        : tail_(std::forward< arguments >(_arguments)...)
+    { ; }
+
+public :
+
     explicit
     constexpr
     versatile(this_type const & _rhs) noexcept(std::is_nothrow_constructible< head, this_type const & >{})
         : head_(_rhs)
+    { ; }
+
+    explicit
+    constexpr
+    versatile(this_type & _rhs) noexcept(std::is_nothrow_constructible< head, this_type & >{})
+        : head_(_rhs)
+    { ; }
+
+    explicit
+    constexpr
+    versatile(this_type const && _rhs) noexcept(std::is_nothrow_constructible< head, this_type const && >{})
+        : head_(std::move(_rhs))
     { ; }
 
     explicit
@@ -245,6 +261,22 @@ public :
     {
         assert(active());
         operator this_type & () = _rhs;
+    }
+
+    constexpr
+    void
+    operator = (this_type & _rhs) & noexcept(std::is_nothrow_assignable< this_type &, this_type >{})
+    {
+        assert(active());
+        operator this_type & () = _rhs;
+    }
+
+    constexpr
+    void
+    operator = (this_type const && _rhs) & noexcept(std::is_nothrow_assignable< this_type &, this_type const && >{})
+    {
+        assert(active());
+        operator this_type & () = std::move(_rhs);
     }
 
     constexpr
