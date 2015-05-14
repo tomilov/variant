@@ -63,21 +63,13 @@ struct visitor
 
 };
 
-template< typename L, typename ...R >
-constexpr
-bool
-lvalueizer(L const & _lhs, R const &... _rhs) noexcept // Additional layer too avoid known clang++ bug #19917 https://llvm.org/bugs/show_bug.cgi?id=19917 make all parametres lvalues.
-{
-    using variant::apply_visitor;
-    return (_lhs == apply_visitor(visitor{}, _rhs...));
-}
-
 template< std::size_t ...M, std::size_t ...N >
 constexpr
 bool
 invoke(std::index_sequence< M... >, std::index_sequence< N... >) noexcept
 {
-    return lvalueizer(std::array< std::size_t, sizeof...(N) >{(N % sizeof...(M))...}, variant::variant< T< M >... >{T< (N % sizeof...(M)) >{}}...);
+    using variant::apply_visitor;
+    return (std::array< std::size_t, sizeof...(N) >{(N % sizeof...(M))...} == apply_visitor(visitor{}, variant::variant< T< M >... >{T< (N % sizeof...(M)) >{}}...));
 }
 
 #pragma clang diagnostic pop
@@ -99,15 +91,21 @@ main()
         using namespace variant;
         {
             using V = variant< int, float, double, long double >;
-            assert(V{}.which() == 4);
             assert(V{0}.which() == 4);
             assert(V{1.0f}.which() == 3);
             assert(V{2.0}.which() == 2);
             assert(V{3.0L}.which() == 1);
         }
+        {
+            struct A;
+            struct B {};
+            using V = variant< recursive_wrapper< A >, B >;
+            struct A {};
+            assert(V{A{}}.which() == 2);
+        }
     }
     {
-        //assert((test< ROWS, COLS >())); // 9 seconds (Release build) for COLS=5 ROWS=5 on Intel(R) Xeon(R) CPU E5-1650 0 @ 3.20GHz
+        assert((test< ROWS, COLS >())); // 9 seconds (Release build) for COLS=5 ROWS=5 on Intel(R) Xeon(R) CPU E5-1650 0 @ 3.20GHz
     }
     return EXIT_SUCCESS;
 }

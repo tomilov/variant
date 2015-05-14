@@ -155,7 +155,7 @@ template< typename general_type >
 struct unwrap_type< general_type, false >
 {
 
-    using type = general_type &&;
+    using type = general_type;
 
 };
 
@@ -177,7 +177,7 @@ constexpr
 decltype(auto)
 unwrap(type && _value) noexcept
 {
-    return static_cast< unwrap_type_t< type > >(std::forward< type >(_value));
+    return static_cast< unwrap_type_t< type && > >(std::forward< type >(_value));
 }
 
 }

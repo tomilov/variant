@@ -85,9 +85,9 @@ struct visitor_partially_applier< result_type, first, rest... >
 template< typename visitor, typename first, typename ...rest >
 constexpr
 decltype(auto)
-apply_visitor(visitor && _visitor, first && _first, rest &&... _rest) noexcept(is_nothrow_callable_v< visitor, first_type_t< first >, first_type_t< rest >... >)
+apply_visitor(visitor && _visitor, first && _first, rest &&... _rest) noexcept(is_nothrow_callable_v< visitor, first_type_t< first && >, first_type_t< rest && >... >)
 {
-    using result_type = result_of< visitor, first_type_t< first >, first_type_t< rest >... >;
+    using result_type = result_of< visitor, first_type_t< first && >, first_type_t< rest && >... >;
     return visitation::visitor_partially_applier< result_type, first, rest... >{}(std::forward< visitor >(_visitor), std::forward< first >(_first), std::forward< rest >(_rest)...);
 }
 
@@ -102,28 +102,28 @@ struct delayed_visitor_applier
 
     template< typename first, typename ...rest >
     decltype(auto)
-    operator () (first && _first, rest &&... _rest) const & noexcept(is_nothrow_callable_v< visitor const &, first_type_t< first >, first_type_t< rest >... >)
+    operator () (first && _first, rest &&... _rest) const & noexcept(is_nothrow_callable_v< visitor const &, first_type_t< first && >, first_type_t< rest && >... >)
     {
         return apply_visitor(visitor_, std::forward< first >(_first), std::forward< rest >(_rest)...);
     }
 
     template< typename first, typename ...rest >
     decltype(auto)
-    operator () (first && _first, rest &&... _rest) & noexcept(is_nothrow_callable_v< visitor &, first_type_t< first >, first_type_t< rest >... >)
+    operator () (first && _first, rest &&... _rest) & noexcept(is_nothrow_callable_v< visitor &, first_type_t< first && >, first_type_t< rest && >... >)
     {
         return apply_visitor(visitor_, std::forward< first >(_first), std::forward< rest >(_rest)...);
     }
 
     template< typename first, typename ...rest >
     decltype(auto)
-    operator () (first && _first, rest &&... _rest) const && noexcept(is_nothrow_callable_v< visitor const &&, first_type_t< first >, first_type_t< rest >... >)
+    operator () (first && _first, rest &&... _rest) const && noexcept(is_nothrow_callable_v< visitor const &&, first_type_t< first && >, first_type_t< rest && >... >)
     {
         return apply_visitor(std::move(visitor_), std::forward< first >(_first), std::forward< rest >(_rest)...);
     }
 
     template< typename first, typename ...rest >
     decltype(auto)
-    operator () (first && _first, rest &&... _rest) && noexcept(is_nothrow_callable_v< visitor &&, first_type_t< first >, first_type_t< rest >... >)
+    operator () (first && _first, rest &&... _rest) && noexcept(is_nothrow_callable_v< visitor &&, first_type_t< first && >, first_type_t< rest && >... >)
     {
         return apply_visitor(std::move(visitor_), std::forward< first >(_first), std::forward< rest >(_rest)...);
     }

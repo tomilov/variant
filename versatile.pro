@@ -21,6 +21,8 @@ QMAKE_CXXFLAGS_WARN_ON = \
     -W -Weverything -pedantic -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded \
     -ftemplate-backtrace-limit=0 -fdiagnostics-color=always
 
+#QMAKE_CXXFLAGS_RELEASE += -gline-tables-only
+#QMAKE_LFLAGS_RELEASE   += -gline-tables-only
 CONFIG(release, debug|release) {
     DEFINES += NDEBUG=1
 
