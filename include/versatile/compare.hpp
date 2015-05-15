@@ -21,6 +21,7 @@ struct equal_to
     }
 
     template< typename lhs, typename rhs >
+    constexpr
     bool
     operator () (lhs const &, rhs const &) const noexcept
     {
@@ -29,28 +30,27 @@ struct equal_to
 
 };
 
-template< typename ...lhses, typename ...rhses >
+template< typename ...lhs, typename ...rhs >
 bool
-operator == (variant< lhses... > const & _lhs, variant< rhses... > const & _rhs)
+operator == (variant< lhs... > const & _lhs, variant< rhs... > const & _rhs)
 {
     return apply_visitor(equal_to{}, _lhs, _rhs);
 }
 
-template< typename ...lhses, typename rhs >
+template< typename ...lhs, typename rhs >
 bool
-operator == (variant< lhses... > const & _lhs, rhs const & _rhs)
+operator == (variant< lhs... > const & _lhs, rhs const & _rhs)
 {
     return apply_visitor(equal_to{}, _lhs, _rhs);
 }
 
-template< typename lhs, typename ...rhses >
+template< typename lhs, typename ...rhs >
 bool
-operator == (lhs const & _lhs, variant< rhses... > const & _rhs)
+operator == (lhs const & _lhs, variant< rhs... > const & _rhs)
 {
     return apply_visitor(equal_to{}, _lhs, _rhs);
 }
 
-template< typename variant_type >
 struct less
 {
 
@@ -67,30 +67,30 @@ struct less
     bool
     operator () (lhs const &, rhs const &) const noexcept
     {
-        return (index< variant_type, lhs > < index< variant_type, rhs >);
+        return false;
     }
 
 };
 
-template< typename ...types >
+template< typename ...lhs, typename ...rhs >
 bool
-operator < (variant< types... > const & _lhs, variant< types... > const & _rhs)
+operator < (variant< lhs... > const & _lhs, variant< rhs... > const & _rhs)
 {
-    return apply_visitor(less< variant< types... > >{}, _lhs, _rhs);
+    return apply_visitor(less{}, _lhs, _rhs);
 }
 
-template< typename rhs, typename ...lhses >
+template< typename rhs, typename ...lhs >
 bool
-operator < (variant< lhses... > const & _lhs, rhs const & _rhs)
+operator < (variant< lhs... > const & _lhs, rhs const & _rhs)
 {
-    return apply_visitor(less< variant< lhses... > >{}, _lhs, _rhs);
+    return apply_visitor(less{}, _lhs, _rhs);
 }
 
-template< typename lhs, typename ...rhses >
+template< typename lhs, typename ...rhs >
 bool
-operator < (lhs const & _lhs, variant< rhses... > const & _rhs)
+operator < (lhs const & _lhs, variant< rhs... > const & _rhs)
 {
-    return apply_visitor(less< variant< rhses... > >{}, _lhs, _rhs);
+    return apply_visitor(less{}, _lhs, _rhs);
 }
 
 }
