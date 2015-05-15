@@ -259,7 +259,6 @@ public :
     void
     operator = (this_type const & _rhs) & noexcept(std::is_nothrow_copy_assignable< this_type >{})
     {
-        assert(active());
         operator this_type & () = _rhs;
     }
 
@@ -267,7 +266,6 @@ public :
     void
     operator = (this_type & _rhs) & noexcept(std::is_nothrow_assignable< this_type &, this_type >{})
     {
-        assert(active());
         operator this_type & () = _rhs;
     }
 
@@ -275,7 +273,6 @@ public :
     void
     operator = (this_type const && _rhs) & noexcept(std::is_nothrow_assignable< this_type &, this_type const && >{})
     {
-        assert(active());
         operator this_type & () = std::move(_rhs);
     }
 
@@ -283,7 +280,6 @@ public :
     void
     operator = (this_type && _rhs) & noexcept(std::is_nothrow_move_assignable< this_type >{})
     {
-        assert(active());
         operator this_type & () = std::move(_rhs);
     }
 

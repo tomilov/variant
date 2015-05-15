@@ -13,7 +13,8 @@ HEADERS += \
     recursive_wrapper.hpp \
     versatile.hpp \
     variant.hpp \
-    visitation.hpp
+    visitation.hpp \
+    compare.hpp
 
 linux:OBJECTS_DIR = /tmp/
 

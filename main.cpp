@@ -2,6 +2,7 @@
 #include "recursive_wrapper.hpp"
 #include "variant.hpp"
 #include "visitation.hpp"
+#include "compare.hpp"
 
 #include <string>
 #include <array>
@@ -84,30 +85,417 @@ test() noexcept
 
 }
 
+namespace
+{
+
+struct visitor0
+{
+
+    using R = std::tuple< bool, bool, bool >;
+
+    template< typename type >
+    R
+    operator () (type &&) const
+    {
+        return std::make_tuple(true, std::is_const< std::remove_reference_t< type > >::value, std::is_lvalue_reference< type >::value);
+    }
+
+    template< typename type >
+    R
+    operator () (type &&)
+    {
+        return std::make_tuple(false, std::is_const< std::remove_reference_t< type > >::value, std::is_lvalue_reference< type >::value);
+    }
+
+};
+
+struct visitor1
+{
+
+    using R = std::tuple< bool, bool, bool, bool >;
+
+    template< typename type >
+    R
+    operator () (type &&) const &
+    {
+        return std::make_tuple(true, true, std::is_const< std::remove_reference_t< type > >::value, std::is_lvalue_reference< type >::value);
+    }
+
+    template< typename type >
+    R
+    operator () (type &&) &
+    {
+        return std::make_tuple(false, true, std::is_const< std::remove_reference_t< type > >::value, std::is_lvalue_reference< type >::value);
+    }
+
+    template< typename type >
+    R
+    operator () (type &&) &&
+    {
+        return std::make_tuple(false, false, std::is_const< std::remove_reference_t< type > >::value, std::is_lvalue_reference< type >::value);
+    }
+
+};
+
+struct visitor2
+{
+    template< typename ...types >
+    auto
+    operator () (types &&... _values) const
+    {
+        return std::tuple_cat(std::make_tuple(true), std::make_tuple(std::tie(typeid(std::forward< types >(_values))), std::is_const< std::remove_reference_t< types > >::value, std::is_lvalue_reference< types >::value)...);
+    }
+
+    template< typename ...types >
+    auto
+    operator () (types &&... _values)
+    {
+        return std::tuple_cat(std::make_tuple(false), std::make_tuple(std::tie(typeid(std::forward< types >(_values))), std::is_const< std::remove_reference_t< types > >::value, std::is_lvalue_reference< types >::value)...);
+    }
+
+};
+
+struct visitor3
+{
+
+    using R = std::tuple< bool, bool, bool, bool >;
+
+    template< typename type >
+    R
+    operator () (type &&) const &
+    {
+        return std::make_tuple(true, true, std::is_const< std::remove_reference_t< type > >::value, std::is_lvalue_reference< type >::value);
+    }
+
+    template< typename type >
+    R
+    operator () (type &&) &
+    {
+        return std::make_tuple(false, true, std::is_const< std::remove_reference_t< type > >::value, std::is_lvalue_reference< type >::value);
+    }
+
+    template< typename type >
+    R
+    operator () (type &&) const &&
+    {
+        return std::make_tuple(true, false, std::is_const< std::remove_reference_t< type > >::value, std::is_lvalue_reference< type >::value);
+    }
+
+    template< typename type >
+    R
+    operator () (type &&) &&
+    {
+        return std::make_tuple(false, false, std::is_const< std::remove_reference_t< type > >::value, std::is_lvalue_reference< type >::value);
+    }
+
+};
+
+}
+
 int
 main()
 {
     {
         using namespace variant;
         {
+            using V = variant<>;
+            static_assert(V::size == 0, "V::size != 0");
+            V v;
+            assert(v.index() == 0);
+            assert(v.which() == 0);
+            assert(v.active());
+        }
+        {
             using V = variant< int >;
-            assert(V{}.template active< int >());
+            static_assert(V::size == 1, "V::size != 1");
+            V v;
+            assert((1 == index< V, int >));
+            assert(v.index() == 1);
+            assert(v.which() == 1);
+            assert(v.active< int >());
+            assert(v.active());
+            assert(static_cast< int >(v) == int{});
+            V w(222);
+            assert(static_cast< int >(w) == 222);
+            v = w;
+            assert(static_cast< int >(v) == 222);
+            assert(v == w);
+            assert(!(v < w));
+            assert(!(w < v));
+            ++static_cast< int & >(v);
+            assert(w < v);
+            assert(!(v < w));
+            assert(!(v == w));
+            assert(static_cast< int >(w) == 222);
+            assert(static_cast< int >(v) == 223);
+            v.swap(w);
+            assert(static_cast< int >(w) == 223);
+            assert(static_cast< int >(v) == 222);
+            V u = w;
+            assert(static_cast< int >(u) == 223);
+            assert(w.index() == 1);
+            assert(w.which() == 1);
+            assert(u.index() == 1);
+            assert(u.which() == 1);
         }
         {
             using V = variant< int, float, double, long double >;
-            assert(V{0}.active< int >());
-            assert(V{1.0f}.active< float >());
-            assert(V{1.0}.active< double >());
-            assert(V{1.0L}.active< long double >());
+            assert((V{}.which() == index< V, int >));
+            assert((V{0}.which() == index< V, int >));
+            assert((V{1.0f}.which() == index< V, float >));
+            assert((V{2.0}.which() == index< V, double >));
+            assert((V{3.0L}.which() == index< V, long double >));
+            V i;
+            assert(i.active< int >());
+            assert(i.active<>());
+            V j = 1;
+            assert(j.active< int >());
+            assert(j.active<>());
+            V f = 1.0f;
+            assert(f.active< float >());
+            V d = 2.0;
+            assert(d.active< double >());
+            V l = 3.0L;
+            assert(l.active< long double >());
+            i = l;
+            assert(i.active< long double >());
+            l = d;
+            assert(l.active< double >());
+            d = f;
+            assert(d.active< float >());
+            f = j;
+            assert(f.active< int >());
+            d.swap(j);
+            assert(d.active< int >());
+            assert(j.active< float >());
         }
         {
-            struct A;
+            struct A { A() = delete; };
             struct B {};
-            using V = variant< recursive_wrapper< A >, B >;
+            using V =  variant< A, B >;
+            V v;
+            assert(v.active< B >());
+        }
+        {
             struct A {};
-            assert((V{}.active< A >()));
-            assert(!(V{}.active< B >()));
-            assert(!(V{}.active< recursive_wrapper< A > >()));
+            struct B;
+            using V = variant< A, recursive_wrapper< B > >;
+            V v;
+            assert(v.active< A >());
+            struct B {};
+            v = B{};
+            assert(v.active< B >());
+        }
+        {
+            struct R;
+            struct A {};
+            using V = variant< A, recursive_wrapper< R > >;
+            V v;
+            assert(v.active< A >());
+            struct R { V v; };
+            v = R{{}};
+            assert(v.active< R >());
+        }
+        {
+            struct A {};
+            struct B;
+            using V = variant< recursive_wrapper< B >, A >;
+            V v; // ??? wtf
+            assert(v.active< B >());
+            struct B {};
+            v = A{};
+            assert(v.active< A >());
+        }
+        {
+            using V = variant< int, double >;
+            assert(!(V{1} == V{1.0}));
+            assert(V{} == V{});
+            assert(V{1} == 1);
+            assert(1 == V{1});
+            assert(!(V{1.0} == 1));
+            assert(!(1 == V{1.0}));
+            assert(!(V{1} == 1.0));
+            assert(!(1.0 == V{1}));
+        }
+        {
+            using V = variant< int, double >;
+            assert(V{1} < V{2});
+            assert(V{1.0} < V{2.0});
+            assert(!(V{1} < V{0}));
+            assert(!(V{1.0} < V{0.0}));
+            assert(1 < V{2});
+            assert(V{1} < 2);
+            assert(V{1.0} < 2.0);
+            assert(1.0 < V{2.0});
+            assert(!(V{1} < 0));
+            assert(!(1 < V{0}));
+            assert(!(V{1.0} < 0.0));
+            assert(!(1.0 < V{0.0}));
+        }
+        {
+            struct A { A(int &, int) {} };
+            struct B { B(int const &, int) {} };
+            using V = variant< A, B >;
+            V v{1, 2};
+            assert(v.active< B >());
+            int i{1};
+            V w{i, 2};
+            assert(w.active< A >());
+        }
+        {
+            variant< char const * > v;
+            assert(static_cast< char const * >(v) == nullptr);
+        }
+        {
+            struct A {};
+            struct B { B(B &&) = default; B(B const &) = delete; B & operator = (B &&) = default; void operator = (B const &) = delete; };
+            variant< A, B > v;
+            assert(v.active< A >());
+            v = B{};
+            assert(v.active< B >());
+        }
+        {
+            struct A {};
+            using V = variant< A >;
+            visitor0 p_;
+            visitor0 const cp_{};
+            V v;
+            V const cv;
+            assert(v.apply_visitor(p_)    == std::make_tuple(false, false, true));
+            assert(v.apply_visitor(cp_)   == std::make_tuple(true,  false, true));
+            assert(cv.apply_visitor(p_)   == std::make_tuple(false, true,  true));
+            assert(cv.apply_visitor(cp_)  == std::make_tuple(true,  true,  true));
+            assert(V().apply_visitor(p_)  == std::make_tuple(false, false, false));
+            assert(V().apply_visitor(cp_) == std::make_tuple(true,  false, false));
+        }
+        {
+            struct A {};
+            using V = variant< A >;
+            visitor1 p_;
+            visitor1 const cp_{};
+            V v;
+            V const cv;
+            assert(v.apply_visitor(p_)           == std::make_tuple(false, true,  false, true));
+            assert(v.apply_visitor(cp_)          == std::make_tuple(true,  true,  false, true));
+            assert(v.apply_visitor(visitor1{})   == std::make_tuple(false, false, false, true));
+            assert(cv.apply_visitor(p_)          == std::make_tuple(false, true,  true,  true));
+            assert(cv.apply_visitor(cp_)         == std::make_tuple(true,  true,  true,  true));
+            assert(cv.apply_visitor(visitor1{})  == std::make_tuple(false, false, true,  true));
+            assert(V().apply_visitor(p_)         == std::make_tuple(false, true,  false, false));
+            assert(V().apply_visitor(cp_)        == std::make_tuple(true,  true,  false, false));
+            assert(V().apply_visitor(visitor1{}) == std::make_tuple(false, false, false, false));
+        }
+        { // multivisitation with forwarding
+            struct A {};
+            struct B {};
+            using V = variant< A, B >;
+            visitor2 v_;
+            visitor2 const c_{};
+            assert(apply_visitor(v_, V{B{}}) == std::make_tuple(false, std::tie(typeid(B)), false, false));
+            assert(apply_visitor(c_, V{B{}}) == std::make_tuple(true, std::tie(typeid(B)), false, false));
+            assert(apply_visitor(visitor2{}, V{B{}}) == std::make_tuple(false, std::tie(typeid(B)), false, false));
+            assert(apply_visitor(v_, V{}, V{B{}}) == std::make_tuple(false, std::tie(typeid(A)), false, false, std::tie(typeid(B)), false, false));
+            assert(apply_visitor(c_, V{}, V{B{}}) == std::make_tuple(true, std::tie(typeid(A)), false, false, std::tie(typeid(B)), false, false));
+            assert(apply_visitor(visitor2{}, V{}, V{B{}}) == std::make_tuple(false, std::tie(typeid(A)), false, false, std::tie(typeid(B)), false, false));
+            // forwarding
+            enum class op { eq, lt, gt, nge };
+            assert(apply_visitor(v_, V{}, op::eq, V{B{}}) == std::make_tuple(false, std::tie(typeid(A)), false, false, std::tie(typeid(op)), false, false, std::tie(typeid(B)), false, false));
+            assert(apply_visitor(c_, V{}, op::eq, V{B{}}) == std::make_tuple(true, std::tie(typeid(A)), false, false, std::tie(typeid(op)), false, false, std::tie(typeid(B)), false, false));
+            assert(apply_visitor(visitor2{}, V{}, op::eq, V{B{}}) == std::make_tuple(false, std::tie(typeid(A)), false, false, std::tie(typeid(op)), false, false, std::tie(typeid(B)), false, false));
+        }
+        { // delayed visitation
+            visitor2 v_;
+            visitor2 const c_{};
+
+            auto d0 = apply_visitor(v_);
+            auto const d1 = apply_visitor(v_);
+            auto d2 = apply_visitor(c_);
+            auto const d3 = apply_visitor(c_);
+            auto d4 = apply_visitor(visitor2{});
+            auto const d5 = apply_visitor(visitor2{});
+
+            struct A {};
+            struct B {};
+            using V = variant< A, B >;
+            V v;
+            V const c(B{});
+
+            assert(d0(v) ==   std::make_tuple(false, std::tie(typeid(A)), false, true ));
+            assert(d0(c) ==   std::make_tuple(false, std::tie(typeid(B)), true,  true ));
+            assert(d0(V{}) == std::make_tuple(false, std::tie(typeid(A)), false, false));
+
+            assert(d1(v) ==   std::make_tuple(false, std::tie(typeid(A)), false, true ));
+            assert(d1(c) ==   std::make_tuple(false, std::tie(typeid(B)), true,  true ));
+            assert(d1(V{}) == std::make_tuple(false, std::tie(typeid(A)), false, false));
+
+            assert(d2(v) ==   std::make_tuple(true,  std::tie(typeid(A)), false, true ));
+            assert(d2(c) ==   std::make_tuple(true,  std::tie(typeid(B)), true,  true ));
+            assert(d2(V{}) == std::make_tuple(true,  std::tie(typeid(A)), false, false));
+
+            assert(d3(v) ==   std::make_tuple(true,  std::tie(typeid(A)), false, true ));
+            assert(d3(c) ==   std::make_tuple(true,  std::tie(typeid(B)), true,  true ));
+            assert(d3(V{}) == std::make_tuple(true,  std::tie(typeid(A)), false, false));
+
+            assert(d4(v) ==   std::make_tuple(false, std::tie(typeid(A)), false, true ));
+            assert(d4(c) ==   std::make_tuple(false, std::tie(typeid(B)), true,  true ));
+            assert(d4(V{}) == std::make_tuple(false, std::tie(typeid(A)), false, false));
+
+            // to use mutable visitor it is mandatory to have non-const delayed visitor instance
+            assert(d5(v) ==   std::make_tuple(true,  std::tie(typeid(A)), false, true ));
+            assert(d5(c) ==   std::make_tuple(true,  std::tie(typeid(B)), true,  true ));
+            assert(d5(V{}) == std::make_tuple(true,  std::tie(typeid(A)), false, false));
+        }
+        { // delayed visitation
+            visitor3 v_;
+            visitor3 const cv_{};
+
+            auto d = apply_visitor(v_);
+            auto const cd = apply_visitor(v_);
+            auto dcv = apply_visitor(cv_);
+            auto const cdcv = apply_visitor(cv_);
+            auto dmv = apply_visitor(visitor3{});
+            auto const cdmv = apply_visitor(visitor3{});
+
+            struct A {};
+            using V = variant< A >;
+            V v;
+            V const cv{};
+
+            assert(d(v)                           == std::make_tuple(false, true,  false, true ));
+            assert(cd(v)                          == std::make_tuple(false, true,  false, true )); // ! true, true, false, true
+            assert(apply_visitor(v_)(v)           == std::make_tuple(false, false, false, true ));
+
+            assert(dcv(v)                         == std::make_tuple(true,  true,  false, true ));
+            assert(cdcv(v)                        == std::make_tuple(true,  true,  false, true ));
+            assert(apply_visitor(cv_)(v)          == std::make_tuple(true,  false, false, true )); // if visitor have not `const &&` version of `operator ()`, then `const &` chosen
+
+            assert(dmv(v)                         == std::make_tuple(false, true,  false, true ));
+            assert(cdmv(v)                        == std::make_tuple(true,  true,  false, true ));
+            assert(apply_visitor(visitor3{})(v)   == std::make_tuple(false, false, false, true ));
+
+            assert(d(cv)                          == std::make_tuple(false, true,  true,  true ));
+            assert(cd(cv)                         == std::make_tuple(false, true,  true,  true )); // ! true, true, true, true
+            assert(apply_visitor(v_)(cv)          == std::make_tuple(false, false, true,  true ));
+
+            assert(dcv(cv)                        == std::make_tuple(true,  true,  true,  true ));
+            assert(cdcv(cv)                       == std::make_tuple(true,  true,  true,  true ));
+            assert(apply_visitor(cv_)(cv)         == std::make_tuple(true,  false, true,  true ));
+
+            assert(dmv(cv)                        == std::make_tuple(false, true,  true,  true ));
+            assert(cdmv(cv)                       == std::make_tuple(true,  true,  true,  true ));
+            assert(apply_visitor(visitor3{})(cv)  == std::make_tuple(false, false, true,  true ));
+
+            assert(d(V{})                         == std::make_tuple(false, true,  false, false));
+            assert(cd(V{})                        == std::make_tuple(false, true,  false, false)); // ! true, true, false, false
+            assert(apply_visitor(v_)(V{})         == std::make_tuple(false, false, false, false));
+
+            assert(dcv(V{})                       == std::make_tuple(true,  true,  false, false));
+            assert(cdcv(V{})                      == std::make_tuple(true,  true,  false, false));
+            assert(apply_visitor(cv_)(V{})        == std::make_tuple(true,  false, false, false));
+
+            assert(dmv(V{})                       == std::make_tuple(false, true,  false, false));
+            assert(cdmv(V{})                      == std::make_tuple(true,  true,  false, false));
+            assert(apply_visitor(visitor3{})(V{}) == std::make_tuple(false, false, false, false));
         }
     }
     {

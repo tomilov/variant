@@ -45,11 +45,8 @@ public :
     std::size_t
     which() const noexcept
     {
-        if (!!storage_) {
-            return storage_->which();
-        } else {
-            return 0;
-        }
+        assert(!!storage_);
+        return storage_->which();
     }
 
     template< typename type = at<> >
@@ -125,13 +122,11 @@ private :
     struct constructor
     {
 
-        storage_type & storage_;
-
         template< typename type >
-        void
+        storage_type
         operator () (type && _value) const
         {
-            storage_ = std::make_unique< versatile >(std::forward< type >(_value));
+            return std::make_unique< versatile >(std::forward< type >(_value));
         }
 
     };
@@ -140,27 +135,23 @@ public :
 
     constexpr
     variant(variant const & _rhs)
-    {
-        _rhs.apply_visitor(constructor{storage_});
-    }
+        : storage_(_rhs.apply_visitor(constructor{}))
+    { ; }
 
     constexpr
     variant(variant & _rhs)
-    {
-        _rhs.apply_visitor(constructor{storage_});
-    }
+        : storage_(_rhs.apply_visitor(constructor{}))
+    { ; }
 
     constexpr
     variant(variant const && _rhs)
-    {
-        std::move(_rhs).apply_visitor(constructor{storage_});
-    }
+        : storage_(std::move(_rhs).apply_visitor(constructor{}))
+    { ; }
 
     constexpr
     variant(variant && _rhs)
-    {
-        std::move(_rhs).apply_visitor(constructor{storage_});
-    }
+        : storage_(std::move(_rhs).apply_visitor(constructor{}))
+    { ; }
 
     template< typename ...arguments >
     constexpr
