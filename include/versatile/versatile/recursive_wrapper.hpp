@@ -1,6 +1,6 @@
 #pragma once
 
-#include "versatile/type_traits.hpp"
+#include "type_traits.hpp"
 
 #include <type_traits>
 #include <utility>

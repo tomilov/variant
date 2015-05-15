@@ -1,11 +1,12 @@
 #pragma once
 
-#include "versatile/type_traits.hpp"
-#include "versatile/versatile.hpp"
+#include "type_traits.hpp"
+#include "versatile.hpp"
 
 #include <type_traits>
 #include <utility>
 #include <memory>
+#include <typeinfo>
 
 #include <cstddef>
 #include <cassert>
@@ -14,12 +15,8 @@ namespace versatile
 {
 
 template< typename ...types >
-struct variant
+class variant
 {
-
-    static constexpr std::size_t size = sizeof...(types);
-
-private :
 
     using versatile = versatile< types... >;
     using storage_type = std::unique_ptr< versatile >;
@@ -28,20 +25,37 @@ private :
 
 public :
 
-    template< std::size_t _which = size >
+    using base_type = variant;
+
+    using size_type = typename versatile::size_type;
+
+    static constexpr size_type size = sizeof...(types);
+
+    template< size_type _which = size >
     using at = typename versatile::template at< _which >;
 
     template< typename type = at<> >
     static
     constexpr
-    std::size_t
+    size_type
     index() noexcept
     {
         return versatile::template index< type >();
     }
 
+    template< typename ...arguments >
+    using constructible_type = typename versatile::template constructible_type< arguments... >;
+
+    template< typename ...arguments >
+    static
     constexpr
-    std::size_t
+    size_type
+    index_of_constructible() noexcept
+    {
+        return versatile::template index_of_constructible< arguments... >();
+    }
+
+    size_type
     which() const noexcept
     {
         assert(!!storage_);
@@ -49,7 +63,6 @@ public :
     }
 
     template< typename type = at<> >
-    constexpr
     bool
     active() const noexcept
     {
@@ -138,28 +151,26 @@ private :
 
 public :
 
-    constexpr
     variant(variant const & _rhs)
         : storage_(_rhs.apply_visitor(constructor{}))
     { ; }
 
-    constexpr
     variant(variant & _rhs)
         : storage_(_rhs.apply_visitor(constructor{}))
     { ; }
 
-    constexpr
-    variant(variant const && _rhs)
+    variant(variant const && _rhs) = delete;
+
+    variant(variant && _rhs) noexcept
         : storage_(std::move(_rhs).apply_visitor(constructor{}))
     { ; }
 
-    constexpr
-    variant(variant && _rhs)
-        : storage_(std::move(_rhs).apply_visitor(constructor{}))
+    template< typename argument >
+    variant(argument && _argument) noexcept(!std::is_lvalue_reference< argument >{})
+        : storage_(std::make_unique< versatile >(std::forward< argument >(_argument)))
     { ; }
 
     template< typename ...arguments >
-    constexpr
     variant(arguments &&... _arguments)
         : storage_(std::make_unique< versatile >(std::forward< arguments >(_arguments)...))
     { ; }
@@ -188,7 +199,6 @@ private :
 
 public :
 
-    constexpr
     variant &
     operator = (variant const & _rhs) &
     {
@@ -200,7 +210,6 @@ public :
         return *this;
     }
 
-    constexpr
     variant &
     operator = (variant & _rhs) &
     {
@@ -212,21 +221,11 @@ public :
         return *this;
     }
 
-    constexpr
-    variant &
-    operator = (variant const && _rhs) &
-    {
-        if (which() == _rhs.which()) {
-            std::move(_rhs).apply_visitor(assigner{*storage_});
-        } else {
-            variant(std::move(_rhs)).swap(*this);
-        }
-        return *this;
-    }
+    void
+    operator = (variant const && _rhs) = delete;
 
-    constexpr
     variant &
-    operator = (variant && _rhs) &
+    operator = (variant && _rhs) & noexcept
     {
         if (which() == _rhs.which()) {
             std::move(_rhs).apply_visitor(assigner{*storage_});
@@ -237,9 +236,8 @@ public :
     }
 
     template< typename rhs >
-    constexpr
     variant &
-    operator = (rhs && _rhs) &
+    operator = (rhs && _rhs) & noexcept(!std::is_lvalue_reference< rhs >{})
     {
         if (active< std::decay_t< rhs > >()) {
             *storage_ = std::forward< rhs >(_rhs);
@@ -251,41 +249,66 @@ public :
 
     template< typename type >
     explicit
-    constexpr
-    operator type const & () const & noexcept
+    operator type const & () const &
     {
-        assert(active< type >());
+        if (!active< type >()) {
+            throw std::bad_cast{};
+        }
         return static_cast< type const & >(*storage_);
     }
 
     template< typename type >
     explicit
-    constexpr
-    operator type & () & noexcept
+    operator type & () &
     {
-        assert(active< type >());
+        if (!active< type >()) {
+            throw std::bad_cast{};
+        }
         return static_cast< type & >(*storage_);
     }
 
     template< typename type >
     explicit
-    constexpr
-    operator type const && () const && noexcept
+    operator type const && () const &&
     {
-        assert(active< type >());
+        if (!active< type >()) {
+            throw std::bad_cast{};
+        }
         return static_cast< type const && >(*storage_);
     }
 
     template< typename type >
     explicit
-    constexpr
-    operator type && () && noexcept
+    operator type && () &&
     {
-        assert(active< type >());
+        if (!active< type >()) {
+            throw std::bad_cast{};
+        }
         return static_cast< type && >(*storage_);
     }
 
 };
+
+template< typename variant, typename argument >
+std::enable_if_t< !(0 < variant::template index< argument >()), variant >
+make_variant(argument && _argument)
+{
+    return typename variant::template constructible_type< argument >(std::forward< argument >(_argument));
+}
+
+template< typename variant, typename argument >
+std::enable_if_t< (0 < variant::template index< argument >()), variant >
+make_variant(argument && _argument)
+{
+    return typename variant::template constructible_type< argument >(std::forward< argument >(_argument));
+}
+
+template< typename variant, typename ...arguments >
+variant
+make_variant(arguments &&... _arguments)
+{
+    return {std::forward< arguments >(_arguments)...};
+}
 
 template< typename type >
 struct is_variant
@@ -324,9 +347,9 @@ template< typename type >
 using first_type_t = typename first_type< type >::type;
 
 template< typename variant, typename type >
-constexpr std::size_t index = variant::template index< type >();
+constexpr auto index = variant::template index< type >();
 
-template< typename variant, std::size_t index >
+template< typename variant, typename variant::size_type index >
 using at = typename variant::template at< index >;
 
 template< typename ...types >

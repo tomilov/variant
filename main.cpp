@@ -1,9 +1,4 @@
-#include "versatile/type_traits.hpp"
-#include "versatile/recursive_wrapper.hpp"
-#include "versatile/variant.hpp"
-#include "versatile/visitation.hpp"
-#include "versatile/compare.hpp"
-#include "versatile/io.hpp"
+#include "versatile/versatile.hpp"
 
 #include <string>
 #include <array>
@@ -524,9 +519,15 @@ main()
             ss_ << v;
             assert(ss_.str() == "3.5");
         }
+        {
+            struct A { A(int) {} };
+            struct B {};
+            auto v = make_variant< variant< A, B > >(1.0);
+            assert(v.active< A >());
+        }
     }
     {
-        assert((test< ROWS, COLS >())); // 9 seconds (Release build) for COLS=5 ROWS=5 on Intel(R) Xeon(R) CPU E5-1650 0 @ 3.20GHz
+        assert((test< ROWS, COLS >())); // 8 seconds (Release build) for COLS=5 ROWS=5 on Intel(R) Xeon(R) CPU E5-1650 0 @ 3.20GHz
     }
     return EXIT_SUCCESS;
 }

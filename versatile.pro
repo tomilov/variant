@@ -10,13 +10,14 @@ SOURCES += main.cpp
 
 INCLUDEPATH += include/
 HEADERS += \
-    include/versatile/type_traits.hpp \
-    include/versatile/recursive_wrapper.hpp \
-    include/versatile/versatile.hpp \
-    include/versatile/variant.hpp \
-    include/versatile/visitation.hpp \
-    include/versatile/compare.hpp \
-    include/versatile/io.hpp
+    include/versatile/versatile/type_traits.hpp \
+    include/versatile/versatile/recursive_wrapper.hpp \
+    include/versatile/versatile/versatile.hpp \
+    include/versatile/versatile/variant.hpp \
+    include/versatile/versatile/visitor.hpp \
+    include/versatile/versatile/compare.hpp \
+    include/versatile/versatile/io.hpp \
+    include/versatile/versatile.hpp
 
 QMAKE_CXXFLAGS_WARN_ON = \
     -W -Weverything -pedantic -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded \

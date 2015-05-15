@@ -1,7 +1,7 @@
 #pragma once
 
-#include "versatile/type_traits.hpp"
-#include "versatile/variant.hpp"
+#include "type_traits.hpp"
+#include "variant.hpp"
 
 #include <type_traits>
 #include <utility>
