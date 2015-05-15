@@ -8,6 +8,7 @@
 #include <array>
 #include <utility>
 #include <tuple>
+#include <functional>
 #ifdef _DEBUG
 #include <iostream>
 #include <iomanip>
@@ -310,6 +311,8 @@ main()
             using V = variant< int, double >;
             assert(!(V{1} == V{1.0}));
             assert(V{} == V{});
+            assert(V{} == int{});
+            assert(int{} == V{});
             assert(V{1} == 1);
             assert(1 == V{1});
             assert(!(V{1.0} == 1));
@@ -496,6 +499,15 @@ main()
             assert(dmv(V{})                       == std::make_tuple(false, true,  false, false));
             assert(cdmv(V{})                      == std::make_tuple(true,  true,  false, false));
             assert(apply_visitor(visitor3{})(V{}) == std::make_tuple(false, false, false, false));
+        }
+        {
+            struct A {};
+            struct B {};
+            struct C {};
+            using V = variant< A, B, C >;
+            static_assert((std::is_same< variant< std::reference_wrapper< A >, std::reference_wrapper< B >, std::reference_wrapper< C > >, V::wrap< std::reference_wrapper > >{}), "!");
+            static_assert((std::is_same< std::tuple< A, B, C >, V::engage< std::tuple > >{}), "!");
+            static_assert((std::is_same< std::tuple< std::reference_wrapper< A >, std::reference_wrapper< B >, std::reference_wrapper< C > >, V::wrap< std::reference_wrapper, std::tuple > >{}), "!");
         }
     }
     {

@@ -6,9 +6,6 @@
 namespace variant
 {
 
-namespace compare
-{
-
 struct equal_to
 {
 
@@ -32,31 +29,26 @@ struct equal_to
 
 };
 
-}
-
 template< typename ...lhses, typename ...rhses >
 bool
 operator == (variant< lhses... > const & _lhs, variant< rhses... > const & _rhs)
 {
-    return apply_visitor(compare::equal_to{}, _lhs, _rhs);
+    return apply_visitor(equal_to{}, _lhs, _rhs);
 }
 
 template< typename ...lhses, typename rhs >
 bool
 operator == (variant< lhses... > const & _lhs, rhs const & _rhs)
 {
-    return apply_visitor(compare::equal_to{}, _lhs, _rhs);
+    return apply_visitor(equal_to{}, _lhs, _rhs);
 }
 
 template< typename lhs, typename ...rhses >
 bool
 operator == (lhs const & _lhs, variant< rhses... > const & _rhs)
 {
-    return apply_visitor(compare::equal_to{}, _lhs, _rhs);
+    return apply_visitor(equal_to{}, _lhs, _rhs);
 }
-
-namespace compare
-{
 
 template< typename variant_type >
 struct less
@@ -80,27 +72,25 @@ struct less
 
 };
 
-}
-
 template< typename ...types >
 bool
 operator < (variant< types... > const & _lhs, variant< types... > const & _rhs)
 {
-    return apply_visitor(compare::less< variant< types... > >{}, _lhs, _rhs);
+    return apply_visitor(less< variant< types... > >{}, _lhs, _rhs);
 }
 
 template< typename rhs, typename ...lhses >
 bool
 operator < (variant< lhses... > const & _lhs, rhs const & _rhs)
 {
-    return apply_visitor(compare::less< variant< lhses... > >{}, _lhs, _rhs);
+    return apply_visitor(less< variant< lhses... > >{}, _lhs, _rhs);
 }
 
 template< typename lhs, typename ...rhses >
 bool
 operator < (lhs const & _lhs, variant< rhses... > const & _rhs)
 {
-    return apply_visitor(compare::less< variant< rhses... > >{}, _lhs, _rhs);
+    return apply_visitor(less< variant< rhses... > >{}, _lhs, _rhs);
 }
 
 }

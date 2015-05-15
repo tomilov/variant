@@ -57,6 +57,12 @@ public :
         return (index< type >() == which());
     }
 
+    template< template< typename > class wrapper, template< typename ... > class receptacle = variant >
+    using wrap = receptacle< wrapper< types >... >;
+
+    template< template< typename ... > class receptacle >
+    using engage = receptacle< types... >;
+
 private :
 
     template< typename type, typename result_type, typename visitor, typename visitable, typename ...arguments >
