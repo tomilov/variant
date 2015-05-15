@@ -1,9 +1,9 @@
 #pragma once
 
-#include "variant.hpp"
-#include "visitation.hpp"
+#include "versatile/variant.hpp"
+#include "versatile/visitation.hpp"
 
-namespace variant
+namespace versatile
 {
 
 struct equal_to

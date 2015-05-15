@@ -1,8 +1,7 @@
 #pragma once
 
-#include "type_traits.hpp"
-#include "recursive_wrapper.hpp"
-#include "versatile.hpp"
+#include "versatile/type_traits.hpp"
+#include "versatile/versatile.hpp"
 
 #include <type_traits>
 #include <utility>
@@ -11,7 +10,7 @@
 #include <cstddef>
 #include <cassert>
 
-namespace variant
+namespace versatile
 {
 
 template< typename ...types >
@@ -302,7 +301,7 @@ struct is_variant< variant< types... > >
 
 };
 
-template< typename type, bool = is_variant< std::remove_cv_t< std::remove_reference_t< type > > >{} >
+template< typename type, bool = (is_variant< std::decay_t< type > >{}) >
 struct first_type;
 
 template< typename visitable >

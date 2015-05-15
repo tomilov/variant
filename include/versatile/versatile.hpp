@@ -1,7 +1,7 @@
 #pragma once
 
-#include "type_traits.hpp"
-#include "recursive_wrapper.hpp"
+#include "versatile/type_traits.hpp"
+#include "versatile/recursive_wrapper.hpp"
 
 #include <type_traits>
 #include <utility>
@@ -9,7 +9,7 @@
 #include <cstddef>
 #include <cassert>
 
-namespace variant
+namespace versatile
 {
 
 template< std::size_t _which = 0, typename type = void >

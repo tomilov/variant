@@ -2,7 +2,7 @@
 
 #include <type_traits>
 
-namespace variant
+namespace versatile
 {
 
 namespace type_traits

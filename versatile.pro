@@ -3,20 +3,20 @@ CONFIG *= exceptions warn_on optimize_full c++11
 TEMPLATE = app
 
 TARGET = versatile
-DESTDIR = "/tmp/"
+linux:DESTDIR = /tmp/
+linux:OBJECTS_DIR = /tmp/
 
 SOURCES += main.cpp
 
-INCLUDEPATH += .
+INCLUDEPATH += include/
 HEADERS += \
-    type_traits.hpp \
-    recursive_wrapper.hpp \
-    versatile.hpp \
-    variant.hpp \
-    visitation.hpp \
-    compare.hpp
-
-linux:OBJECTS_DIR = /tmp/
+    include/versatile/type_traits.hpp \
+    include/versatile/recursive_wrapper.hpp \
+    include/versatile/versatile.hpp \
+    include/versatile/variant.hpp \
+    include/versatile/visitation.hpp \
+    include/versatile/compare.hpp \
+    include/versatile/io.hpp
 
 QMAKE_CXXFLAGS_WARN_ON = \
     -W -Weverything -pedantic -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded \

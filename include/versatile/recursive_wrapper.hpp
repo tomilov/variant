@@ -1,12 +1,12 @@
 #pragma once
 
-#include "type_traits.hpp"
+#include "versatile/type_traits.hpp"
 
 #include <type_traits>
 #include <utility>
 #include <memory>
 
-namespace variant
+namespace versatile
 {
 
 template< typename incomplete_type >
@@ -148,7 +148,7 @@ using is_recursive_wrapper_t = typename is_recursive_wrapper< type >::type;
 namespace recursive_wrapping
 {
 
-template< typename type, bool = is_recursive_wrapper_t< std::remove_cv_t< std::remove_reference_t< type > > >{} >
+template< typename type, bool = (is_recursive_wrapper_t< std::decay_t< type > >{}) >
 struct unwrap_type;
 
 template< typename general_type >

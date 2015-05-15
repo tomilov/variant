@@ -1,14 +1,16 @@
-#include "type_traits.hpp"
-#include "recursive_wrapper.hpp"
-#include "variant.hpp"
-#include "visitation.hpp"
-#include "compare.hpp"
+#include "versatile/type_traits.hpp"
+#include "versatile/recursive_wrapper.hpp"
+#include "versatile/variant.hpp"
+#include "versatile/visitation.hpp"
+#include "versatile/compare.hpp"
+#include "versatile/io.hpp"
 
 #include <string>
 #include <array>
 #include <utility>
 #include <tuple>
 #include <functional>
+#include <sstream>
 #ifdef _DEBUG
 #include <iostream>
 #include <iomanip>
@@ -70,8 +72,8 @@ constexpr
 bool
 invoke(std::index_sequence< M... >, std::index_sequence< N... >) noexcept
 {
-    using variant::apply_visitor;
-    return (std::array< std::size_t, sizeof...(N) >{(N % sizeof...(M))...} == apply_visitor(visitor{}, variant::variant< T< M >... >{T< (N % sizeof...(M)) >{}}...));
+    using versatile::apply_visitor;
+    return (std::array< std::size_t, sizeof...(N) >{(N % sizeof...(M))...} == apply_visitor(visitor{}, versatile::variant< T< M >... >{T< (N % sizeof...(M)) >{}}...));
 }
 
 #pragma clang diagnostic pop
@@ -197,7 +199,7 @@ int
 main()
 {
     {
-        using namespace variant;
+        using namespace versatile;
         {
             using V = variant<>;
             static_assert(V::size == 0, "V::size != 0");
@@ -508,6 +510,19 @@ main()
             static_assert((std::is_same< variant< std::reference_wrapper< A >, std::reference_wrapper< B >, std::reference_wrapper< C > >, V::wrap< std::reference_wrapper > >{}), "!");
             static_assert((std::is_same< std::tuple< A, B, C >, V::engage< std::tuple > >{}), "!");
             static_assert((std::is_same< std::tuple< std::reference_wrapper< A >, std::reference_wrapper< B >, std::reference_wrapper< C > >, V::wrap< std::reference_wrapper, std::tuple > >{}), "!");
+        }
+        {
+            using V = variant< int, double >;
+            std::stringstream ss_;
+            ss_.str("1");
+            V v = 2;
+            ss_ >> v;
+            assert(v == 1);
+            v = 3.5;
+            ss_.str();
+            ss_.clear();
+            ss_ << v;
+            assert(ss_.str() == "3.5");
         }
     }
     {

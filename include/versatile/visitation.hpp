@@ -1,17 +1,18 @@
 #pragma once
 
-#include "variant.hpp"
+#include "versatile/type_traits.hpp"
+#include "versatile/variant.hpp"
 
 #include <type_traits>
 #include <utility>
 
-namespace variant
+namespace versatile
 {
 
 namespace visitation
 {
 
-template< typename result_type, typename supervisitor, typename type, bool = is_variant< std::remove_cv_t< std::remove_reference_t< type > > >{} >
+template< typename result_type, typename supervisitor, typename type, bool = (is_variant< std::decay_t< type > >{}) >
 struct subvisitor;
 
 template< typename result_type, typename supervisitor, typename visitable >
@@ -74,8 +75,7 @@ struct visitor_partially_applier< result_type, first, rest... >
     result_type
     operator () (visitor && _visitor, first && _first, rest &&... _rest) const
     {
-        subvisitor< result_type, visitor, first > subvisitor_{std::forward< visitor >(_visitor), std::forward< first >(_first)};
-        return visitor_partially_applier< result_type, rest... >{}(subvisitor_, std::forward< rest >(_rest)...);
+        return visitor_partially_applier< result_type, rest... >{}(subvisitor< result_type, visitor, first >{std::forward< visitor >(_visitor), std::forward< first >(_first)}, std::forward< rest >(_rest)...);
     }
 
 };
