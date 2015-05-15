@@ -296,13 +296,6 @@ make_variant(argument && _argument)
     return typename variant::template constructible_type< argument >(std::forward< argument >(_argument));
 }
 
-template< typename variant, typename argument >
-std::enable_if_t< (0 < variant::template index< argument >()), variant >
-make_variant(argument && _argument)
-{
-    return typename variant::template constructible_type< argument >(std::forward< argument >(_argument));
-}
-
 template< typename variant, typename ...arguments >
 variant
 make_variant(arguments &&... _arguments)
