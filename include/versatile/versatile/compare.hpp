@@ -1,7 +1,7 @@
 #pragma once
 
 #include "variant.hpp"
-#include "visitor.hpp"
+#include "apply_visitor.hpp"
 
 namespace versatile
 {

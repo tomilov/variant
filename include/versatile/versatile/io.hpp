@@ -1,12 +1,12 @@
 #pragma once
 
 #include "variant.hpp"
-#include "visitor.hpp"
+#include "apply_visitor.hpp"
 
 namespace versatile
 {
 
-namespace io
+namespace details
 {
 
 struct out
@@ -29,10 +29,10 @@ template< typename first, typename ...rest >
 std::ostream &
 operator << (std::ostream & _out, variant< first, rest... > const & _variant) // http://stackoverflow.com/questions/23355117/
 {
-    return _variant.apply_visitor(io::out{_out});
+    return _variant.apply_visitor(details::out{_out});
 }
 
-namespace io
+namespace details
 {
 
 struct in
@@ -55,7 +55,7 @@ template< typename first, typename ...rest >
 std::istream &
 operator >> (std::istream & _in, variant< first, rest... > & _variant) // http://stackoverflow.com/questions/23355117/
 {
-    return _variant.apply_visitor(io::in{_in});
+    return _variant.apply_visitor(details::in{_in});
 }
 
 }

@@ -9,7 +9,7 @@
 namespace versatile
 {
 
-namespace visitation
+namespace details
 {
 
 template< typename result_type, typename supervisitor, typename type, bool = (is_variant< std::decay_t< type > >{}) >
@@ -88,10 +88,10 @@ decltype(auto)
 apply_visitor(visitor && _visitor, first && _first, rest &&... _rest)
 {
     using result_type = result_of< visitor, first_type_t< first && >, first_type_t< rest && >... >;
-    return visitation::visitor_partially_applier< result_type, first, rest... >{}(std::forward< visitor >(_visitor), std::forward< first >(_first), std::forward< rest >(_rest)...);
+    return details::visitor_partially_applier< result_type, first, rest... >{}(std::forward< visitor >(_visitor), std::forward< first >(_first), std::forward< rest >(_rest)...);
 }
 
-namespace visitation
+namespace details
 {
 
 template< typename visitor >
@@ -134,7 +134,7 @@ struct delayed_visitor_applier
 
 template< typename visitor >
 constexpr
-visitation::delayed_visitor_applier< visitor >
+details::delayed_visitor_applier< visitor >
 apply_visitor(visitor && _visitor) noexcept(std::is_lvalue_reference< visitor >{} || std::is_nothrow_move_constructible< visitor >{})
 {
     return {std::forward< visitor >(_visitor)};

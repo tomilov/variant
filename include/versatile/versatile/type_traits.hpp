@@ -5,7 +5,7 @@
 namespace versatile
 {
 
-namespace type_traits
+namespace details
 {
 
 template< typename from, typename to >
@@ -67,10 +67,10 @@ struct copy_cv< volatile from, to >
 }
 
 template< typename from, typename to >
-using copy_reference_t = typename type_traits::copy_reference< from, to >::type;
+using copy_reference_t = typename details::copy_reference< from, to >::type;
 
 template< typename from, typename to >
-using copy_cv_t = typename type_traits::copy_cv< from, to >::type;
+using copy_cv_t = typename details::copy_cv< from, to >::type;
 
 template< typename from, typename to >
 using copy_cv_reference_t = copy_reference_t< from, copy_cv_t< std::remove_reference_t< from >, to > >;

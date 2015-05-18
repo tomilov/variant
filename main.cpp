@@ -535,11 +535,11 @@ main()
                 using V = variant< A >;
                 V v;
                 V const c{};
-                auto const lv = make_lambda_visitor(l0, l1, l2, l3);
-                assert(0 == c.apply_visitor(lv));
-                assert(1 == v.apply_visitor(lv));
-                assert(2 == std::move(c).apply_visitor(lv));
-                assert(3 == std::move(v).apply_visitor(lv));
+                auto const l = compose_visitors(l0, l1, l2, l3);
+                assert(0 == c.apply_visitor(l));
+                assert(1 == v.apply_visitor(l));
+                assert(2 == std::move(c).apply_visitor(l));
+                assert(3 == std::move(v).apply_visitor(l));
             }
             {
                 struct A
@@ -558,109 +558,144 @@ main()
                 A av{0};
                 A const ac{1};
                 {
-                    auto const lv = make_lambda_visitor(l0, l1, l2, l3);
-                    assert(0 == lv(ac));
-                    assert(1 == lv(av));
-                    assert(2 == lv(std::move(ac)));
-                    assert(3 == lv(std::move(av)));
+                    auto const l = compose_visitors(l0, l1, l2, l3);
+                    assert(0 == l(ac));
+                    assert(1 == l(av));
+                    assert(2 == l(std::move(ac)));
+                    assert(3 == l(std::move(av)));
                 }
                 {
-                    auto const lv = make_lambda_visitor(l0);
-                    assert(0 == lv(ac));
-                    assert(0 == lv(av));
-                    assert(0 == lv(std::move(ac)));
-                    assert(0 == lv(std::move(av)));
+                    auto const l = compose_visitors(l0);
+                    assert(0 == l(ac));
+                    assert(0 == l(av));
+                    assert(0 == l(std::move(ac)));
+                    assert(0 == l(std::move(av)));
                 }
                 {
-                    auto const lv = make_lambda_visitor(l1);
-                    assert(1 == lv(ac));
-                    assert(1 == lv(av));
-                    assert(1 == lv(std::move(ac)));
-                    //assert(1 == lv(std::move(v)));
+                    auto const l = compose_visitors(l1);
+                    assert(1 == l(ac));
+                    assert(1 == l(av));
+                    assert(1 == l(std::move(ac)));
+                    //assert(1 == l(std::move(v)));
                 }
                 {
-                    auto const lv = make_lambda_visitor(l2);
-                    //assert(2 == lv(c));
-                    //assert(2 == lv(v));
-                    assert(2 == lv(std::move(ac)));
-                    assert(2 == lv(std::move(av)));
+                    auto const l = compose_visitors(l2);
+                    //assert(2 == l(c));
+                    //assert(2 == l(v));
+                    assert(2 == l(std::move(ac)));
+                    assert(2 == l(std::move(av)));
                 }
                 {
-                    auto const lv = make_lambda_visitor(l3);
-                    assert(3 == lv(ac));
-                    assert(3 == lv(av));
-                    assert(3 == lv(std::move(ac)));
-                    assert(3 == lv(std::move(av)));
+                    auto const l = compose_visitors(l3);
+                    assert(3 == l(ac));
+                    assert(3 == l(av));
+                    assert(3 == l(std::move(ac)));
+                    assert(3 == l(std::move(av)));
                 }
                 {
-                    auto const lv = make_lambda_visitor(l0, l1);
-                    assert(0 == lv(ac));
-                    assert(1 == lv(av));
-                    assert(0 == lv(std::move(ac)));
-                    assert(0 == lv(std::move(av)));
+                    auto const l = compose_visitors(l0, l1);
+                    assert(0 == l(ac));
+                    assert(1 == l(av));
+                    assert(0 == l(std::move(ac)));
+                    assert(0 == l(std::move(av)));
                 }
                 {
-                    auto const lv = make_lambda_visitor(l0, l2);
-                    assert(0 == lv(ac));
-                    assert(0 == lv(av));
-                    assert(2 == lv(std::move(ac)));
-                    assert(2 == lv(std::move(av)));
+                    auto const l = compose_visitors(l0, l2);
+                    assert(0 == l(ac));
+                    assert(0 == l(av));
+                    assert(2 == l(std::move(ac)));
+                    assert(2 == l(std::move(av)));
                 }
                 {
-                    auto const lv = make_lambda_visitor(l0, l3);
-                    assert(0 == lv(ac));
-                    assert(3 == lv(av));
-                    assert(3 == lv(std::move(ac)));
-                    assert(3 == lv(std::move(av)));
+                    auto const l = compose_visitors(l0, l3);
+                    assert(0 == l(ac));
+                    assert(3 == l(av));
+                    assert(3 == l(std::move(ac)));
+                    assert(3 == l(std::move(av)));
                 }
                 {
-                    auto const lv = make_lambda_visitor(l1, l2);
-                    assert(1 == lv(ac));
-                    assert(1 == lv(av));
-                    assert(2 == lv(std::move(ac)));
-                    assert(2 == lv(std::move(av)));
+                    auto const l = compose_visitors(l1, l2);
+                    assert(1 == l(ac));
+                    assert(1 == l(av));
+                    assert(2 == l(std::move(ac)));
+                    assert(2 == l(std::move(av)));
                 }
                 {
-                    auto const lv = make_lambda_visitor(l1, l3);
-                    assert(1 == lv(ac));
-                    assert(1 == lv(av));
-                    assert(3 == lv(std::move(ac)));
-                    assert(3 == lv(std::move(av)));
+                    auto const l = compose_visitors(l1, l3);
+                    assert(1 == l(ac));
+                    assert(1 == l(av));
+                    assert(3 == l(std::move(ac)));
+                    assert(3 == l(std::move(av)));
                 }
                 {
-                    auto const lv = make_lambda_visitor(l2, l3);
-                    assert(3 == lv(ac));
-                    assert(3 == lv(av));
-                    assert(2 == lv(std::move(ac)));
-                    assert(3 == lv(std::move(av)));
+                    auto const l = compose_visitors(l2, l3);
+                    assert(3 == l(ac));
+                    assert(3 == l(av));
+                    assert(2 == l(std::move(ac)));
+                    assert(3 == l(std::move(av)));
                 }
                 {
-                    auto const lv = make_lambda_visitor(l0, l1, l2);
-                    assert(0 == lv(ac));
-                    assert(1 == lv(av));
-                    assert(2 == lv(std::move(ac)));
-                    assert(2 == lv(std::move(av)));
+                    auto const l = compose_visitors(l0, l1, l2);
+                    assert(0 == l(ac));
+                    assert(1 == l(av));
+                    assert(2 == l(std::move(ac)));
+                    assert(2 == l(std::move(av)));
                 }
                 {
-                    auto const lv = make_lambda_visitor(l0, l1, l3);
-                    assert(0 == lv(ac));
-                    assert(1 == lv(av));
-                    assert(3 == lv(std::move(ac)));
-                    assert(3 == lv(std::move(av)));
+                    auto const l = compose_visitors(l0, l1, l3);
+                    assert(0 == l(ac));
+                    assert(1 == l(av));
+                    assert(3 == l(std::move(ac)));
+                    assert(3 == l(std::move(av)));
                 }
                 {
-                    auto const lv = make_lambda_visitor(l0, l2, l3);
-                    assert(0 == lv(ac));
-                    assert(3 == lv(av));
-                    assert(2 == lv(std::move(ac)));
-                    assert(3 == lv(std::move(av)));
+                    auto const l = compose_visitors(l0, l2, l3);
+                    assert(0 == l(ac));
+                    assert(3 == l(av));
+                    assert(2 == l(std::move(ac)));
+                    assert(3 == l(std::move(av)));
                 }
                 {
-                    auto const lv = make_lambda_visitor(l1, l2, l3);
-                    assert(1 == lv(ac));
-                    assert(1 == lv(av));
-                    assert(2 == lv(std::move(ac)));
-                    assert(3 == lv(std::move(av)));
+                    auto const l = compose_visitors(l1, l2, l3);
+                    assert(1 == l(ac));
+                    assert(1 == l(av));
+                    assert(2 == l(std::move(ac)));
+                    assert(3 == l(std::move(av)));
+                }
+            }
+            {
+                auto const l = compose_visitors(l0, l1, l2, l3);
+                struct A {};
+                A a;
+                A const c{};
+                {
+                    struct R {};
+                    auto const rvl = add_result_type< R >(l);
+                    static_assert(std::is_same< decltype(rvl)::result_type, R >{});
+                    assert(0 == rvl(c));
+                    assert(1 == rvl(a));
+                    assert(2 == rvl(std::move(c)));
+                    assert(3 == rvl(A{}));
+                }
+                {
+                    auto const la = compose_visitors(l, [] (A const &) { return -1; });
+                    assert(-1 == la(c));
+                    assert(1 == la(a));
+                    assert(2 == la(std::move(c)));
+                    assert(3 == la(A{}));
+                }
+                {
+                    struct V { auto operator () (A const &) && { return -11; } };
+                    auto lam = compose_visitors(l, V{});
+                    assert(0 == lam(c));
+                    assert(-11 == std::move(lam)(c));
+                }
+                {
+                    struct D0 { int x; };
+                    struct D1 { int x; };
+                    auto const ld = compose_visitors(l, D0{123}, D1{321});
+                    assert(ld.D0::x == 123);
+                    assert(ld.D1::x == 321);
                 }
             }
         }

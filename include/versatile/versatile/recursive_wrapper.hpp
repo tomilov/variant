@@ -145,7 +145,7 @@ struct is_recursive_wrapper< recursive_wrapper< incomplete_type > >
 template< typename type >
 using is_recursive_wrapper_t = typename is_recursive_wrapper< type >::type;
 
-namespace recursive_wrapping
+namespace details
 {
 
 template< typename type, bool = (is_recursive_wrapper_t< std::decay_t< type > >{}) >
@@ -170,7 +170,7 @@ struct unwrap_type< recursive_wrapper_type, true >
 }
 
 template< typename type >
-using unwrap_type_t = typename recursive_wrapping::unwrap_type< type >::type;
+using unwrap_type_t = typename details::unwrap_type< type >::type;
 
 template< typename type >
 constexpr
