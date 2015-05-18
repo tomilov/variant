@@ -7,3 +7,4 @@
 #include "versatile/visitor.hpp"
 #include "versatile/compare.hpp"
 #include "versatile/io.hpp"
+#include "versatile/lambda_visitor.hpp"

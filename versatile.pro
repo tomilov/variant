@@ -17,6 +17,7 @@ HEADERS += \
     include/versatile/versatile/visitor.hpp \
     include/versatile/versatile/compare.hpp \
     include/versatile/versatile/io.hpp \
+    include/versatile/versatile/lambda_visitor.hpp \
     include/versatile/versatile.hpp
 
 QMAKE_CXXFLAGS_WARN_ON = \

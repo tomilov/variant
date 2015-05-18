@@ -525,6 +525,145 @@ main()
             auto v = make_variant< variant< A, B > >(1.0);
             assert(v.active< A >());
         }
+        {
+            auto const l0 = [] (auto const &) { return 0; };
+            auto const l1 = [] (auto &) { return 1; };
+            auto const l2 = [] (auto const &&) { return 2; };
+            auto const l3 = [] (auto &&) { return 3; };
+            {
+                struct A {};
+                using V = variant< A >;
+                V v;
+                V const c{};
+                auto const lv = make_lambda_visitor(l0, l1, l2, l3);
+                assert(0 == c.apply_visitor(lv));
+                assert(1 == v.apply_visitor(lv));
+                assert(2 == std::move(c).apply_visitor(lv));
+                assert(3 == std::move(v).apply_visitor(lv));
+            }
+            {
+                struct A
+                {
+
+                    A(int) { ; }
+                    A() = delete;
+                    A(A const &) = delete;
+                    A(A &) = delete;
+                    A(A &&) = delete;
+                    A & operator = (A const &) = delete;
+                    A & operator = (A &) = delete;
+                    A & operator = (A &&) = delete;
+
+                };
+                A av{0};
+                A const ac{1};
+                {
+                    auto const lv = make_lambda_visitor(l0, l1, l2, l3);
+                    assert(0 == lv(ac));
+                    assert(1 == lv(av));
+                    assert(2 == lv(std::move(ac)));
+                    assert(3 == lv(std::move(av)));
+                }
+                {
+                    auto const lv = make_lambda_visitor(l0);
+                    assert(0 == lv(ac));
+                    assert(0 == lv(av));
+                    assert(0 == lv(std::move(ac)));
+                    assert(0 == lv(std::move(av)));
+                }
+                {
+                    auto const lv = make_lambda_visitor(l1);
+                    assert(1 == lv(ac));
+                    assert(1 == lv(av));
+                    assert(1 == lv(std::move(ac)));
+                    //assert(1 == lv(std::move(v)));
+                }
+                {
+                    auto const lv = make_lambda_visitor(l2);
+                    //assert(2 == lv(c));
+                    //assert(2 == lv(v));
+                    assert(2 == lv(std::move(ac)));
+                    assert(2 == lv(std::move(av)));
+                }
+                {
+                    auto const lv = make_lambda_visitor(l3);
+                    assert(3 == lv(ac));
+                    assert(3 == lv(av));
+                    assert(3 == lv(std::move(ac)));
+                    assert(3 == lv(std::move(av)));
+                }
+                {
+                    auto const lv = make_lambda_visitor(l0, l1);
+                    assert(0 == lv(ac));
+                    assert(1 == lv(av));
+                    assert(0 == lv(std::move(ac)));
+                    assert(0 == lv(std::move(av)));
+                }
+                {
+                    auto const lv = make_lambda_visitor(l0, l2);
+                    assert(0 == lv(ac));
+                    assert(0 == lv(av));
+                    assert(2 == lv(std::move(ac)));
+                    assert(2 == lv(std::move(av)));
+                }
+                {
+                    auto const lv = make_lambda_visitor(l0, l3);
+                    assert(0 == lv(ac));
+                    assert(3 == lv(av));
+                    assert(3 == lv(std::move(ac)));
+                    assert(3 == lv(std::move(av)));
+                }
+                {
+                    auto const lv = make_lambda_visitor(l1, l2);
+                    assert(1 == lv(ac));
+                    assert(1 == lv(av));
+                    assert(2 == lv(std::move(ac)));
+                    assert(2 == lv(std::move(av)));
+                }
+                {
+                    auto const lv = make_lambda_visitor(l1, l3);
+                    assert(1 == lv(ac));
+                    assert(1 == lv(av));
+                    assert(3 == lv(std::move(ac)));
+                    assert(3 == lv(std::move(av)));
+                }
+                {
+                    auto const lv = make_lambda_visitor(l2, l3);
+                    assert(3 == lv(ac));
+                    assert(3 == lv(av));
+                    assert(2 == lv(std::move(ac)));
+                    assert(3 == lv(std::move(av)));
+                }
+                {
+                    auto const lv = make_lambda_visitor(l0, l1, l2);
+                    assert(0 == lv(ac));
+                    assert(1 == lv(av));
+                    assert(2 == lv(std::move(ac)));
+                    assert(2 == lv(std::move(av)));
+                }
+                {
+                    auto const lv = make_lambda_visitor(l0, l1, l3);
+                    assert(0 == lv(ac));
+                    assert(1 == lv(av));
+                    assert(3 == lv(std::move(ac)));
+                    assert(3 == lv(std::move(av)));
+                }
+                {
+                    auto const lv = make_lambda_visitor(l0, l2, l3);
+                    assert(0 == lv(ac));
+                    assert(3 == lv(av));
+                    assert(2 == lv(std::move(ac)));
+                    assert(3 == lv(std::move(av)));
+                }
+                {
+                    auto const lv = make_lambda_visitor(l1, l2, l3);
+                    assert(1 == lv(ac));
+                    assert(1 == lv(av));
+                    assert(2 == lv(std::move(ac)));
+                    assert(3 == lv(std::move(av)));
+                }
+            }
+        }
     }
     {
         assert((test< ROWS, COLS >())); // 8 seconds (Release build) for COLS=5 ROWS=5 on Intel(R) Xeon(R) CPU E5-1650 0 @ 3.20GHz
