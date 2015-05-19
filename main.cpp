@@ -671,7 +671,7 @@ main()
                 {
                     struct R {};
                     auto const rvl = add_result_type< R >(l);
-                    static_assert(std::is_same< decltype(rvl)::result_type, R >{});
+                    static_assert((std::is_same< decltype(rvl)::result_type, R >{}));
                     assert(0 == rvl(c));
                     assert(1 == rvl(a));
                     assert(2 == rvl(std::move(c)));
@@ -696,6 +696,20 @@ main()
                     auto const ld = compose_visitors(l, D0{123}, D1{321});
                     assert(ld.D0::x == 123);
                     assert(ld.D1::x == 321);
+                }
+                {
+                    struct C
+                    {
+                        C() = default;
+                        C(C const &) = delete;
+                        C(C &&) = delete;
+                        auto operator () (int) { return 100; }
+                        auto operator () (int) const { return 200; }
+                    };
+                    C vc;
+                    assert((compose_visitors(vc)(1) == 100));
+                    C const cc{};
+                    assert((compose_visitors(cc)(1) == 200));
                 }
             }
         }
