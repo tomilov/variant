@@ -181,7 +181,7 @@ public :
         }
     }
 
-    ~versatile() noexcept
+    ~versatile() noexcept(std::is_nothrow_destructible< head >{} && std::is_nothrow_destructible< tail >{})
     {
         if (active()) {
             head_.~head();

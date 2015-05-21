@@ -39,25 +39,25 @@ struct recursive_wrapper
     void
     operator = (recursive_wrapper const & _rhs) & noexcept(std::is_nothrow_copy_assignable< type >{})
     {
-        operator type & () = static_cast< type const & >(_rhs);
+        operator type & () = _rhs;
     }
 
     void
     operator = (recursive_wrapper & _rhs) & noexcept(std::is_nothrow_assignable< type &, type & >{})
     {
-        operator type & () = static_cast< type & >(_rhs);
+        operator type & () = _rhs;
     }
 
     void
     operator = (recursive_wrapper const && _rhs) & noexcept(std::is_nothrow_assignable< type &, type const && >{})
     {
-        operator type & () = static_cast< type const && >(std::move(_rhs));
+        operator type & () = std::move(_rhs);
     }
 
     void
     operator = (recursive_wrapper && _rhs) & noexcept(std::is_nothrow_move_assignable< type >{})
     {
-        operator type & () = static_cast< type && >(std::move(_rhs));
+        operator type & () = std::move(_rhs);
     }
 
     void
@@ -145,9 +145,6 @@ struct is_recursive_wrapper< recursive_wrapper< incomplete_type > >
 template< typename type >
 using is_recursive_wrapper_t = typename is_recursive_wrapper< type >::type;
 
-namespace details
-{
-
 template< typename type, bool = (is_recursive_wrapper_t< std::decay_t< type > >{}) >
 struct unwrap_type;
 
@@ -167,10 +164,8 @@ struct unwrap_type< recursive_wrapper_type, true >
 
 };
 
-}
-
 template< typename type >
-using unwrap_type_t = typename details::unwrap_type< type >::type;
+using unwrap_type_t = typename unwrap_type< type >::type;
 
 template< typename type >
 constexpr

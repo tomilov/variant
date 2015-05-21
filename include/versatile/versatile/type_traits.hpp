@@ -5,9 +5,6 @@
 namespace versatile
 {
 
-namespace details
-{
-
 template< typename from, typename to >
 struct copy_reference
 {
@@ -64,21 +61,16 @@ struct copy_cv< volatile from, to >
 
 };
 
-}
+template< typename from, typename to >
+using copy_reference_t = typename copy_reference< from, to >::type;
 
 template< typename from, typename to >
-using copy_reference_t = typename details::copy_reference< from, to >::type;
-
-template< typename from, typename to >
-using copy_cv_t = typename details::copy_cv< from, to >::type;
+using copy_cv_t = typename copy_cv< from, to >::type;
 
 template< typename from, typename to >
 using copy_cv_reference_t = copy_reference_t< from, copy_cv_t< std::remove_reference_t< from >, to > >;
 
 template< typename type, typename ...arguments >
 using result_of = decltype(std::declval< type >()(std::declval< arguments >()...));
-
-template< typename type, typename ...arguments >
-constexpr bool is_nothrow_callable_v = noexcept(std::declval< type >()(std::declval< arguments >()...));
 
 }

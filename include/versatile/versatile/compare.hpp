@@ -14,10 +14,7 @@ struct equal_to
     bool
     operator () (type const & _lhs, type const & _rhs) const
     {
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wfloat-equal"
         return static_cast< bool >(_lhs == _rhs);
-#pragma clang diagnostic pop
     }
 
     template< typename lhs, typename rhs >

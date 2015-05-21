@@ -42,10 +42,10 @@ struct in
     std::istream &
     operator () (type & _value) const
     {
-        return out_ >> _value;
+        return in_ >> _value;
     }
 
-    std::istream & out_;
+    std::istream & in_;
 
 };
 

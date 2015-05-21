@@ -25,8 +25,6 @@ class variant
 
 public :
 
-    using base_type = variant;
-
     using size_type = typename versatile::size_type;
 
     static constexpr size_type size = sizeof...(types);
@@ -81,7 +79,7 @@ private :
     static
     constexpr
     result_type
-    caller(visitor && _visitor, visitable && _visitable, arguments &&... _arguments) noexcept(is_nothrow_callable_v< visitor, unwrap_type_t< type >, arguments... >)
+    caller(visitor && _visitor, visitable && _visitable, arguments &&... _arguments)
     {
         // There is known clang++ bug #19917 for static_cast to rvalue reference.
 #if 0
@@ -159,14 +157,16 @@ public :
         : storage_(_rhs.apply_visitor(constructor{}))
     { ; }
 
-    variant(variant const && _rhs) = delete;
+    variant(variant const && _rhs)
+        : storage_(std::move(_rhs).apply_visitor(constructor{}))
+    { ; }
 
-    variant(variant && _rhs) noexcept
+    variant(variant && _rhs)
         : storage_(std::move(_rhs).apply_visitor(constructor{}))
     { ; }
 
     template< typename argument >
-    variant(argument && _argument) noexcept(!std::is_lvalue_reference< argument >{})
+    variant(argument && _argument)
         : storage_(std::make_unique< versatile >(std::forward< argument >(_argument)))
     { ; }
 
@@ -221,11 +221,19 @@ public :
         return *this;
     }
 
-    void
-    operator = (variant const && _rhs) = delete;
+    variant &
+    operator = (variant const && _rhs) &
+    {
+        if (which() == _rhs.which()) {
+            std::move(_rhs).apply_visitor(assigner{*storage_});
+        } else {
+            variant(std::move(_rhs)).swap(*this);
+        }
+        return *this;
+    }
 
     variant &
-    operator = (variant && _rhs) & noexcept
+    operator = (variant && _rhs) &
     {
         if (which() == _rhs.which()) {
             std::move(_rhs).apply_visitor(assigner{*storage_});
@@ -237,7 +245,7 @@ public :
 
     template< typename rhs >
     variant &
-    operator = (rhs && _rhs) & noexcept(!std::is_lvalue_reference< rhs >{})
+    operator = (rhs && _rhs) &
     {
         if (active< std::decay_t< rhs > >()) {
             *storage_ = std::forward< rhs >(_rhs);
@@ -293,7 +301,7 @@ template< typename variant, typename argument >
 std::enable_if_t< !(0 < variant::template index< argument >()), variant >
 make_variant(argument && _argument)
 {
-    return typename variant::template constructible_type< argument >(std::forward< argument >(_argument));
+    return {typename variant::template constructible_type< argument >(std::forward< argument >(_argument))};
 }
 
 template< typename variant, typename ...arguments >
