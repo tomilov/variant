@@ -199,19 +199,16 @@ main()
             using V = variant<>;
             static_assert(V::size == 0, "V::size != 0");
             V v;
-            assert(v.index() == 0);
             assert(v.which() == 0);
-            assert(v.active());
         }
         {
             using V = variant< int >;
             static_assert(V::size == 1, "V::size != 1");
             V v;
             assert((1 == index< V, int >));
-            assert(v.index() == 1);
+            assert(v.index< int >() == 1);
             assert(v.which() == 1);
             assert(v.active< int >());
-            assert(v.active());
             assert(static_cast< int >(v) == int{});
             V w(222);
             assert(static_cast< int >(w) == 222);
@@ -231,9 +228,9 @@ main()
             assert(static_cast< int >(v) == 222);
             V u = w;
             assert(static_cast< int >(u) == 223);
-            assert(w.index() == 1);
+            assert(w.index< int >() == 1);
             assert(w.which() == 1);
-            assert(u.index() == 1);
+            assert(u.index< int >() == 1);
             assert(u.which() == 1);
         }
         {
@@ -245,10 +242,8 @@ main()
             assert((V{3.0L}.which() == index< V, long double >));
             V i;
             assert(i.active< int >());
-            assert(i.active<>());
             V j = 1;
             assert(j.active< int >());
-            assert(j.active<>());
             V f = 1.0f;
             assert(f.active< float >());
             V d = 2.0;
@@ -277,6 +272,16 @@ main()
         {
             struct A {};
             struct B;
+            using V = variant< A, B >;
+            struct B {};
+            V v;
+            assert(v.active< A >());
+            v = B{};
+            assert(v.active< B >());
+        }
+        {
+            struct A {};
+            struct B;
             using V = variant< A, recursive_wrapper< B > >;
             V v;
             assert(v.active< A >());
@@ -291,18 +296,8 @@ main()
             V v;
             assert(v.active< A >());
             struct R { V v; };
-            v = R{{}};
+            v = R{};
             assert(v.active< R >());
-        }
-        {
-            struct A {};
-            struct B;
-            using V = variant< recursive_wrapper< B >, A >;
-            V v; // ??? wtf
-            assert(v.active< B >());
-            struct B {};
-            v = A{};
-            assert(v.active< A >());
         }
         {
             using V = variant< int, double >;

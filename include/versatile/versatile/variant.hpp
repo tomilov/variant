@@ -32,7 +32,7 @@ public :
     template< size_type _which = size >
     using at = typename versatile::template at< _which >;
 
-    template< typename type = at<> >
+    template< typename type >
     static
     constexpr
     size_type
@@ -60,7 +60,7 @@ public :
         return storage_->which();
     }
 
-    template< typename type = at<> >
+    template< typename type >
     bool
     active() const noexcept
     {
@@ -163,11 +163,6 @@ public :
 
     variant(variant && _rhs)
         : storage_(std::move(_rhs).apply_visitor(constructor{}))
-    { ; }
-
-    template< typename argument >
-    variant(argument && _argument)
-        : storage_(std::make_unique< versatile >(std::forward< argument >(_argument)))
     { ; }
 
     template< typename ...arguments >

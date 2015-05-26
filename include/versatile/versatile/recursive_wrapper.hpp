@@ -9,11 +9,11 @@
 namespace versatile
 {
 
-template< typename incomplete_type >
+template< typename wrapped_type >
 struct recursive_wrapper
 {
 
-    using type = incomplete_type;
+    using type = wrapped_type;
 
     template< typename ...arguments >
     recursive_wrapper(arguments &&... _arguments)
@@ -87,8 +87,7 @@ struct recursive_wrapper
     void
     swap(recursive_wrapper & _rhs) noexcept
     {
-        using std::swap;
-        swap(storage_, _rhs.storage_);
+        storage_.swap(_rhs.storage_);
     }
 
     explicit
@@ -121,9 +120,9 @@ private :
 
 };
 
-template< typename incomplete_type >
+template< typename wrapped_type >
 void
-swap(recursive_wrapper< incomplete_type > & _lhs, recursive_wrapper< incomplete_type > & _rhs) noexcept
+swap(recursive_wrapper< wrapped_type > & _lhs, recursive_wrapper< wrapped_type > & _rhs) noexcept
 {
     _lhs.swap(_rhs);
 }
@@ -135,8 +134,8 @@ struct is_recursive_wrapper
 
 };
 
-template< typename incomplete_type >
-struct is_recursive_wrapper< recursive_wrapper< incomplete_type > >
+template< typename wrapped_type >
+struct is_recursive_wrapper< recursive_wrapper< wrapped_type > >
         : std::true_type
 {
 
