@@ -87,7 +87,7 @@ constexpr
 decltype(auto)
 apply_visitor(visitor && _visitor, first && _first, rest &&... _rest)
 {
-    using result_type = result_of< visitor, first_type_t< first && >, first_type_t< rest && >... >;
+    using result_type = result_of_t< visitor, first_type_t< first && >, first_type_t< rest && >... >;
     return details::visitor_partially_applier< result_type, first, rest... >{}(std::forward< visitor >(_visitor), std::forward< first >(_first), std::forward< rest >(_rest)...);
 }
 
@@ -98,7 +98,34 @@ template< typename visitor >
 struct delayed_visitor_applier
 {
 
-    visitor visitor_;
+    constexpr
+    delayed_visitor_applier(visitor && _visitor)
+        : visitor_(std::forward< visitor >(_visitor))
+    { ; }
+
+    decltype(auto)
+    operator () () const &
+    {
+        return visitor_();
+    }
+
+    decltype(auto)
+    operator () () &
+    {
+        return visitor_();
+    }
+
+    decltype(auto)
+    operator () () const &&
+    {
+        return std::move(visitor_)();
+    }
+
+    decltype(auto)
+    operator () () &&
+    {
+        return std::move(visitor_)();
+    }
 
     template< typename first, typename ...rest >
     decltype(auto)
@@ -128,6 +155,10 @@ struct delayed_visitor_applier
         return apply_visitor(std::move(visitor_), std::forward< first >(_first), std::forward< rest >(_rest)...);
     }
 
+private :
+
+    visitor visitor_;
+
 };
 
 }
@@ -137,7 +168,7 @@ constexpr
 details::delayed_visitor_applier< visitor >
 apply_visitor(visitor && _visitor) noexcept(std::is_lvalue_reference< visitor >{} || std::is_nothrow_move_constructible< visitor >{})
 {
-    return {std::forward< visitor >(_visitor)};
+    return std::forward< visitor >(_visitor);
 }
 
 }

@@ -20,14 +20,14 @@ struct reference_invoker
     { ; }
 
     template< typename ...arguments >
-    result_of< visitor, arguments... >
+    result_of_t< visitor, arguments... >
     operator () (arguments &&... _arguments) const
     {
         return std::forward< visitor >(visitor_)(std::forward< arguments >(_arguments)...);
     }
 
     template< typename ...arguments >
-    result_of< visitor, arguments... >
+    result_of_t< visitor, arguments... >
     operator () (arguments &&... _arguments)
     {
         return std::forward< visitor >(visitor_)(std::forward< arguments >(_arguments)...);
@@ -55,7 +55,7 @@ struct composite_visitor
 
 };
 
-template<  typename visitor >
+template< typename visitor >
 struct composite_visitor< visitor >
     : effective_type< visitor >
 {

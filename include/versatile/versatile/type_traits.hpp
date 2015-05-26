@@ -71,6 +71,6 @@ template< typename from, typename to >
 using copy_cv_reference_t = copy_reference_t< from, copy_cv_t< std::remove_reference_t< from >, to > >;
 
 template< typename type, typename ...arguments >
-using result_of = decltype(std::declval< type >()(std::declval< arguments >()...));
+using result_of_t = decltype(std::declval< type >()(std::declval< arguments >()...));
 
 }

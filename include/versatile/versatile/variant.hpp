@@ -97,7 +97,7 @@ public :
     decltype(auto)
     apply_visitor(visitor && _visitor, arguments &&... _arguments) const &
     {
-        using result_type = result_of< visitor, at<> const &, arguments... >;
+        using result_type = result_of_t< visitor, at<> const &, arguments... >;
         using caller_type = result_type (*)(visitor && _visitor, versatile const & _visitable, arguments &&... _arguments);
         static constexpr caller_type dispatcher_[size] = {variant::caller< types const &, result_type, visitor, versatile const &, arguments... >...};
         return dispatcher_[size - which()](std::forward< visitor >(_visitor), *storage_, std::forward< arguments >(_arguments)...);
@@ -107,7 +107,7 @@ public :
     decltype(auto)
     apply_visitor(visitor && _visitor, arguments &&... _arguments) &
     {
-        using result_type = result_of< visitor, at<> &, arguments... >;
+        using result_type = result_of_t< visitor, at<> &, arguments... >;
         using caller_type = result_type (*)(visitor && _visitor, versatile & _visitable, arguments &&... _arguments);
         static constexpr caller_type dispatcher_[size] = {variant::caller< types &, result_type, visitor, versatile &, arguments... >...};
         return dispatcher_[size - which()](std::forward< visitor >(_visitor), *storage_, std::forward< arguments >(_arguments)...);
@@ -117,7 +117,7 @@ public :
     decltype(auto)
     apply_visitor(visitor && _visitor, arguments &&... _arguments) const &&
     {
-        using result_type = result_of< visitor, at<> const &&, arguments... >;
+        using result_type = result_of_t< visitor, at<> const &&, arguments... >;
         using caller_type = result_type (*)(visitor && _visitor, versatile const && _visitable, arguments &&... _arguments);
         static constexpr caller_type dispatcher_[size] = {variant::caller< types const &&, result_type, visitor, versatile const &&, arguments... >...};
         return dispatcher_[size - which()](std::forward< visitor >(_visitor), std::move(*storage_), std::forward< arguments >(_arguments)...);
@@ -127,7 +127,7 @@ public :
     decltype(auto)
     apply_visitor(visitor && _visitor, arguments &&... _arguments) &&
     {
-        using result_type = result_of< visitor, at<> &&, arguments... >;
+        using result_type = result_of_t< visitor, at<> &&, arguments... >;
         using caller_type = result_type (*)(visitor && _visitor, versatile && _visitable, arguments &&... _arguments);
         static constexpr caller_type dispatcher_[size] = {variant::caller< types &&, result_type, visitor, versatile &&, arguments... >...};
         return dispatcher_[size - which()](std::forward< visitor >(_visitor), std::move(*storage_), std::forward< arguments >(_arguments)...);
@@ -296,7 +296,7 @@ template< typename variant, typename argument >
 std::enable_if_t< !(0 < variant::template index< argument >()), variant >
 make_variant(argument && _argument)
 {
-    return {typename variant::template constructible_type< argument >(std::forward< argument >(_argument))};
+    return typename variant::template constructible_type< argument >(std::forward< argument >(_argument));
 }
 
 template< typename variant, typename ...arguments >

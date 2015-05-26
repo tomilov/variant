@@ -6,7 +6,7 @@
 #include <tuple>
 #include <functional>
 #include <sstream>
-#ifdef _DEBUG
+#if defined(DEBUG) || defined(_DEBUG)
 #include <iostream>
 #include <iomanip>
 #endif

@@ -258,7 +258,7 @@ public :
 
     constexpr
     void
-    operator = (this_type & _rhs) & noexcept(std::is_nothrow_assignable< this_type &, this_type >{})
+    operator = (this_type & _rhs) & noexcept(std::is_nothrow_assignable< this_type &, this_type & >{})
     {
         operator this_type & () = _rhs;
     }
