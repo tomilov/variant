@@ -686,13 +686,6 @@ main()
                     assert(-11 == std::move(lam)(c));
                 }
                 {
-                    struct D0 { int x; };
-                    struct D1 { int x; };
-                    auto const ld = compose_visitors(l, D0{123}, D1{321});
-                    assert(ld.D0::x == 123);
-                    assert(ld.D1::x == 321);
-                }
-                {
                     struct C
                     {
                         C() = default;

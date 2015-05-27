@@ -48,6 +48,9 @@ struct composite_visitor
     , composite_visitor< visitors... >
 {
 
+    using effective_type< visitor >::operator ();
+    using composite_visitor< visitors... >::operator ();
+
     composite_visitor(visitor && _visitor, visitors &&... _visitors)
         : effective_type< visitor >(std::forward< visitor >(_visitor))
         , composite_visitor< visitors... >{std::forward< visitors >(_visitors)...}
@@ -59,6 +62,8 @@ template< typename visitor >
 struct composite_visitor< visitor >
     : effective_type< visitor >
 {
+
+    using effective_type< visitor >::operator ();
 
     composite_visitor(visitor && _visitor)
         : effective_type< visitor >(std::forward< visitor >(_visitor))
