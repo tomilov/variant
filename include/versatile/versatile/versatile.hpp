@@ -25,14 +25,7 @@ union versatile<>
 
 private :
 
-    struct head
-    {
-
-        size_type which_;
-
-    };
-
-    head head_{size};
+    size_type head_;
 
 public :
 
@@ -70,14 +63,6 @@ public :
         return 0;
     }
 
-    static
-    constexpr
-    bool
-    empty() noexcept
-    {
-        return true;
-    }
-
     template< typename type = void >
     static
     constexpr
@@ -86,6 +71,11 @@ public :
     {
         return false;
     }
+
+    constexpr
+    versatile() noexcept
+        : head_{size}
+    { ; }
 
 };
 
@@ -108,7 +98,7 @@ private :
         template< typename ...arguments >
         constexpr
         head(arguments &&... _arguments) noexcept(std::is_nothrow_constructible< first, arguments... >{})
-            : which_(size)
+            : which_{size}
             , value_(std::forward< arguments >(_arguments)...)
         { ; }
 
@@ -160,13 +150,6 @@ public :
     which() const noexcept
     {
         return head_.which_;
-    }
-
-    constexpr
-    bool
-    empty() const noexcept
-    { // initialization by versatile<>
-        return (which() == 0);
     }
 
     template< typename type = this_type >
@@ -238,12 +221,14 @@ public :
     versatile(versatile && _rhs) = delete;
 
     template< typename argument >
+    explicit
     constexpr
     versatile(argument && _argument) noexcept(std::is_nothrow_constructible< versatile, typename std::is_same< std::decay_t< argument >, this_type >::type, argument >{})
         : versatile(typename std::is_same< std::decay_t< argument >, this_type >::type{}, std::forward< argument >(_argument))
     { ; }
 
     template< typename ...arguments >
+    explicit
     constexpr
     versatile(arguments &&... _arguments) noexcept(std::is_nothrow_constructible< versatile, typename std::is_constructible< this_type, arguments... >::type, arguments... >{})
         : versatile(typename std::is_constructible< this_type, arguments... >::type{}, std::forward< arguments >(_arguments)...)

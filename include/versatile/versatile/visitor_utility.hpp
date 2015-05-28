@@ -11,48 +11,17 @@ namespace versatile
 namespace details
 {
 
-template< typename visitor >
-struct reference_invoker
-{
-
-    reference_invoker(visitor && _visitor)
-        : visitor_(std::forward< visitor >(_visitor))
-    { ; }
-
-    template< typename ...arguments >
-    result_of_t< visitor, arguments... >
-    operator () (arguments &&... _arguments) const
-    {
-        return std::forward< visitor >(visitor_)(std::forward< arguments >(_arguments)...);
-    }
-
-    template< typename ...arguments >
-    result_of_t< visitor, arguments... >
-    operator () (arguments &&... _arguments)
-    {
-        return std::forward< visitor >(visitor_)(std::forward< arguments >(_arguments)...);
-    }
-
-private :
-
-    visitor && visitor_;
-
-};
-
-template< typename type, typename visitor = std::decay_t< type > >
-using effective_type = std::conditional_t< (std::is_constructible< visitor, type >{}), visitor, reference_invoker< type > >;
-
 template< typename visitor, typename ...visitors >
 struct composite_visitor
-    : effective_type< visitor >
+    : std::decay_t< visitor >
     , composite_visitor< visitors... >
 {
 
-    using effective_type< visitor >::operator ();
+    using std::decay_t< visitor >::operator ();
     using composite_visitor< visitors... >::operator ();
 
     composite_visitor(visitor && _visitor, visitors &&... _visitors)
-        : effective_type< visitor >(std::forward< visitor >(_visitor))
+        : std::decay_t< visitor >(std::forward< visitor >(_visitor))
         , composite_visitor< visitors... >{std::forward< visitors >(_visitors)...}
     { ; }
 
@@ -60,13 +29,13 @@ struct composite_visitor
 
 template< typename visitor >
 struct composite_visitor< visitor >
-    : effective_type< visitor >
+    : std::decay_t< visitor >
 {
 
-    using effective_type< visitor >::operator ();
+    using std::decay_t< visitor >::operator ();
 
     composite_visitor(visitor && _visitor)
-        : effective_type< visitor >(std::forward< visitor >(_visitor))
+        : std::decay_t< visitor >(std::forward< visitor >(_visitor))
     { ; }
 
 };
@@ -85,13 +54,13 @@ namespace details
 
 template< typename R, typename visitor >
 struct add_result_type
-    : effective_type< visitor >
+    : std::decay_t< visitor >
 {
 
     using result_type = R;
 
     add_result_type(visitor && _visitor)
-        : effective_type< visitor >(std::forward< visitor >(_visitor))
+        : std::decay_t< visitor >(std::forward< visitor >(_visitor))
     { ; }
 
 };

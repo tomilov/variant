@@ -685,20 +685,6 @@ main()
                     assert(0 == lam(c));
                     assert(-11 == std::move(lam)(c));
                 }
-                {
-                    struct C
-                    {
-                        C() = default;
-                        C(C const &) = delete;
-                        C(C &&) = delete;
-                        auto operator () (int) { return 100; }
-                        auto operator () (int) const { return 200; }
-                    };
-                    C vc;
-                    assert((compose_visitors(vc)(1) == 100));
-                    C const cc{};
-                    assert((compose_visitors(cc)(1) == 200));
-                }
             }
         }
     }
