@@ -214,13 +214,13 @@ main()
         }
         {
             using V = variant<>;
-            static_assert(V::size == 0, "V::size != 0");
+            static_assert(V::width == 0, "V::width != 0");
             V v;
             assert(v.which() == 0);
         }
         {
             using V = variant< int >;
-            static_assert(V::size == 1, "V::size != 1");
+            static_assert(V::width == 1, "V::width != 1");
             V v;
             assert((1 == index< V, int >));
             assert(v.index< int >() == 1);

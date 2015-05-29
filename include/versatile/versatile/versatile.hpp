@@ -21,7 +21,7 @@ union versatile<>
 
     using size_type = std::size_t;
 
-    static constexpr size_type size = 0;
+    static constexpr size_type width = 0;
 
 private :
 
@@ -74,7 +74,7 @@ public :
 
     constexpr
     versatile() noexcept
-        : head_{size}
+        : head_{width}
     { ; }
 
 };
@@ -85,7 +85,7 @@ union versatile< first, rest... >
 
     using size_type = std::size_t;
 
-    static constexpr size_type size = 1 + sizeof...(rest);
+    static constexpr size_type width = 1 + sizeof...(rest);
 
 private :
 
@@ -99,7 +99,7 @@ private :
         explicit
         constexpr
         head(arguments &&... _arguments) noexcept(std::is_nothrow_constructible< first, arguments... >{})
-            : which_{size}
+            : which_{width}
             , value_(std::forward< arguments >(_arguments)...)
         { ; }
 
@@ -114,8 +114,8 @@ public :
 
     using this_type = unwrap_type_t< first >;
 
-    template< size_type _which = size >
-    using at = std::conditional_t< (_which == size), this_type, typename tail::template at< _which > >;
+    template< size_type _which = width >
+    using at = std::conditional_t< (_which == width), this_type, typename tail::template at< _which > >;
 
     template< typename type = this_type >
     static
@@ -124,7 +124,7 @@ public :
     index() noexcept
     {
         if (std::is_same< type, this_type >{}) {
-            return size;
+            return width;
         } else {
             return tail::template index< type >();
         }
@@ -140,7 +140,7 @@ public :
     index_of_constructible() noexcept
     {
         if (std::is_constructible< this_type, arguments... >{}) {
-            return size;
+            return width;
         } else {
             return tail::template index_of_constructible< arguments... >();
         }
@@ -159,7 +159,7 @@ public :
     active() const noexcept
     {
         if (std::is_same< type, this_type >{}) {
-            return (which() == size);
+            return (which() == width);
         } else {
             return tail_.template active< type >();
         }
