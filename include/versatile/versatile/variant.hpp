@@ -4,6 +4,7 @@
 #include "versatile.hpp"
 
 #include <type_traits>
+#include <experimental/optional>
 #include <utility>
 #include <memory>
 #include <typeinfo>
@@ -45,18 +46,6 @@ public :
     index() noexcept
     {
         return versatile::template index< type >();
-    }
-
-    template< typename ...arguments >
-    using constructible_type = typename versatile::template constructible_type< arguments... >;
-
-    template< typename ...arguments >
-    static
-    constexpr
-    size_type
-    index_of_constructible() noexcept
-    {
-        return versatile::template index_of_constructible< arguments... >();
     }
 
     size_type
@@ -184,7 +173,7 @@ public :
     void
     emplace(arguments &&... _arguments)
     {
-        variant(std::forward< arguments >(_arguments)...).swap(*this);
+        variant{std::experimental::in_place, std::forward< arguments >(_arguments)...}.swap(*this);
     }
 
 private :
@@ -205,13 +194,20 @@ private :
 
 public :
 
+    template< typename rhs >
+    void
+    replace(rhs && _rhs)
+    {
+        variant{std::forward< rhs >(_rhs)}.swap(*this);
+    }
+
     variant &
     operator = (variant const & _rhs) &
     {
         if (which() == _rhs.which()) {
             _rhs.apply_visitor(assigner{*storage_});
         } else {
-            emplace(_rhs);
+            replace(_rhs);
         }
         return *this;
     }
@@ -222,7 +218,7 @@ public :
         if (which() == _rhs.which()) {
             _rhs.apply_visitor(assigner{*storage_});
         } else {
-            emplace(_rhs);
+            replace(_rhs);
         }
         return *this;
     }
@@ -233,7 +229,7 @@ public :
         if (which() == _rhs.which()) {
             std::move(_rhs).apply_visitor(assigner{*storage_});
         } else {
-            emplace(std::move(_rhs));
+            replace(std::move(_rhs));
         }
         return *this;
     }
@@ -244,7 +240,7 @@ public :
         if (which() == _rhs.which()) {
             std::move(_rhs).apply_visitor(assigner{*storage_});
         } else {
-            emplace(std::move(_rhs));
+            replace(std::move(_rhs));
         }
         return *this;
     }
@@ -256,7 +252,7 @@ public :
         if (active< std::decay_t< rhs > >()) {
             *storage_ = std::forward< rhs >(_rhs);
         } else {
-            emplace(std::forward< rhs >(_rhs));
+            replace(std::forward< rhs >(_rhs));
         }
         return *this;
     }
@@ -302,13 +298,6 @@ public :
     }
 
 };
-
-template< typename variant, typename ...arguments >
-variant
-make_variant(arguments &&... _arguments)
-{
-    return typename variant::template constructible_type< arguments... >(std::forward< arguments >(_arguments)...);
-}
 
 template< typename type >
 struct is_variant

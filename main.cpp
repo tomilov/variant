@@ -348,10 +348,10 @@ main()
             struct A { A(int &, int) {} };
             struct B { B(int const &, int) {} };
             using V = variant< A, B >;
-            V v{1, 2};
+            V v{std::experimental::in_place, 1, 2};
             assert(v.active< B >());
             int i{1};
-            V w{i, 2};
+            V w{std::experimental::in_place, i, 2};
             assert(w.active< A >());
         }
         {
@@ -530,12 +530,6 @@ main()
             ss_.clear();
             ss_ << v;
             assert(ss_.str() == "3.5");
-        }
-        {
-            struct A { A(int) {} };
-            struct B { B(double) {} };
-            auto v = make_variant< variant< A, B > >(1.0);
-            assert(v.active< A >());
         }
         {
             auto const l0 = [] (auto const &) { return 0; };

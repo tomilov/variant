@@ -5,6 +5,7 @@
 
 #include <type_traits>
 #include <utility>
+#include <experimental/optional>
 
 #include <cstddef>
 #include <cassert>
@@ -39,18 +40,6 @@ public :
     constexpr
     size_type
     index() noexcept
-    {
-        return 0;
-    }
-
-    template< typename ...arguments >
-    using constructible_type = void;
-
-    template< typename ...arguments >
-    static
-    constexpr
-    size_type
-    index_of_constructible() noexcept
     {
         return 0;
     }
@@ -98,9 +87,21 @@ private :
         template< typename ...arguments >
         explicit
         constexpr
-        head(arguments &&... _arguments) noexcept(std::is_nothrow_constructible< first, arguments... >{})
+        head(std::experimental::in_place_t, arguments &&... _arguments) noexcept(std::is_nothrow_constructible< first, arguments... >{})
             : which_{width}
             , value_(std::forward< arguments >(_arguments)...)
+        { ; }
+
+        constexpr
+        head() noexcept(std::is_nothrow_default_constructible< first >{})
+            : head(std::experimental::in_place)
+        { ; }
+
+        template< typename rhs >
+        explicit
+        constexpr
+        head(rhs && _rhs) noexcept(std::is_nothrow_constructible< first, rhs >{})
+            : head(std::experimental::in_place, std::forward< rhs >(_rhs))
         { ; }
 
     };
@@ -127,22 +128,6 @@ public :
             return width;
         } else {
             return tail::template index< type >();
-        }
-    }
-
-    template< typename ...arguments >
-    using constructible_type = std::conditional_t< (std::is_constructible< this_type, arguments... >{}), this_type, typename tail::template constructible_type< arguments... > >;
-
-    template< typename ...arguments >
-    static
-    constexpr
-    size_type
-    index_of_constructible() noexcept
-    {
-        if (std::is_constructible< this_type, arguments... >{}) {
-            return width;
-        } else {
-            return tail::template index_of_constructible< arguments... >();
         }
     }
 
@@ -228,11 +213,11 @@ public :
         : tail_(std::forward< rhs >(_rhs))
     { ; }
 
-    template< typename ...arguments, typename = std::enable_if_t< (1 < sizeof...(arguments)) > >
+    template< typename ...arguments >
     explicit
     constexpr
-    versatile(arguments &&... _arguments) noexcept(std::is_nothrow_constructible< versatile, typename std::is_constructible< this_type, arguments... >::type, arguments... >{})
-        : versatile(typename std::is_constructible< this_type, arguments... >::type{}, std::forward< arguments >(_arguments)...)
+    versatile(std::experimental::in_place_t, arguments &&... _arguments) noexcept(std::is_nothrow_constructible< versatile, typename std::is_constructible< this_type, arguments... >::type, std::experimental::in_place_t, arguments... >{})
+        : versatile(typename std::is_constructible< this_type, arguments... >::type{}, std::experimental::in_place, std::forward< arguments >(_arguments)...)
     { ; }
 
     constexpr
