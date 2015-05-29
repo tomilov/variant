@@ -196,6 +196,23 @@ main()
     {
         using namespace versatile;
         {
+            using V = versatile< int, double >;
+            V v{1};
+            assert(v.active< int >());
+            assert(static_cast< int >(v) == 1);
+            V w{2.0};
+            assert(w.active< double >());
+            assert(static_cast< double >(w) == 2.0);
+            //static_assert(std::is_trivially_copy_constructible< V >{}, "versatile is not trivially copy constructible");
+            V u{w};
+            assert(u.active< double >());
+            assert(static_cast< double >(u) == 2.0);
+            static_assert(std::is_trivially_copy_assignable< V >{}, "versatile is not trivially copy assignable");
+            u = v;
+            assert(u.active< int >());
+            assert(static_cast< int >(u) == 1);
+        }
+        {
             using V = variant<>;
             static_assert(V::size == 0, "V::size != 0");
             V v;

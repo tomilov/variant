@@ -96,6 +96,7 @@ private :
         first value_;
 
         template< typename ...arguments >
+        explicit
         constexpr
         head(arguments &&... _arguments) noexcept(std::is_nothrow_constructible< first, arguments... >{})
             : which_{size}
@@ -191,6 +192,11 @@ private :
 
 public :
 
+    constexpr
+    versatile() noexcept(std::is_nothrow_constructible< versatile, typename std::is_default_constructible< this_type >::type >{})
+        : versatile(typename std::is_default_constructible< this_type >::type{})
+    { ; }
+
     explicit
     constexpr
     versatile(this_type const & _rhs) noexcept(std::is_nothrow_constructible< head, this_type const & >{})
@@ -215,19 +221,14 @@ public :
         : head_(std::move(_rhs))
     { ; }
 
-    versatile(versatile const & _rhs) = delete;
-    versatile(versatile & _rhs) = delete;
-    versatile(versatile const && _rhs) = delete;
-    versatile(versatile && _rhs) = delete;
-
-    template< typename argument >
+    template< typename rhs, typename = std::enable_if_t< !(std::is_same< std::decay_t< rhs >, versatile >{}) > >
     explicit
     constexpr
-    versatile(argument && _argument) noexcept(std::is_nothrow_constructible< versatile, typename std::is_same< std::decay_t< argument >, this_type >::type, argument >{})
-        : versatile(typename std::is_same< std::decay_t< argument >, this_type >::type{}, std::forward< argument >(_argument))
+    versatile(rhs && _rhs) noexcept(std::is_nothrow_constructible< tail, rhs >{})
+        : tail_(std::forward< rhs >(_rhs))
     { ; }
 
-    template< typename ...arguments >
+    template< typename ...arguments, typename = std::enable_if_t< (1 < sizeof...(arguments)) > >
     explicit
     constexpr
     versatile(arguments &&... _arguments) noexcept(std::is_nothrow_constructible< versatile, typename std::is_constructible< this_type, arguments... >::type, arguments... >{})
@@ -262,12 +263,7 @@ public :
         operator this_type & () = std::move(_rhs);
     }
 
-    void operator = (versatile const & _rhs) = delete;
-    void operator = (versatile & _rhs) = delete;
-    void operator = (versatile const && _rhs) = delete;
-    void operator = (versatile && _rhs) = delete;
-
-    template< typename rhs >
+    template< typename rhs, typename = std::enable_if_t< !(std::is_same< std::decay_t< rhs >, versatile >{}) > >
     constexpr
     void
     operator = (rhs && _rhs) & noexcept(std::is_nothrow_assignable< tail &, rhs >{})
