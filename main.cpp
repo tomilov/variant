@@ -188,6 +188,30 @@ struct visitor3
 
 };
 
+// value_or
+template< typename lhs, typename rhs >
+std::enable_if_t< (versatile::is_variant< std::decay_t< lhs > >{} && !versatile::is_variant< std::decay_t< rhs > >{}), std::decay_t< rhs > >
+operator || (lhs && _lhs, rhs && _rhs) noexcept
+{
+    using result_type = std::decay_t< rhs >;
+    if (_lhs.template active< result_type >()) {
+        return static_cast< result_type >(std::forward< lhs >(_lhs));
+    } else {
+        return std::forward< rhs >(_rhs);
+    }
+}
+
+template< typename lhs, typename rhs >
+std::enable_if_t< (!versatile::is_variant< std::decay_t< lhs > >{} && versatile::is_variant< std::decay_t< rhs > >{}), lhs >
+operator || (lhs && _lhs, rhs && _rhs) noexcept
+{
+    return (std::forward< rhs >(_rhs) || std::forward< lhs >(_lhs));
+}
+
+template< typename lhs, typename rhs >
+std::enable_if_t< (versatile::is_variant< std::decay_t< lhs > >{} && versatile::is_variant< std::decay_t< rhs > >{}) >
+operator || (lhs && _lhs, rhs && _rhs) = delete;
+
 }
 
 int
@@ -204,7 +228,7 @@ main()
             assert(w.active< double >());
             assert(static_cast< double >(w) == 2.0);
             //static_assert(std::is_trivially_copy_constructible< V >{}, "versatile is not trivially copy constructible");
-            V u{w};
+            V u = w;
             assert(u.active< double >());
             assert(static_cast< double >(u) == 2.0);
             static_assert(std::is_trivially_copy_assignable< V >{}, "versatile is not trivially copy assignable");
@@ -217,6 +241,23 @@ main()
             static_assert(V::width == 0, "V::width != 0");
             V v;
             assert(v.which() == 0);
+        }
+        { // value_or
+            using V = variant< double, int >;
+            {
+                V D{1.0};
+                int i = D || 2;
+                assert(i == 2);
+                V I{1};
+                int j = I || 2;
+                assert(j == 1);
+            }
+            {
+                int i = 2 || V{1.0};
+                assert(i == 2);
+                int j = 2 || V{1} ;
+                assert(j == 1);
+            }
         }
         {
             using V = variant< int >;

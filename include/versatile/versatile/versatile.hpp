@@ -26,7 +26,7 @@ union versatile<>
 
 private :
 
-    size_type head_;
+    size_type head_ = width;
 
 public :
 
@@ -60,11 +60,6 @@ public :
     {
         return false;
     }
-
-    constexpr
-    versatile() noexcept
-        : head_{width}
-    { ; }
 
 };
 
@@ -206,7 +201,7 @@ public :
         : head_(std::move(_rhs))
     { ; }
 
-    template< typename rhs, typename = std::enable_if_t< !(std::is_same< std::decay_t< rhs >, versatile >{}) > >
+    template< typename rhs >
     explicit
     constexpr
     versatile(rhs && _rhs) noexcept(std::is_nothrow_constructible< tail, rhs >{})

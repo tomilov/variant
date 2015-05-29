@@ -294,7 +294,13 @@ public :
         if (!active< type >()) {
             throw std::bad_cast{};
         }
+        // There is known clang++ bug #19917 for static_cast to rvalue reference.
+#if 0
         return static_cast< type && >(*storage_);
+#else
+        // workaround
+        return static_cast< type && >(static_cast< type & >(*storage_));
+#endif
     }
 
 };
