@@ -533,7 +533,7 @@ main()
         }
         {
             struct A { A(int) {} };
-            struct B {};
+            struct B { B(double) {} };
             auto v = make_variant< variant< A, B > >(1.0);
             assert(v.active< A >());
         }

@@ -29,6 +29,12 @@ public :
 
     static constexpr size_type width = sizeof...(types);
 
+    void
+    swap(variant & _other) noexcept
+    {
+        storage_.swap(_other.storage_);
+    }
+
     template< size_type _which = width >
     using at = typename versatile::template at< _which >;
 
@@ -174,10 +180,11 @@ public :
         : storage_(std::make_unique< versatile >(std::forward< arguments >(_arguments)...))
     { ; }
 
+    template< typename ...arguments >
     void
-    swap(variant & _other) noexcept
+    emplace(arguments &&... _arguments)
     {
-        storage_.swap(_other.storage_);
+        variant(std::forward< arguments >(_arguments)...).swap(*this);
     }
 
 private :
@@ -204,7 +211,7 @@ public :
         if (which() == _rhs.which()) {
             _rhs.apply_visitor(assigner{*storage_});
         } else {
-            variant(_rhs).swap(*this);
+            emplace(_rhs);
         }
         return *this;
     }
@@ -215,7 +222,7 @@ public :
         if (which() == _rhs.which()) {
             _rhs.apply_visitor(assigner{*storage_});
         } else {
-            variant(_rhs).swap(*this);
+            emplace(_rhs);
         }
         return *this;
     }
@@ -226,7 +233,7 @@ public :
         if (which() == _rhs.which()) {
             std::move(_rhs).apply_visitor(assigner{*storage_});
         } else {
-            variant(std::move(_rhs)).swap(*this);
+            emplace(std::move(_rhs));
         }
         return *this;
     }
@@ -237,7 +244,7 @@ public :
         if (which() == _rhs.which()) {
             std::move(_rhs).apply_visitor(assigner{*storage_});
         } else {
-            variant(std::move(_rhs)).swap(*this);
+            emplace(std::move(_rhs));
         }
         return *this;
     }
@@ -249,7 +256,7 @@ public :
         if (active< std::decay_t< rhs > >()) {
             *storage_ = std::forward< rhs >(_rhs);
         } else {
-            variant(std::forward< rhs >(_rhs)).swap(*this);
+            emplace(std::forward< rhs >(_rhs));
         }
         return *this;
     }
@@ -296,18 +303,11 @@ public :
 
 };
 
-template< typename variant, typename argument >
-std::enable_if_t< !(0 < variant::template index< argument >()), variant >
-make_variant(argument && _argument)
-{
-    return typename variant::template constructible_type< argument >(std::forward< argument >(_argument));
-}
-
 template< typename variant, typename ...arguments >
 variant
 make_variant(arguments &&... _arguments)
 {
-    return {std::forward< arguments >(_arguments)...};
+    return typename variant::template constructible_type< arguments... >(std::forward< arguments >(_arguments)...);
 }
 
 template< typename type >
@@ -320,6 +320,27 @@ struct is_variant
 template< typename ...types >
 struct is_variant< variant< types... > >
         : std::true_type
+{
+
+};
+
+template< typename type >
+struct is_variant< type const >
+        : is_variant< type >
+{
+
+};
+
+template< typename type >
+struct is_variant< volatile type >
+        : is_variant< type >
+{
+
+};
+
+template< typename type >
+struct is_variant< volatile type const >
+        : is_variant< type >
 {
 
 };

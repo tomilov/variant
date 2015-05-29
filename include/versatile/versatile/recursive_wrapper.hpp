@@ -142,6 +142,27 @@ struct is_recursive_wrapper< recursive_wrapper< wrapped_type > >
 };
 
 template< typename type >
+struct is_recursive_wrapper< type const >
+        : is_recursive_wrapper< type >
+{
+
+};
+
+template< typename type >
+struct is_recursive_wrapper< volatile type >
+        : is_recursive_wrapper< type >
+{
+
+};
+
+template< typename type >
+struct is_recursive_wrapper< volatile type const >
+        : is_recursive_wrapper< type >
+{
+
+};
+
+template< typename type >
 using is_recursive_wrapper_t = typename is_recursive_wrapper< type >::type;
 
 template< typename type, bool = (is_recursive_wrapper_t< std::decay_t< type > >{}) >
