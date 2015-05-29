@@ -1,7 +1,7 @@
 #pragma once
 
 #include "variant.hpp"
-#include "apply_visitor.hpp"
+#include "visit.hpp"
 
 namespace versatile
 {
@@ -31,21 +31,21 @@ template< typename ...lhs, typename ...rhs >
 bool
 operator == (variant< lhs... > const & _lhs, variant< rhs... > const & _rhs)
 {
-    return apply_visitor(equal_to{}, _lhs, _rhs);
+    return visit(equal_to{}, _lhs, _rhs);
 }
 
 template< typename ...lhs, typename rhs >
 bool
 operator == (variant< lhs... > const & _lhs, rhs const & _rhs)
 {
-    return apply_visitor(equal_to{}, _lhs, _rhs);
+    return visit(equal_to{}, _lhs, _rhs);
 }
 
 template< typename lhs, typename ...rhs >
 bool
 operator == (lhs const & _lhs, variant< rhs... > const & _rhs)
 {
-    return apply_visitor(equal_to{}, _lhs, _rhs);
+    return visit(equal_to{}, _lhs, _rhs);
 }
 
 struct less
@@ -73,21 +73,21 @@ template< typename ...lhs, typename ...rhs >
 bool
 operator < (variant< lhs... > const & _lhs, variant< rhs... > const & _rhs)
 {
-    return apply_visitor(less{}, _lhs, _rhs);
+    return visit(less{}, _lhs, _rhs);
 }
 
 template< typename rhs, typename ...lhs >
 bool
 operator < (variant< lhs... > const & _lhs, rhs const & _rhs)
 {
-    return apply_visitor(less{}, _lhs, _rhs);
+    return visit(less{}, _lhs, _rhs);
 }
 
 template< typename lhs, typename ...rhs >
 bool
 operator < (lhs const & _lhs, variant< rhs... > const & _rhs)
 {
-    return apply_visitor(less{}, _lhs, _rhs);
+    return visit(less{}, _lhs, _rhs);
 }
 
 }

@@ -20,46 +20,7 @@ template<>
 union versatile<>
 {
 
-    using size_type = std::size_t;
-
-    static constexpr size_type width = 0;
-
-private :
-
-    size_type head_ = width;
-
-public :
-
-    using this_type = void;
-
-    template< size_type _which = 0 >
-    using at = void;
-
-    template< typename type = void >
-    static
-    constexpr
-    size_type
-    index() noexcept
-    {
-        return 0;
-    }
-
-    static
-    constexpr
-    size_type
-    which() noexcept
-    {
-        return 0;
-    }
-
-    template< typename type = void >
-    static
-    constexpr
-    bool
-    active() noexcept
-    {
-        return false;
-    }
+    versatile() = delete;
 
 };
 
@@ -69,7 +30,7 @@ union versatile< first, rest... >
 
     using size_type = std::size_t;
 
-    static constexpr size_type width = 1 + sizeof...(rest);
+    static constexpr size_type width = sizeof...(rest);
 
 private :
 
@@ -110,48 +71,11 @@ public :
 
     using this_type = unwrap_type_t< first >;
 
-    template< size_type _which = width >
-    using at = std::conditional_t< (_which == width), this_type, typename tail::template at< _which > >;
-
-    template< typename type = this_type >
-    static
-    constexpr
-    size_type
-    index() noexcept
-    {
-        if (std::is_same< type, this_type >{}) {
-            return width;
-        } else {
-            return tail::template index< type >();
-        }
-    }
-
     constexpr
     size_type
     which() const noexcept
     {
         return head_.which_;
-    }
-
-    template< typename type = this_type >
-    constexpr
-    bool
-    active() const noexcept
-    {
-        if (std::is_same< type, this_type >{}) {
-            return (which() == width);
-        } else {
-            return tail_.template active< type >();
-        }
-    }
-
-    ~versatile() noexcept(std::is_nothrow_destructible< head >{} && std::is_nothrow_destructible< tail >{})
-    {
-        if (active()) {
-            head_.~head();
-        } else {
-            tail_.~tail();
-        }
     }
 
 private :
@@ -176,6 +100,11 @@ public :
     versatile() noexcept(std::is_nothrow_constructible< versatile, typename std::is_default_constructible< this_type >::type >{})
         : versatile(typename std::is_default_constructible< this_type >::type{})
     { ; }
+
+    versatile(versatile const &) = delete;
+    versatile(versatile &) = delete;
+    versatile(versatile const &&) = delete;
+    versatile(versatile &&) = delete;
 
     explicit
     constexpr
@@ -215,6 +144,11 @@ public :
         : versatile(typename std::is_constructible< this_type, arguments... >::type{}, std::experimental::in_place, std::forward< arguments >(_arguments)...)
     { ; }
 
+    void operator = (versatile const & _rhs) = delete;
+    void operator = (versatile & _rhs) = delete;
+    void operator = (versatile const && _rhs) = delete;
+    void operator = (versatile && _rhs) = delete;
+
     constexpr
     void
     operator = (this_type const & _rhs) & noexcept(std::is_nothrow_copy_assignable< this_type >{})
@@ -243,12 +177,32 @@ public :
         operator this_type & () = std::move(_rhs);
     }
 
-    template< typename rhs, typename = std::enable_if_t< !(std::is_same< std::decay_t< rhs >, versatile >{}) > >
+    template< typename rhs >
     constexpr
     void
     operator = (rhs && _rhs) & noexcept(std::is_nothrow_assignable< tail &, rhs >{})
     {
         tail_ = std::forward< rhs >(_rhs);
+    }
+
+private :
+
+    constexpr
+    bool
+    active() const noexcept
+    {
+        return (width == which());
+    }
+
+public :
+
+    ~versatile() noexcept(std::is_nothrow_destructible< head >{} && std::is_nothrow_destructible< tail >{})
+    {
+        if (active()) {
+            head_.~head();
+        } else {
+            tail_.~tail();
+        }
     }
 
     explicit

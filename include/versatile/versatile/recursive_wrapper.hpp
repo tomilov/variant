@@ -165,7 +165,7 @@ struct is_recursive_wrapper< volatile type const >
 template< typename type >
 using is_recursive_wrapper_t = typename is_recursive_wrapper< type >::type;
 
-template< typename type, bool = (is_recursive_wrapper_t< std::decay_t< type > >{}) >
+template< typename type, bool = (is_recursive_wrapper_t< std::remove_reference_t< type > >{}) >
 struct unwrap_type;
 
 template< typename general_type >
