@@ -19,7 +19,7 @@ class variant
 {
 
     using versatile = versatile< types... >;
-    using storage_type = std::unique_ptr< versatile >;
+    using storage_type = std::unique_ptr< versatile >; // All problems in computer science can be solved by another level of indirection, except for the problem of too many layers of indirection.
 
     storage_type storage_;
 
