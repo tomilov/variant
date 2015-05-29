@@ -325,7 +325,7 @@ main()
             v = B{};
             assert(v.active< B >());
         }
-        {
+        { // incomplete
             struct A {};
             struct B;
             using V = variant< A, recursive_wrapper< B > >;
@@ -335,7 +335,7 @@ main()
             v = B{};
             assert(v.active< B >());
         }
-        {
+        { // recursive
             struct R;
             struct A {};
             using V = variant< A, recursive_wrapper< R > >;
@@ -345,7 +345,7 @@ main()
             v = R{};
             assert(v.active< R >());
         }
-        {
+        { // exact
             using V = variant< int, double >;
             assert(!(V{1} == V{1.0}));
             assert(V{} == V{});
@@ -358,7 +358,7 @@ main()
             assert(!(V{1} == 1.0));
             assert(!(1.0 == V{1}));
         }
-        {
+        { // relational
             using V = variant< int, double >;
             assert(V{1} < V{2});
             assert(V{1.0} < V{2.0});
@@ -372,6 +372,23 @@ main()
             assert(!(1 < V{0}));
             assert(!(V{1.0} < 0.0));
             assert(!(1.0 < V{0.0}));
+        }
+        {
+            struct A
+            {
+                A(int j) : i(j) { ; }
+                A(A && a) : i(a.i) { a.i = 0; }
+                void operator = (A && a) { i = a.i; a.i = 0; }
+                operator int () const { return i; }
+            private :
+                int i;
+            };
+            using V = variant< A >;
+            V x{std::experimental::in_place, 1};
+            V y{std::experimental::in_place, 2};
+            y = std::move(x);
+            assert(x == A{0});
+            assert(y == A{1});
         }
         {
             struct A { A(int &, int) {} };

@@ -15,6 +15,9 @@
 namespace versatile
 {
 
+template< typename type >
+struct is_variant;
+
 template< typename ...types >
 class variant
 {
@@ -160,6 +163,13 @@ public :
         variant{std::experimental::in_place, std::forward< arguments >(_arguments)...}.swap(*this);
     }
 
+    template< typename rhs >
+    void
+    replace(rhs && _rhs)
+    {
+        variant{std::forward< rhs >(_rhs)}.swap(*this);
+    }
+
 private :
 
     struct assigner
@@ -179,52 +189,25 @@ private :
 public :
 
     template< typename rhs >
-    void
-    replace(rhs && _rhs)
-    {
-        variant{std::forward< rhs >(_rhs)}.swap(*this);
-    }
-
-    variant &
-    operator = (variant const & _rhs) &
+    std::enable_if_t< (is_variant< std::remove_reference_t< rhs > >{}), variant & >
+    assign(rhs && _rhs)
     {
         if (which() == _rhs.which()) {
-            _rhs.visit(assigner{*storage_});
+            std::forward< rhs >(_rhs).visit(assigner{*storage_});
         } else {
-            replace(_rhs);
+            replace(std::forward< rhs >(_rhs));
         }
         return *this;
     }
 
-    variant &
-    operator = (variant & _rhs) &
+    template< typename rhs >
+    std::enable_if_t< !(is_variant< std::remove_reference_t< rhs > >{}), variant & >
+    assign(rhs && _rhs)
     {
-        if (which() == _rhs.which()) {
-            _rhs.visit(assigner{*storage_});
+        if (active< std::decay_t< rhs > >()) {
+            *storage_ = std::forward< rhs >(_rhs);
         } else {
-            replace(_rhs);
-        }
-        return *this;
-    }
-
-    variant &
-    operator = (variant const && _rhs) &
-    {
-        if (which() == _rhs.which()) {
-            std::move(_rhs).visit(assigner{*storage_});
-        } else {
-            replace(std::move(_rhs));
-        }
-        return *this;
-    }
-
-    variant &
-    operator = (variant && _rhs) &
-    {
-        if (which() == _rhs.which()) {
-            std::move(_rhs).visit(assigner{*storage_});
-        } else {
-            replace(std::move(_rhs));
+            replace(std::forward< rhs >(_rhs));
         }
         return *this;
     }
@@ -233,11 +216,7 @@ public :
     variant &
     operator = (rhs && _rhs) &
     {
-        if (active< std::decay_t< rhs > >()) {
-            *storage_ = std::forward< rhs >(_rhs);
-        } else {
-            replace(std::forward< rhs >(_rhs));
-        }
+        assign(std::forward< rhs >(_rhs));
         return *this;
     }
 
