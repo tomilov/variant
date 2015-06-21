@@ -9,37 +9,36 @@
 namespace versatile
 {
 
-template< typename wrapped_type >
+template< typename type >
 struct recursive_wrapper
+        : identity< type >
 {
 
-    using type = wrapped_type;
-
-    template< typename ...arguments >
-    recursive_wrapper(arguments &&... _arguments)
-        : storage_(std::make_unique< type >(std::forward< arguments >(_arguments)...))
-    { ; }
-
-    recursive_wrapper(recursive_wrapper const & _rhs)
-        : recursive_wrapper(static_cast< type const & >(_rhs))
+    template< typename ...types >
+    recursive_wrapper(types &&... _values)
+        : storage_(std::make_unique< type >(std::forward< types >(_values)...))
     { ; }
 
     recursive_wrapper(recursive_wrapper & _rhs)
         : recursive_wrapper(static_cast< type & >(_rhs))
     { ; }
 
-    recursive_wrapper(recursive_wrapper const && _rhs)
-        : recursive_wrapper(static_cast< type const && >(std::move(_rhs)))
+    recursive_wrapper(recursive_wrapper const & _rhs)
+        : recursive_wrapper(static_cast< type const & >(_rhs))
     { ; }
 
     recursive_wrapper(recursive_wrapper && _rhs)
         : recursive_wrapper(static_cast< type && >(std::move(_rhs)))
     { ; }
 
+    recursive_wrapper(recursive_wrapper const && _rhs)
+        : recursive_wrapper(static_cast< type const && >(std::move(_rhs)))
+    { ; }
+
     void
-    operator = (recursive_wrapper const & _rhs) & noexcept(std::is_nothrow_copy_assignable< type >{})
+    swap(recursive_wrapper & _rhs) noexcept
     {
-        operator type & () = _rhs;
+        storage_.swap(_rhs.storage_);
     }
 
     void
@@ -49,9 +48,9 @@ struct recursive_wrapper
     }
 
     void
-    operator = (recursive_wrapper const && _rhs) & noexcept(std::is_nothrow_assignable< type &, type const && >{})
+    operator = (recursive_wrapper const & _rhs) & noexcept(std::is_nothrow_copy_assignable< type >{})
     {
-        operator type & () = std::move(_rhs);
+        operator type & () = _rhs;
     }
 
     void
@@ -61,9 +60,9 @@ struct recursive_wrapper
     }
 
     void
-    operator = (type const & _rhs) & noexcept(std::is_nothrow_copy_assignable< type >{})
+    operator = (recursive_wrapper const && _rhs) & noexcept(std::is_nothrow_assignable< type &, type const && >{})
     {
-        operator type & () = _rhs;
+        operator type & () = std::move(_rhs);
     }
 
     void
@@ -73,9 +72,9 @@ struct recursive_wrapper
     }
 
     void
-    operator = (type const && _rhs) & noexcept(std::is_nothrow_assignable< type &, type const && >{})
+    operator = (type const & _rhs) & noexcept(std::is_nothrow_copy_assignable< type >{})
     {
-        operator type & () = std::move(_rhs);
+        operator type & () = _rhs;
     }
 
     void
@@ -85,15 +84,9 @@ struct recursive_wrapper
     }
 
     void
-    swap(recursive_wrapper & _rhs) noexcept
+    operator = (type const && _rhs) & noexcept(std::is_nothrow_assignable< type &, type const && >{})
     {
-        storage_.swap(_rhs.storage_);
-    }
-
-    explicit
-    operator type const & () const & noexcept
-    {
-        return *storage_;
+        operator type & () = std::move(_rhs);
     }
 
     explicit
@@ -103,13 +96,19 @@ struct recursive_wrapper
     }
 
     explicit
-    operator type const && () const && noexcept
+    operator type const & () const & noexcept
+    {
+        return *storage_;
+    }
+
+    explicit
+    operator type && () && noexcept
     {
         return std::move(*storage_);
     }
 
     explicit
-    operator type && () && noexcept
+    operator type const && () const && noexcept
     {
         return std::move(*storage_);
     }
@@ -162,25 +161,17 @@ struct is_recursive_wrapper< volatile type const >
 
 };
 
-template< typename type >
-using is_recursive_wrapper_t = typename is_recursive_wrapper< type >::type;
-
-template< typename type, bool = (is_recursive_wrapper_t< std::remove_reference_t< type > >{}) >
-struct unwrap_type;
-
-template< typename general_type >
-struct unwrap_type< general_type, false >
+template< typename type, typename = std::decay_t< type > >
+struct unwrap_type
+        : identity< type >
 {
-
-    using type = general_type;
 
 };
 
-template< typename recursive_wrapper_type >
-struct unwrap_type< recursive_wrapper_type, true >
+template< typename recursive_wrapper_type, typename type >
+struct unwrap_type< recursive_wrapper_type, recursive_wrapper< type > >
+        : identity< copy_cv_reference_t< recursive_wrapper_type, typename recursive_wrapper< type >::type > >
 {
-
-    using type = copy_cv_reference_t< recursive_wrapper_type, typename std::remove_reference_t< recursive_wrapper_type >::type >;
 
 };
 

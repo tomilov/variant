@@ -14,23 +14,33 @@ namespace versatile
 {
 
 template< typename ...types >
-union versatile;
+struct versatile;
 
 template<>
-union versatile<>
+struct versatile<>
 {
 
     versatile() = delete;
 
+    versatile(versatile &) = delete;
+    versatile(versatile const &) = delete;
+    versatile(versatile &&) = delete;
+    versatile(versatile const &&) = delete;
+
+    void operator = (versatile &) = delete;
+    void operator = (versatile const &) = delete;
+    void operator = (versatile &&) = delete;
+    void operator = (versatile const &&) = delete;
+
 };
 
 template< typename first, typename ...rest >
-union versatile< first, rest... >
+struct versatile< first, rest... >
 {
 
     using size_type = std::size_t;
 
-    static constexpr size_type width = sizeof...(rest);
+    static constexpr size_type index = sizeof...(rest); // zero-based right-to-left index of leftmost alternative type
 
 private :
 
@@ -40,32 +50,46 @@ private :
         size_type which_;
         first value_;
 
-        template< typename ...arguments >
+        template< typename ...types >
         explicit
         constexpr
-        head(std::experimental::in_place_t, arguments &&... _arguments) noexcept(std::is_nothrow_constructible< first, arguments... >{})
-            : which_{width}
-            , value_(std::forward< arguments >(_arguments)...)
+        head(std::experimental::in_place_t, types &&... _values) noexcept(std::is_nothrow_constructible< first, types... >{})
+            : which_{index}
+            , value_(std::forward< types >(_values)...)
         { ; }
 
-        constexpr
-        head() noexcept(std::is_nothrow_default_constructible< first >{})
-            : head(std::experimental::in_place)
-        { ; }
-
-        template< typename rhs >
+        template< typename type >
         explicit
         constexpr
-        head(rhs && _rhs) noexcept(std::is_nothrow_constructible< first, rhs >{})
-            : head(std::experimental::in_place, std::forward< rhs >(_rhs))
+        head(type && _value) noexcept(std::is_nothrow_constructible< first, type >{})
+            : head(std::experimental::in_place, std::forward< type >(_value))
         { ; }
 
     };
 
     using tail = versatile< rest... >;
 
-    head head_;
-    tail tail_;
+    union
+    {
+
+        head head_;
+        tail tail_;
+
+    };
+
+    template< typename ...types >
+    explicit
+    constexpr
+    versatile(std::true_type, types &&... _values) noexcept(std::is_nothrow_constructible< head, types... >{})
+        : head_(std::forward< types >(_values)...)
+    { ; }
+
+    template< typename ...types >
+    explicit
+    constexpr
+    versatile(std::false_type, types &&... _values) noexcept(std::is_nothrow_constructible< tail, types... >{})
+        : tail_(std::forward< types >(_values)...)
+    { ; }
 
 public :
 
@@ -78,111 +102,41 @@ public :
         return head_.which_;
     }
 
-private :
-
-    template< typename ...arguments >
-    explicit
     constexpr
-    versatile(std::true_type, arguments &&... _arguments) noexcept(std::is_nothrow_constructible< head, arguments... >{})
-        : head_(std::forward< arguments >(_arguments)...)
+    versatile() noexcept(std::is_nothrow_constructible< versatile, typename std::is_default_constructible< this_type >::type, std::experimental::in_place_t >{})
+        : versatile(typename std::is_default_constructible< this_type >::type{}, std::experimental::in_place)
     { ; }
 
-    template< typename ...arguments >
-    explicit
-    constexpr
-    versatile(std::false_type, arguments &&... _arguments) noexcept(std::is_nothrow_constructible< tail, arguments... >{})
-        : tail_(std::forward< arguments >(_arguments)...)
-    { ; }
-
-public :
-
-    constexpr
-    versatile() noexcept(std::is_nothrow_constructible< versatile, typename std::is_default_constructible< this_type >::type >{})
-        : versatile(typename std::is_default_constructible< this_type >::type{})
-    { ; }
-
-    versatile(versatile const &) = delete;
     versatile(versatile &) = delete;
-    versatile(versatile const &&) = delete;
+    versatile(versatile const &) = delete;
     versatile(versatile &&) = delete;
+    versatile(versatile const &&) = delete;
 
+    template< typename type >
     explicit
     constexpr
-    versatile(this_type const & _rhs) noexcept(std::is_nothrow_constructible< head, this_type const & >{})
-        : head_(_rhs)
+    versatile(type && _value) noexcept(std::is_nothrow_constructible< versatile, typename std::is_same< std::decay_t< type >, this_type >::type, type >{})
+        : versatile(typename std::is_same< std::decay_t< type >, this_type >::type{}, std::forward< type >(_value))
     { ; }
 
+    template< typename ...types >
     explicit
     constexpr
-    versatile(this_type & _rhs) noexcept(std::is_nothrow_constructible< head, this_type & >{})
-        : head_(_rhs)
+    versatile(std::experimental::in_place_t, types &&... _values) noexcept(std::is_nothrow_constructible< versatile, typename std::is_constructible< this_type, types... >::type, std::experimental::in_place_t, types... >{})
+        : versatile(typename std::is_constructible< this_type, types... >::type{}, std::experimental::in_place, std::forward< types >(_values)...)
     { ; }
 
-    explicit
-    constexpr
-    versatile(this_type const && _rhs) noexcept(std::is_nothrow_constructible< head, this_type const && >{})
-        : head_(std::move(_rhs))
-    { ; }
+    void operator = (versatile &) = delete;
+    void operator = (versatile const &) = delete;
+    void operator = (versatile &&) = delete;
+    void operator = (versatile const &&) = delete;
 
-    explicit
-    constexpr
-    versatile(this_type && _rhs) noexcept(std::is_nothrow_constructible< head, this_type && >{})
-        : head_(std::move(_rhs))
-    { ; }
-
-    template< typename rhs >
-    explicit
-    constexpr
-    versatile(rhs && _rhs) noexcept(std::is_nothrow_constructible< tail, rhs >{})
-        : tail_(std::forward< rhs >(_rhs))
-    { ; }
-
-    template< typename ...arguments >
-    explicit
-    constexpr
-    versatile(std::experimental::in_place_t, arguments &&... _arguments) noexcept(std::is_nothrow_constructible< versatile, typename std::is_constructible< this_type, arguments... >::type, std::experimental::in_place_t, arguments... >{})
-        : versatile(typename std::is_constructible< this_type, arguments... >::type{}, std::experimental::in_place, std::forward< arguments >(_arguments)...)
-    { ; }
-
-    void operator = (versatile const & _rhs) = delete;
-    void operator = (versatile & _rhs) = delete;
-    void operator = (versatile const && _rhs) = delete;
-    void operator = (versatile && _rhs) = delete;
-
+    template< typename type >
     constexpr
     void
-    operator = (this_type const & _rhs) & noexcept(std::is_nothrow_copy_assignable< this_type >{})
+    operator = (type && _value) & noexcept(std::is_nothrow_assignable< std::decay_t< type > &, type >{})
     {
-        operator this_type & () = _rhs;
-    }
-
-    constexpr
-    void
-    operator = (this_type & _rhs) & noexcept(std::is_nothrow_assignable< this_type &, this_type & >{})
-    {
-        operator this_type & () = _rhs;
-    }
-
-    constexpr
-    void
-    operator = (this_type const && _rhs) & noexcept(std::is_nothrow_assignable< this_type &, this_type const && >{})
-    {
-        operator this_type & () = std::move(_rhs);
-    }
-
-    constexpr
-    void
-    operator = (this_type && _rhs) & noexcept(std::is_nothrow_move_assignable< this_type >{})
-    {
-        operator this_type & () = std::move(_rhs);
-    }
-
-    template< typename rhs >
-    constexpr
-    void
-    operator = (rhs && _rhs) & noexcept(std::is_nothrow_assignable< tail &, rhs >{})
-    {
-        tail_ = std::forward< rhs >(_rhs);
+        operator std::decay_t< type > & () = std::forward< type >(_value);
     }
 
 private :
@@ -191,18 +145,25 @@ private :
     bool
     active() const noexcept
     {
-        return (width == which());
+        return (index == which());
     }
 
 public :
 
-    ~versatile() noexcept(std::is_nothrow_destructible< head >{} && std::is_nothrow_destructible< tail >{})
+    explicit
+    constexpr
+    operator this_type & () & noexcept
     {
-        if (active()) {
-            head_.~head();
-        } else {
-            tail_.~tail();
-        }
+        assert(active());
+        return static_cast< this_type & >(head_.value_);
+    }
+
+    template< typename type >
+    explicit
+    constexpr
+    operator type & () & noexcept
+    {
+        return static_cast< type & >(tail_);
     }
 
     explicit
@@ -223,42 +184,11 @@ public :
 
     explicit
     constexpr
-    operator this_type & () & noexcept
-    {
-        assert(active());
-        return static_cast< this_type & >(head_.value_);
-    }
-
-    template< typename type >
-    explicit
-    constexpr
-    operator type & () & noexcept
-    {
-        return static_cast< type & >(tail_);
-    }
-
-    explicit
-    constexpr
-    operator this_type const && () const && noexcept
-    {
-        assert(active());
-        return static_cast< this_type const && >(std::move(head_.value_));
-    }
-
-    template< typename type >
-    explicit
-    constexpr
-    operator type const && () const && noexcept
-    {
-        return static_cast< type const && >(std::move(tail_));
-    }
-
-    explicit
-    constexpr
     operator this_type && () && noexcept
     {
         assert(active());
-        return static_cast< this_type && >(std::move(head_.value_));
+        //return static_cast< this_type && >(std::move(head_.value_)); // There is known clang++ bug #19917 for static_cast to rvalue reference.
+        return static_cast< this_type && >(static_cast< this_type & >(head_.value_)); // workaround
     }
 
     template< typename type >
@@ -266,7 +196,35 @@ public :
     constexpr
     operator type && () && noexcept
     {
-        return static_cast< type && >(std::move(tail_));
+        //return static_cast< type && >(std::move(tail_)); // There is known clang++ bug #19917 for static_cast to rvalue reference.
+        return static_cast< type && >(static_cast< type & >(tail_)); // workaround
+    }
+
+    explicit
+    constexpr
+    operator this_type const && () const && noexcept
+    {
+        assert(active());
+        //return static_cast< this_type const && >(std::move(head_.value_)); // There is known clang++ bug #19917 for static_cast to rvalue reference.
+        return static_cast< this_type const && >(static_cast< this_type const & >(head_.value_)); // workaround
+    }
+
+    template< typename type >
+    explicit
+    constexpr
+    operator type const && () const && noexcept
+    {
+        //return static_cast< type const && >(std::move(tail_)); // There is known clang++ bug #19917 for static_cast to rvalue reference.
+        return static_cast< type const && >(static_cast< type const & >(tail_)); // workaround
+    }
+
+    ~versatile() noexcept(std::is_nothrow_destructible< head >{} && std::is_nothrow_destructible< tail >{})
+    {
+        if (active()) {
+            head_.~head();
+        } else {
+            tail_.~tail();
+        }
     }
 
 };

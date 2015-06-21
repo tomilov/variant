@@ -5,70 +5,65 @@
 namespace versatile
 {
 
-template< typename from, typename to >
-struct copy_reference
+template< typename first, typename ...rest >
+struct identity
 {
 
-    using type = to;
+    using type = first;
 
 };
 
-template< typename from, typename to >
-struct copy_reference< from &, to >
+enum class type_qualifiers
+        : std::size_t
 {
+    value,
+    const_value,
+    lvalue,
+    const_lvalue,
+    rvalue,
+    const_rvalue,
+    volatile_value,
+    volatile_const_value,
+    volatile_lvalue,
+    volatile_const_lvalue,
+    volatile_rvalue,
+    volatile_const_rvalue,
 
-    using type = to &;
-
+    count
 };
 
-template< typename from, typename to >
-struct copy_reference< from &&, to >
-{
+template< type_qualifiers get_type_qualifier, typename type > struct add_type_qualifier;
+template< typename to > struct add_type_qualifier< type_qualifiers::value                , to > : identity<          to          > {};
+template< typename to > struct add_type_qualifier< type_qualifiers::const_value          , to > : identity<          to const    > {};
+template< typename to > struct add_type_qualifier< type_qualifiers::lvalue               , to > : identity<          to       &  > {};
+template< typename to > struct add_type_qualifier< type_qualifiers::const_lvalue         , to > : identity<          to const &  > {};
+template< typename to > struct add_type_qualifier< type_qualifiers::rvalue               , to > : identity<          to       && > {};
+template< typename to > struct add_type_qualifier< type_qualifiers::const_rvalue         , to > : identity<          to const && > {};
+template< typename to > struct add_type_qualifier< type_qualifiers::volatile_value       , to > : identity< volatile to          > {};
+template< typename to > struct add_type_qualifier< type_qualifiers::volatile_const_value , to > : identity< volatile to const    > {};
+template< typename to > struct add_type_qualifier< type_qualifiers::volatile_lvalue      , to > : identity< volatile to       &  > {};
+template< typename to > struct add_type_qualifier< type_qualifiers::volatile_const_lvalue, to > : identity< volatile to const &  > {};
+template< typename to > struct add_type_qualifier< type_qualifiers::volatile_rvalue      , to > : identity< volatile to       && > {};
+template< typename to > struct add_type_qualifier< type_qualifiers::volatile_const_rvalue, to > : identity< volatile to const && > {};
 
-    using type = to &&;
+template< type_qualifiers get_type_qualifier, typename to >
+using add_qualifier_t = typename add_type_qualifier< get_type_qualifier, to >::type;
 
-};
-
-template< typename from, typename to >
-struct copy_cv
-{
-
-    using type = to;
-
-};
-
-template< typename from, typename to >
-struct copy_cv< volatile from const, to >
-{
-
-    using type = volatile to const;
-
-};
-
-template< typename from, typename to >
-struct copy_cv< from const, to >
-{
-
-    using type = to const;
-
-};
+template< typename type > constexpr type_qualifiers get_type_qualifier                           = type_qualifiers::value                ;
+template< typename type > constexpr type_qualifiers get_type_qualifier<          type const    > = type_qualifiers::const_value          ;
+template< typename type > constexpr type_qualifiers get_type_qualifier<          type       &  > = type_qualifiers::lvalue               ;
+template< typename type > constexpr type_qualifiers get_type_qualifier<          type const &  > = type_qualifiers::const_lvalue         ;
+template< typename type > constexpr type_qualifiers get_type_qualifier<          type       && > = type_qualifiers::rvalue               ;
+template< typename type > constexpr type_qualifiers get_type_qualifier<          type const && > = type_qualifiers::const_rvalue         ;
+template< typename type > constexpr type_qualifiers get_type_qualifier< volatile type          > = type_qualifiers::volatile_value       ;
+template< typename type > constexpr type_qualifiers get_type_qualifier< volatile type const    > = type_qualifiers::volatile_const_value ;
+template< typename type > constexpr type_qualifiers get_type_qualifier< volatile type       &  > = type_qualifiers::volatile_lvalue      ;
+template< typename type > constexpr type_qualifiers get_type_qualifier< volatile type const &  > = type_qualifiers::volatile_const_lvalue;
+template< typename type > constexpr type_qualifiers get_type_qualifier< volatile type       && > = type_qualifiers::volatile_rvalue      ;
+template< typename type > constexpr type_qualifiers get_type_qualifier< volatile type const && > = type_qualifiers::volatile_const_rvalue;
 
 template< typename from, typename to >
-struct copy_cv< volatile from, to >
-{
-
-    using type = volatile to;
-
-};
-
-template< typename from, typename to >
-using copy_reference_t = typename copy_reference< from, to >::type;
-
-template< typename from, typename to >
-using copy_cv_t = typename copy_cv< from, to >::type;
-
-template< typename from, typename to >
-using copy_cv_reference_t = copy_reference_t< from, copy_cv_t< std::remove_reference_t< from >, to > >;
+using copy_cv_reference_t = add_qualifier_t< get_type_qualifier< from >, to >;
 
 template< typename type, typename ...arguments >
 using result_of_t = decltype(std::declval< type >()(std::declval< arguments >()...));
@@ -105,9 +100,8 @@ struct type_by_index
 
 template< typename first, typename ...rest >
 struct type_by_index< sizeof...(rest), first, rest... >
+    : identity< first >
 {
-
-    using type = first;
 
 };
 

@@ -26,7 +26,7 @@ struct subvisitor< result_type, supervisitor, visitable, true >
     constexpr
     result_type
     operator () (visited &&... _visited) const
-    {
+    { // member function 'visit' grant better compile times then free one
         return std::forward< visitable >(visitable_).visit(std::forward< supervisitor >(supervisitor_), std::forward< visited >(_visited)...);
     }
 
@@ -87,7 +87,7 @@ constexpr
 decltype(auto)
 visit(visitor && _visitor, types &&... _values)
 {
-    using result_type = result_of_t< visitor, first_type_t< types && >... >;
+    using result_type = result_of_t< visitor, first_type_t< types >... >;
     return details::visitor_partially_applier< result_type, types... >{}(std::forward< visitor >(_visitor), std::forward< types >(_values)...);
 }
 
@@ -105,13 +105,6 @@ struct delayed_visitor
 
     template< typename ...types >
     decltype(auto)
-    operator () (types &&... _values) const &
-    {
-        return visit(visitor_, std::forward< types >(_values)...);
-    }
-
-    template< typename ...types >
-    decltype(auto)
     operator () (types &&... _values) &
     {
         return visit(visitor_, std::forward< types >(_values)...);
@@ -119,14 +112,21 @@ struct delayed_visitor
 
     template< typename ...types >
     decltype(auto)
-    operator () (types &&... _values) const &&
+    operator () (types &&... _values) const &
+    {
+        return visit(visitor_, std::forward< types >(_values)...);
+    }
+
+    template< typename ...types >
+    decltype(auto)
+    operator () (types &&... _values) &&
     {
         return visit(std::move(visitor_), std::forward< types >(_values)...);
     }
 
     template< typename ...types >
     decltype(auto)
-    operator () (types &&... _values) &&
+    operator () (types &&... _values) const &&
     {
         return visit(std::move(visitor_), std::forward< types >(_values)...);
     }

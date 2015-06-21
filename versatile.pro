@@ -35,6 +35,6 @@ CONFIG(debug, debug|release) {
     DEFINES += _DEBUG=1 DEBUG=1
     DEFINES += _GLIBCXX_DEBUG=1
 
-    DEFINES += COLS=1 ROWS=1
+    DEFINES += COLS=2 ROWS=2
 }
 

@@ -11,11 +11,12 @@
 #include <iomanip>
 #endif
 
+#include <cstdlib>
+
 #ifdef NDEBUG
 #undef NDEBUG
 #endif
 #include <cassert>
-#include <cstdlib>
 
 #ifndef COLS
 #define COLS 5
@@ -25,8 +26,30 @@
 #define ROWS COLS
 #endif
 
-namespace
+namespace test
 {
+
+using namespace versatile;
+
+namespace test_traits
+{
+
+struct A {};
+struct B {};
+static_assert(std::is_same< copy_cv_reference_t<          A         , B >,          B          >{});
+static_assert(std::is_same< copy_cv_reference_t<          A const   , B >,          B const    >{});
+static_assert(std::is_same< copy_cv_reference_t< volatile A         , B >, volatile B          >{});
+static_assert(std::is_same< copy_cv_reference_t< volatile A const   , B >, volatile B const    >{});
+static_assert(std::is_same< copy_cv_reference_t<          A        &, B >,          B        & >{});
+static_assert(std::is_same< copy_cv_reference_t<          A const  &, B >,          B const  & >{});
+static_assert(std::is_same< copy_cv_reference_t< volatile A        &, B >, volatile B        & >{});
+static_assert(std::is_same< copy_cv_reference_t< volatile A const  &, B >, volatile B const  & >{});
+static_assert(std::is_same< copy_cv_reference_t<          A       &&, B >,          B       && >{});
+static_assert(std::is_same< copy_cv_reference_t<          A const &&, B >,          B const && >{});
+static_assert(std::is_same< copy_cv_reference_t< volatile A       &&, B >, volatile B       && >{});
+static_assert(std::is_same< copy_cv_reference_t< volatile A const &&, B >, volatile B const && >{});
+
+}
 
 struct introspector
 {
@@ -40,9 +63,439 @@ struct introspector
 
 };
 
+struct visitor0
+{
+
+    using R = std::array< bool, 3 >;
+
+    template< typename type >
+    constexpr
+    R
+    operator () (type &&) const
+    {
+        return {{true, std::is_const< std::remove_reference_t< type > >::value, std::is_lvalue_reference< type >::value}};
+    }
+
+    template< typename type >
+    constexpr
+    R
+    operator () (type &&)
+    {
+        return {{false, std::is_const< std::remove_reference_t< type > >::value, std::is_lvalue_reference< type >::value}};
+    }
+
+};
+
+struct visitor1
+{
+
+    using R = std::array< bool, 4 >;
+
+    template< typename type >
+    constexpr
+    R
+    operator () (type &&) const &
+    {
+        return {{true, true, std::is_const< std::remove_reference_t< type > >::value, std::is_lvalue_reference< type >::value}};
+    }
+
+    template< typename type >
+    constexpr
+    R
+    operator () (type &&) &
+    {
+        return {{false, true, std::is_const< std::remove_reference_t< type > >::value, std::is_lvalue_reference< type >::value}};
+    }
+
+    template< typename type >
+    constexpr
+    R
+    operator () (type &&) &&
+    {
+        return {{false, false, std::is_const< std::remove_reference_t< type > >::value, std::is_lvalue_reference< type >::value}};
+    }
+
+};
+
+struct visitor2
+{
+    template< typename ...types >
+    constexpr
+    auto
+    operator () (types &&... _values) const
+    {
+        return std::tuple_cat(std::make_tuple(true), std::make_tuple(std::tie(typeid(std::forward< types >(_values))), std::is_const< std::remove_reference_t< types > >::value, std::is_lvalue_reference< types >::value)...);
+    }
+
+    template< typename ...types >
+    constexpr
+    auto
+    operator () (types &&... _values)
+    {
+        return std::tuple_cat(std::make_tuple(false), std::make_tuple(std::tie(typeid(std::forward< types >(_values))), std::is_const< std::remove_reference_t< types > >::value, std::is_lvalue_reference< types >::value)...);
+    }
+
+};
+
+struct visitor3
+{
+
+    using R = std::tuple< bool, bool, bool, bool >;
+
+    template< typename type >
+    constexpr
+    R
+    operator () (type &&) const &
+    {
+        return std::make_tuple(true, true, std::is_const< std::remove_reference_t< type > >::value, std::is_lvalue_reference< type >::value);
+    }
+
+    template< typename type >
+    constexpr
+    R
+    operator () (type &&) &
+    {
+        return std::make_tuple(false, true, std::is_const< std::remove_reference_t< type > >::value, std::is_lvalue_reference< type >::value);
+    }
+
+    template< typename type >
+    constexpr
+    R
+    operator () (type &&) const &&
+    {
+        return std::make_tuple(true, false, std::is_const< std::remove_reference_t< type > >::value, std::is_lvalue_reference< type >::value);
+    }
+
+    template< typename type >
+    constexpr
+    R
+    operator () (type &&) &&
+    {
+        return std::make_tuple(false, false, std::is_const< std::remove_reference_t< type > >::value, std::is_lvalue_reference< type >::value);
+    }
+
+};
+
+// value_or
+template< typename lhs, typename rhs >
+std::enable_if_t< (is_variant< std::remove_reference_t< lhs > >{} && !is_variant< std::remove_reference_t< rhs > >{}), std::remove_reference_t< rhs > >
+operator || (lhs && _lhs, rhs && _rhs) noexcept
+{
+    using result_type = std::remove_reference_t< rhs >;
+    if (_lhs.template active< result_type >()) {
+        return static_cast< result_type >(std::forward< lhs >(_lhs));
+    } else {
+        return std::forward< rhs >(_rhs);
+    }
+}
+
+template< typename lhs, typename rhs >
+std::enable_if_t< (!is_variant< std::remove_reference_t< lhs > >{} && is_variant< std::remove_reference_t< rhs > >{}), lhs >
+operator || (lhs && _lhs, rhs && _rhs) noexcept
+{
+    return (std::forward< rhs >(_rhs) || std::forward< lhs >(_lhs));
+}
+
+template< typename lhs, typename rhs >
+std::enable_if_t< (is_variant< std::remove_reference_t< lhs > >{} && is_variant< std::remove_reference_t< rhs > >{}) >
+operator || (lhs && _lhs, rhs && _rhs) = delete;
+
+template< typename type >
+using same_t = type;
+
+template< typename variadic, typename type >
+struct variadic_index;
+
+template< template< typename ...types > class variadic, typename type, typename ...types >
+struct variadic_index< variadic< types... >, type >
+        : index_by_type< type, types... >
+{
+
+};
+
+template< typename F, std::size_t ...indices >
+struct enumerator;
+
+template< typename F >
+struct enumerator< F >
+{
+
+    constexpr
+    enumerator(F && _f)
+        : f(std::forward< F >(_f))
+    { ; }
+
+    template< std::size_t ...I >
+    constexpr
+    bool
+    operator () () const
+    {
+        return f(std::index_sequence< I... >{});
+    }
+
+private :
+
+    F f;
+
+};
+
+template< typename F, std::size_t first, std::size_t ...rest >
+struct enumerator< F, first, rest... >
+        : enumerator< F, rest... >
+{
+
+    using base = enumerator< F, rest... >;
+
+    constexpr
+    enumerator(F && _f)
+        : base(std::forward< F >(_f))
+    { ; }
+
+    template< std::size_t ...I >
+    constexpr
+    bool
+    operator () () const
+    {
+        return enumerator::template operator () < I... >(std::make_index_sequence< first >{}); // ltr
+    }
+
+    template< std::size_t ...I, std::size_t ...J >
+    constexpr
+    bool
+    operator () (std::index_sequence< J... >) const
+    {
+        return (base::template operator () < I..., J >() && ...); // rtl, `< J, I... >` - ltr
+    }
+
+};
+
+template< std::size_t ...indices, typename F >
+constexpr
+enumerator< F, indices... >
+make_enumerator(F && _f)
+{
+    static_assert(0 < sizeof...(indices));
+    static_assert(((0 < indices) && ...));
+    return std::forward< F >(_f);
+}
+
 template< std::size_t I >
 struct T
 {
+
+    constexpr
+    operator std::size_t () const noexcept
+    {
+        return I;
+    }
+
+};
+
+template< std::size_t M >
+struct pair
+{
+
+    std::array< type_qualifiers, (1 + M) > qual_ids;
+    std::array< std::size_t, (1 + M) > type_ids;
+
+    constexpr
+    bool
+    operator == (pair const & _rhs) const
+    {
+        return (qual_ids == _rhs.qual_ids) && (type_ids == _rhs.type_ids);
+    }
+
+    constexpr
+    std::size_t
+    size() const
+    {
+        return (1 + M);
+    }
+
+};
+
+template< std::size_t M >
+struct multivisitor
+{
+
+    using result_type = pair< M >;
+
+    constexpr
+    std::size_t
+    which() const
+    {
+        return 0;
+    }
+
+    static constexpr std::size_t count = M;
+
+    template< typename ...types >
+    constexpr
+    result_type
+    operator () (types &&... _values) & noexcept
+    {
+        //static_assert(M == sizeof...(types));
+        //static_assert(!(is_variant< types >{} || ...));
+        return {{{get_type_qualifier< multivisitor & >, get_type_qualifier< types && >...}}, {{M, _values...}}};
+    }
+
+    template< typename ...types >
+    constexpr
+    result_type
+    operator () (types &&... _values) const & noexcept
+    {
+        return {{{get_type_qualifier< multivisitor const & >, get_type_qualifier< types && >...}}, {{M, _values...}}};
+    }
+
+    template< typename ...types >
+    constexpr
+    result_type
+    operator () (types &&... _values) && noexcept
+    {
+        return {{{get_type_qualifier< multivisitor && >, get_type_qualifier< types && >...}}, {{M, _values...}}};
+    }
+
+    template< typename ...types >
+    constexpr
+    result_type
+    operator () (types &&... _values) const && noexcept
+    {
+        return {{{get_type_qualifier< multivisitor const && >, get_type_qualifier< types && >...}}, {{M, _values...}}};
+    }
+
+    template< typename ...types >
+    constexpr
+    result_type
+    operator () (types &&... _values) volatile & noexcept
+    {
+        return {{{get_type_qualifier< volatile multivisitor & >, get_type_qualifier< types && >...}}, {{M, _values...}}};
+    }
+
+    template< typename ...types >
+    constexpr
+    result_type
+    operator () (types &&... _values) volatile const & noexcept
+    {
+        return {{{get_type_qualifier< volatile multivisitor const & >, get_type_qualifier< types && >...}}, {{M, _values...}}};
+    }
+
+    template< typename ...types >
+    constexpr
+    result_type
+    operator () (types &&... _values) volatile && noexcept
+    {
+        return {{{get_type_qualifier< volatile multivisitor && >, get_type_qualifier< types && >...}}, {{M, _values...}}};
+    }
+
+    template< typename ...types >
+    constexpr
+    result_type
+    operator () (types &&... _values) volatile const && noexcept
+    {
+        return {{{get_type_qualifier< volatile multivisitor const && >, get_type_qualifier< types && >...}}, {{M, _values...}}};
+    }
+
+};
+
+static constexpr std::size_t qualifier_id_begin = static_cast< std::size_t >(get_type_qualifier< void * & >);
+static constexpr std::size_t qualifier_id_end = static_cast< std::size_t >(get_type_qualifier< void * volatile >);
+
+template< typename ...types >
+struct fusor
+{
+
+    std::tuple< types *... > const & stuff_;
+
+    template< std::size_t ...Q, std::size_t ...K >
+    bool
+    operator () (std::index_sequence< Q... >, std::index_sequence< K... >) const
+    {
+        auto const lhs = visit(static_cast< add_qualifier_t< static_cast< type_qualifiers >(qualifier_id_begin + Q), types > >(*std::get< K >(stuff_))...);
+        static_assert(sizeof...(types) == lhs.size());
+        pair< (sizeof...(types) - 1) > const rhs = {{{static_cast< type_qualifiers >(qualifier_id_begin + Q)...}}, {{(std::get< K >(stuff_)->count - 1 - std::get< K >(stuff_)->which())...}}};
+        if (lhs == rhs) {
+            return false;
+        }
+        return true;
+    }
+
+    template< std::size_t ...Q >
+    bool
+    operator () (std::index_sequence< Q... >) const
+    {
+        return operator () (std::index_sequence< Q... >{}, std::index_sequence_for< types... >{});
+    }
+
+};
+
+template< typename ...types >
+fusor< types... >
+make_fusor(std::tuple< types *... > const & _stuff)
+{
+    static_assert(((get_type_qualifier< types > == type_qualifiers::value) && ...));
+    return {_stuff};
+}
+
+template< std::size_t M, std::size_t N = M > // M - multivisitor arity, N - number of alternative (bounded) types
+class test_perferct_forwarding
+{
+
+    template< std::size_t ...J >
+    static
+    auto
+    generate_variants(std::index_sequence< J... >)
+    {
+        using variant_type = variant< T< J >... >;
+        return std::array< variant_type, N >{{T< J >{}...}};
+    }
+
+    using variant_type = typename decltype(generate_variants(std::make_index_sequence< N >{}))::value_type;
+
+    static_assert(N == variant_type::count);
+
+    template< std::size_t ...I >
+    bool
+    operator () (std::index_sequence< I... >) const
+    {
+        static_assert(sizeof...(I) == M);
+        std::size_t indices[M];
+        for (std::size_t & m : indices) {
+            m = 0;
+        }
+        multivisitor< M > mv;
+        auto variants = generate_variants(std::make_index_sequence< N >{});
+        auto permutation_ = std::make_tuple(&mv, &variants[indices[I]]...);
+        auto const fusor_ = make_fusor(permutation_);
+        constexpr std::size_t ref_count = (qualifier_id_end - qualifier_id_begin); // test only reference types
+        auto const enumerator_ = make_enumerator< ref_count, (I, ref_count)... >(fusor_);
+        for (;;) {
+            permutation_ = std::make_tuple(&mv, &variants[indices[I]]...);
+            if (!enumerator_()) {
+                return false;
+            }
+            std::size_t m = 0;
+            for (;;) {
+                std::size_t & n = indices[m];
+                ++n;
+                if (n != N) {
+                    break;
+                }
+                n = 0;
+                if (++m == M) {
+                    return true;
+                }
+            }
+        }
+        return true;
+    }
+
+public :
+
+    bool
+    operator () () const
+    {
+        return operator () (std::make_index_sequence< M >{});
+    }
 
 };
 
@@ -67,8 +520,7 @@ constexpr
 bool
 invoke(std::index_sequence< M... >, std::index_sequence< N... >) noexcept
 {
-    using versatile::visit;
-    return (std::array< std::size_t, sizeof...(N) >{(N % sizeof...(M))...} == visit(visitor{}, versatile::variant< T< M >... >{T< (N % sizeof...(M)) >{}}...));
+    return (std::array< std::size_t, sizeof...(N) >{(N % sizeof...(M))...} == visit(visitor{}, variant< T< M >... >{T< (N % sizeof...(M)) >{}}...));
 }
 
 #pragma clang diagnostic pop
@@ -76,160 +528,17 @@ invoke(std::index_sequence< M... >, std::index_sequence< N... >) noexcept
 template< std::size_t M, std::size_t N = M >
 constexpr
 bool
-test() noexcept
+hard() noexcept
 {
     return invoke(std::make_index_sequence< M >{}, std::make_index_sequence< N >{});
 }
 
 }
 
-namespace
-{
-
-struct visitor0
-{
-
-    using R = std::tuple< bool, bool, bool >;
-
-    template< typename type >
-    R
-    operator () (type &&) const
-    {
-        return std::make_tuple(true, std::is_const< std::remove_reference_t< type > >::value, std::is_lvalue_reference< type >::value);
-    }
-
-    template< typename type >
-    R
-    operator () (type &&)
-    {
-        return std::make_tuple(false, std::is_const< std::remove_reference_t< type > >::value, std::is_lvalue_reference< type >::value);
-    }
-
-};
-
-struct visitor1
-{
-
-    using R = std::tuple< bool, bool, bool, bool >;
-
-    template< typename type >
-    R
-    operator () (type &&) const &
-    {
-        return std::make_tuple(true, true, std::is_const< std::remove_reference_t< type > >::value, std::is_lvalue_reference< type >::value);
-    }
-
-    template< typename type >
-    R
-    operator () (type &&) &
-    {
-        return std::make_tuple(false, true, std::is_const< std::remove_reference_t< type > >::value, std::is_lvalue_reference< type >::value);
-    }
-
-    template< typename type >
-    R
-    operator () (type &&) &&
-    {
-        return std::make_tuple(false, false, std::is_const< std::remove_reference_t< type > >::value, std::is_lvalue_reference< type >::value);
-    }
-
-};
-
-struct visitor2
-{
-    template< typename ...types >
-    auto
-    operator () (types &&... _values) const
-    {
-        return std::tuple_cat(std::make_tuple(true), std::make_tuple(std::tie(typeid(std::forward< types >(_values))), std::is_const< std::remove_reference_t< types > >::value, std::is_lvalue_reference< types >::value)...);
-    }
-
-    template< typename ...types >
-    auto
-    operator () (types &&... _values)
-    {
-        return std::tuple_cat(std::make_tuple(false), std::make_tuple(std::tie(typeid(std::forward< types >(_values))), std::is_const< std::remove_reference_t< types > >::value, std::is_lvalue_reference< types >::value)...);
-    }
-
-};
-
-struct visitor3
-{
-
-    using R = std::tuple< bool, bool, bool, bool >;
-
-    template< typename type >
-    R
-    operator () (type &&) const &
-    {
-        return std::make_tuple(true, true, std::is_const< std::remove_reference_t< type > >::value, std::is_lvalue_reference< type >::value);
-    }
-
-    template< typename type >
-    R
-    operator () (type &&) &
-    {
-        return std::make_tuple(false, true, std::is_const< std::remove_reference_t< type > >::value, std::is_lvalue_reference< type >::value);
-    }
-
-    template< typename type >
-    R
-    operator () (type &&) const &&
-    {
-        return std::make_tuple(true, false, std::is_const< std::remove_reference_t< type > >::value, std::is_lvalue_reference< type >::value);
-    }
-
-    template< typename type >
-    R
-    operator () (type &&) &&
-    {
-        return std::make_tuple(false, false, std::is_const< std::remove_reference_t< type > >::value, std::is_lvalue_reference< type >::value);
-    }
-
-};
-
-// value_or
-template< typename lhs, typename rhs >
-std::enable_if_t< (versatile::is_variant< std::remove_reference_t< lhs > >{} && !versatile::is_variant< std::remove_reference_t< rhs > >{}), std::remove_reference_t< rhs > >
-operator || (lhs && _lhs, rhs && _rhs) noexcept
-{
-    using result_type = std::remove_reference_t< rhs >;
-    if (_lhs.template active< result_type >()) {
-        return static_cast< result_type >(std::forward< lhs >(_lhs));
-    } else {
-        return std::forward< rhs >(_rhs);
-    }
-}
-
-template< typename lhs, typename rhs >
-std::enable_if_t< (!versatile::is_variant< std::remove_reference_t< lhs > >{} && versatile::is_variant< std::remove_reference_t< rhs > >{}), lhs >
-operator || (lhs && _lhs, rhs && _rhs) noexcept
-{
-    return (std::forward< rhs >(_rhs) || std::forward< lhs >(_lhs));
-}
-
-template< typename lhs, typename rhs >
-std::enable_if_t< (versatile::is_variant< std::remove_reference_t< lhs > >{} && versatile::is_variant< std::remove_reference_t< rhs > >{}) >
-operator || (lhs && _lhs, rhs && _rhs) = delete;
-
-template< typename type >
-using same_t = type;
-
-template< typename variadic, typename type >
-struct variadic_index;
-
-template< template< typename ...types > class variadic, typename type, typename ...types >
-struct variadic_index< variadic< types... >, type >
-        : versatile::index_by_type< type, types... >
-{
-
-};
-
-}
-
 int
 main()
 {
+    using namespace test;
     {
         using namespace versatile;
         { // value_or
@@ -251,7 +560,7 @@ main()
         }
         {
             using V = variant< int >;
-            static_assert(V::width == 1, "V::width != 1");
+            static_assert(V::count == 1, "V::count != 1");
             V v;
             static_assert(0 == variadic_index< V, int >{});
             assert(v.which() == 0);
@@ -419,12 +728,13 @@ main()
             visitor0 const cp_{};
             V v;
             V const cv;
-            assert(v.visit(p_)    == std::make_tuple(false, false, true));
-            assert(v.visit(cp_)   == std::make_tuple(true,  false, true));
-            assert(cv.visit(p_)   == std::make_tuple(false, true,  true));
-            assert(cv.visit(cp_)  == std::make_tuple(true,  true,  true));
-            assert(V().visit(p_)  == std::make_tuple(false, false, false));
-            assert(V().visit(cp_) == std::make_tuple(true,  false, false));
+            using B3 = std::array< bool, 3 >;
+            assert((v.visit(p_)    == B3{{false, false, true }}));
+            assert((v.visit(cp_)   == B3{{true,  false, true }}));
+            assert((cv.visit(p_)   == B3{{false, true,  true }}));
+            assert((cv.visit(cp_)  == B3{{true,  true,  true }}));
+            assert((V().visit(p_)  == B3{{false, false, false}}));
+            assert((V().visit(cp_) == B3{{true,  false, false}}));
         }
         {
             struct A {};
@@ -432,16 +742,17 @@ main()
             visitor1 p_;
             visitor1 const cp_{};
             V v;
-            V const cv;
-            assert(v.visit(p_)           == std::make_tuple(false, true,  false, true));
-            assert(v.visit(cp_)          == std::make_tuple(true,  true,  false, true));
-            assert(v.visit(visitor1{})   == std::make_tuple(false, false, false, true));
-            assert(cv.visit(p_)          == std::make_tuple(false, true,  true,  true));
-            assert(cv.visit(cp_)         == std::make_tuple(true,  true,  true,  true));
-            assert(cv.visit(visitor1{})  == std::make_tuple(false, false, true,  true));
-            assert(V().visit(p_)         == std::make_tuple(false, true,  false, false));
-            assert(V().visit(cp_)        == std::make_tuple(true,  true,  false, false));
-            assert(V().visit(visitor1{}) == std::make_tuple(false, false, false, false));
+            V const cv{};
+            using B4 = std::array< bool, 4 >;
+            assert((v.visit(p_)           == B4{{false, true,  false, true }}));
+            assert((v.visit(cp_)          == B4{{true,  true,  false, true }}));
+            assert((v.visit(visitor1{})   == B4{{false, false, false, true }}));
+            assert((cv.visit(p_)          == B4{{false, true,  true,  true }}));
+            assert((cv.visit(cp_)         == B4{{true,  true,  true,  true }}));
+            assert((cv.visit(visitor1{})  == B4{{false, false, true,  true }}));
+            assert((V().visit(p_)         == B4{{false, true,  false, false}}));
+            assert((V().visit(cp_)        == B4{{true,  true,  false, false}}));
+            assert((V().visit(visitor1{}) == B4{{false, false, false, false}}));
         }
         { // multivisitation with forwarding
             struct A {};
@@ -588,10 +899,10 @@ main()
                 V v;
                 V const c{};
                 auto const l = compose_visitors(l0, l1, l2, l3);
-                assert(0 == c.visit(l));
-                assert(1 == v.visit(l));
-                assert(2 == std::move(c).visit(l));
-                assert(3 == std::move(v).visit(l));
+                assert(0 == visit(l, c));
+                assert(1 == visit(l, v));
+                assert(2 == visit(l, std::move(c)));
+                assert(3 == visit(l, std::move(v)));
             }
             {
                 struct A
@@ -737,7 +1048,10 @@ main()
         }
     }
     {
-        assert((test< ROWS, COLS >())); // 8 seconds (Release build) for COLS=5 ROWS=5 on Intel(R) Xeon(R) CPU E5-1650 0 @ 3.20GHz
+        assert((test_perferct_forwarding< 2, 2 >{}()));
+    }
+    {
+        assert((hard< ROWS, COLS >()));
     }
     return EXIT_SUCCESS;
 }
