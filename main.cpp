@@ -541,6 +541,31 @@ main()
     using namespace test;
     {
         using namespace versatile;
+        {
+            using V = versatile< double, int >;
+            V w{1};
+            V v = std::move(w);
+            assert(static_cast< int >(v) == 1);
+            w = 2;
+            assert(static_cast< int >(w) == 2);
+            v = std::move(w);
+            assert(static_cast< int >(v) == 2);
+        }
+        {
+            using V = versatile< std::true_type, std::false_type >;
+            V t;
+            assert(static_cast< std::true_type >(t) == std::true_type{});
+            V f{std::false_type{}};
+            assert(static_cast< std::false_type >(f) == std::false_type{});
+        }
+        {
+            using V = versatile< int >;
+            V v{2};
+            assert(static_cast< int >(v) == 2);
+            v = versatile<>{};
+            assert(static_cast< int >(v) == 2);
+            V w = versatile<>{};
+        }
         { // value_or
             using V = variant< double, int >;
             {
@@ -656,16 +681,13 @@ main()
         }
         { // exact
             using V = variant< int, double >;
-            assert(!(V{1} == V{1.0}));
             assert(V{} == V{});
             assert(V{} == int{});
             assert(int{} == V{});
             assert(V{1} == 1);
             assert(1 == V{1});
-            assert(!(V{1.0} == 1));
-            assert(!(1 == V{1.0}));
-            assert(!(V{1} == 1.0));
-            assert(!(1.0 == V{1}));
+            assert(V{2.0} == 2.0);
+            assert(2.0 == V{2.0});
         }
         { // relational
             using V = variant< int, double >;

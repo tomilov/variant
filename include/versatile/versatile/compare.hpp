@@ -3,6 +3,8 @@
 #include "variant.hpp"
 #include "visit.hpp"
 
+#include <typeinfo>
+
 namespace versatile
 {
 
@@ -18,11 +20,10 @@ struct equal_to
     }
 
     template< typename lhs, typename rhs >
-    constexpr
     bool
-    operator () (lhs const &, rhs const &) const noexcept
+    operator () (lhs const &, rhs const &) const
     {
-        return false;
+        throw std::bad_cast{};
     }
 
 };
@@ -60,11 +61,10 @@ struct less
     }
 
     template< typename lhs, typename rhs >
-    constexpr
     bool
-    operator () (lhs const &, rhs const &) const noexcept
+    operator () (lhs const &, rhs const &) const
     {
-        return false;
+        throw std::bad_cast{};
     }
 
 };
