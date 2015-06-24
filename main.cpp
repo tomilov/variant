@@ -550,6 +550,10 @@ main()
             assert(static_cast< int >(w) == 2);
             v = std::move(w);
             assert(static_cast< int >(v) == 2);
+            static_assert(std::is_trivially_copy_assignable< V >{});
+            static_assert(std::is_trivially_move_assignable< V >{});
+            static_assert(!std::is_trivially_copy_constructible< V >{});
+            static_assert(!std::is_trivially_move_constructible< V >{});
         }
         {
             using V = versatile< std::true_type, std::false_type >;
@@ -562,9 +566,10 @@ main()
             using V = versatile< int >;
             V v{2};
             assert(static_cast< int >(v) == 2);
-            v = versatile<>{};
+            v = versatile<>{}; // no op
             assert(static_cast< int >(v) == 2);
-            V w = versatile<>{};
+            V w{versatile<>{}}; // equivalent to default construction
+            assert(static_cast< int >(w) == int{});
         }
         { // value_or
             using V = variant< double, int >;

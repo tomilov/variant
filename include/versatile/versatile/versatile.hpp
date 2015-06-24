@@ -99,8 +99,9 @@ public :
         return storage_.head_.which_;
     }
 
+    explicit
     constexpr
-    versatile() noexcept(std::is_nothrow_constructible< storage, typename std::is_default_constructible< this_type >::type, std::experimental::in_place_t >{})
+    versatile(versatile<> = {}) noexcept(std::is_nothrow_constructible< storage, typename std::is_default_constructible< this_type >::type, std::experimental::in_place_t >{})
         : storage_(typename std::is_default_constructible< this_type >::type{}, std::experimental::in_place)
     { ; }
 
