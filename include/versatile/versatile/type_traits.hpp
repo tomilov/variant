@@ -14,53 +14,52 @@ struct identity
 };
 
 enum class type_qualifiers
-        : std::size_t
 {
     value,
     const_value,
-    lvalue,
-    const_lvalue,
-    rvalue,
-    const_rvalue,
+    lref,
+    const_lref,
+    rref,
+    const_rref,
     volatile_value,
     volatile_const_value,
-    volatile_lvalue,
-    volatile_const_lvalue,
-    volatile_rvalue,
-    volatile_const_rvalue,
+    volatile_lref,
+    volatile_const_lref,
+    volatile_rref,
+    volatile_const_rref,
 
     count
 };
 
 template< type_qualifiers get_type_qualifier, typename type > struct add_type_qualifier;
-template< typename to > struct add_type_qualifier< type_qualifiers::value                , to > : identity<          to          > {};
-template< typename to > struct add_type_qualifier< type_qualifiers::const_value          , to > : identity<          to const    > {};
-template< typename to > struct add_type_qualifier< type_qualifiers::lvalue               , to > : identity<          to       &  > {};
-template< typename to > struct add_type_qualifier< type_qualifiers::const_lvalue         , to > : identity<          to const &  > {};
-template< typename to > struct add_type_qualifier< type_qualifiers::rvalue               , to > : identity<          to       && > {};
-template< typename to > struct add_type_qualifier< type_qualifiers::const_rvalue         , to > : identity<          to const && > {};
-template< typename to > struct add_type_qualifier< type_qualifiers::volatile_value       , to > : identity< volatile to          > {};
-template< typename to > struct add_type_qualifier< type_qualifiers::volatile_const_value , to > : identity< volatile to const    > {};
-template< typename to > struct add_type_qualifier< type_qualifiers::volatile_lvalue      , to > : identity< volatile to       &  > {};
-template< typename to > struct add_type_qualifier< type_qualifiers::volatile_const_lvalue, to > : identity< volatile to const &  > {};
-template< typename to > struct add_type_qualifier< type_qualifiers::volatile_rvalue      , to > : identity< volatile to       && > {};
-template< typename to > struct add_type_qualifier< type_qualifiers::volatile_const_rvalue, to > : identity< volatile to const && > {};
+template< typename to > struct add_type_qualifier< type_qualifiers::value                , to > { using type =          to         ; };
+template< typename to > struct add_type_qualifier< type_qualifiers::const_value          , to > { using type =          to const   ; };
+template< typename to > struct add_type_qualifier< type_qualifiers::lref                 , to > { using type =          to       & ; };
+template< typename to > struct add_type_qualifier< type_qualifiers::const_lref           , to > { using type =          to const & ; };
+template< typename to > struct add_type_qualifier< type_qualifiers::rref                 , to > { using type =          to       &&; };
+template< typename to > struct add_type_qualifier< type_qualifiers::const_rref           , to > { using type =          to const &&; };
+template< typename to > struct add_type_qualifier< type_qualifiers::volatile_value       , to > { using type = volatile to         ; };
+template< typename to > struct add_type_qualifier< type_qualifiers::volatile_const_value , to > { using type = volatile to const   ; };
+template< typename to > struct add_type_qualifier< type_qualifiers::volatile_lref        , to > { using type = volatile to       & ; };
+template< typename to > struct add_type_qualifier< type_qualifiers::volatile_const_lref  , to > { using type = volatile to const & ; };
+template< typename to > struct add_type_qualifier< type_qualifiers::volatile_rref        , to > { using type = volatile to       &&; };
+template< typename to > struct add_type_qualifier< type_qualifiers::volatile_const_rref  , to > { using type = volatile to const &&; };
 
 template< type_qualifiers get_type_qualifier, typename to >
 using add_qualifier_t = typename add_type_qualifier< get_type_qualifier, to >::type;
 
 template< typename type > constexpr type_qualifiers get_type_qualifier                           = type_qualifiers::value                ;
 template< typename type > constexpr type_qualifiers get_type_qualifier<          type const    > = type_qualifiers::const_value          ;
-template< typename type > constexpr type_qualifiers get_type_qualifier<          type       &  > = type_qualifiers::lvalue               ;
-template< typename type > constexpr type_qualifiers get_type_qualifier<          type const &  > = type_qualifiers::const_lvalue         ;
-template< typename type > constexpr type_qualifiers get_type_qualifier<          type       && > = type_qualifiers::rvalue               ;
-template< typename type > constexpr type_qualifiers get_type_qualifier<          type const && > = type_qualifiers::const_rvalue         ;
+template< typename type > constexpr type_qualifiers get_type_qualifier<          type       &  > = type_qualifiers::lref                 ;
+template< typename type > constexpr type_qualifiers get_type_qualifier<          type const &  > = type_qualifiers::const_lref           ;
+template< typename type > constexpr type_qualifiers get_type_qualifier<          type       && > = type_qualifiers::rref                 ;
+template< typename type > constexpr type_qualifiers get_type_qualifier<          type const && > = type_qualifiers::const_rref           ;
 template< typename type > constexpr type_qualifiers get_type_qualifier< volatile type          > = type_qualifiers::volatile_value       ;
 template< typename type > constexpr type_qualifiers get_type_qualifier< volatile type const    > = type_qualifiers::volatile_const_value ;
-template< typename type > constexpr type_qualifiers get_type_qualifier< volatile type       &  > = type_qualifiers::volatile_lvalue      ;
-template< typename type > constexpr type_qualifiers get_type_qualifier< volatile type const &  > = type_qualifiers::volatile_const_lvalue;
-template< typename type > constexpr type_qualifiers get_type_qualifier< volatile type       && > = type_qualifiers::volatile_rvalue      ;
-template< typename type > constexpr type_qualifiers get_type_qualifier< volatile type const && > = type_qualifiers::volatile_const_rvalue;
+template< typename type > constexpr type_qualifiers get_type_qualifier< volatile type       &  > = type_qualifiers::volatile_lref        ;
+template< typename type > constexpr type_qualifiers get_type_qualifier< volatile type const &  > = type_qualifiers::volatile_const_lref  ;
+template< typename type > constexpr type_qualifiers get_type_qualifier< volatile type       && > = type_qualifiers::volatile_rref        ;
+template< typename type > constexpr type_qualifiers get_type_qualifier< volatile type const && > = type_qualifiers::volatile_const_rref  ;
 
 template< typename from, typename to >
 using copy_cv_reference_t = add_qualifier_t< get_type_qualifier< from >, to >;
