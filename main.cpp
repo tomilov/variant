@@ -295,7 +295,7 @@ template< std::size_t M >
 struct pair
 {
 
-    std::array< type_qualifiers, (1 + M) > qual_ids;
+    std::array< type_qualifier, (1 + M) > qual_ids;
     std::array< std::size_t, (1 + M) > type_ids;
 
     constexpr
@@ -336,7 +336,7 @@ struct multivisitor
     {
         //static_assert(M == sizeof...(types));
         //static_assert(!(is_variant< types >{} || ...));
-        return {{{get_type_qualifier< multivisitor & >, get_type_qualifier< types && >...}}, {{M, _values...}}};
+        return {{{type_qualifier_of< multivisitor & >, type_qualifier_of< types && >...}}, {{M, _values...}}};
     }
 
     template< typename ...types >
@@ -344,7 +344,7 @@ struct multivisitor
     result_type
     operator () (types &&... _values) const & noexcept
     {
-        return {{{get_type_qualifier< multivisitor const & >, get_type_qualifier< types && >...}}, {{M, _values...}}};
+        return {{{type_qualifier_of< multivisitor const & >, type_qualifier_of< types && >...}}, {{M, _values...}}};
     }
 
     template< typename ...types >
@@ -352,7 +352,7 @@ struct multivisitor
     result_type
     operator () (types &&... _values) && noexcept
     {
-        return {{{get_type_qualifier< multivisitor && >, get_type_qualifier< types && >...}}, {{M, _values...}}};
+        return {{{type_qualifier_of< multivisitor && >, type_qualifier_of< types && >...}}, {{M, _values...}}};
     }
 
     template< typename ...types >
@@ -360,7 +360,7 @@ struct multivisitor
     result_type
     operator () (types &&... _values) const && noexcept
     {
-        return {{{get_type_qualifier< multivisitor const && >, get_type_qualifier< types && >...}}, {{M, _values...}}};
+        return {{{type_qualifier_of< multivisitor const && >, type_qualifier_of< types && >...}}, {{M, _values...}}};
     }
 
     template< typename ...types >
@@ -368,7 +368,7 @@ struct multivisitor
     result_type
     operator () (types &&... _values) volatile & noexcept
     {
-        return {{{get_type_qualifier< volatile multivisitor & >, get_type_qualifier< types && >...}}, {{M, _values...}}};
+        return {{{type_qualifier_of< volatile multivisitor & >, type_qualifier_of< types && >...}}, {{M, _values...}}};
     }
 
     template< typename ...types >
@@ -376,7 +376,7 @@ struct multivisitor
     result_type
     operator () (types &&... _values) volatile const & noexcept
     {
-        return {{{get_type_qualifier< volatile multivisitor const & >, get_type_qualifier< types && >...}}, {{M, _values...}}};
+        return {{{type_qualifier_of< volatile multivisitor const & >, type_qualifier_of< types && >...}}, {{M, _values...}}};
     }
 
     template< typename ...types >
@@ -384,7 +384,7 @@ struct multivisitor
     result_type
     operator () (types &&... _values) volatile && noexcept
     {
-        return {{{get_type_qualifier< volatile multivisitor && >, get_type_qualifier< types && >...}}, {{M, _values...}}};
+        return {{{type_qualifier_of< volatile multivisitor && >, type_qualifier_of< types && >...}}, {{M, _values...}}};
     }
 
     template< typename ...types >
@@ -392,13 +392,13 @@ struct multivisitor
     result_type
     operator () (types &&... _values) volatile const && noexcept
     {
-        return {{{get_type_qualifier< volatile multivisitor const && >, get_type_qualifier< types && >...}}, {{M, _values...}}};
+        return {{{type_qualifier_of< volatile multivisitor const && >, type_qualifier_of< types && >...}}, {{M, _values...}}};
     }
 
 };
 
-static constexpr std::size_t qualifier_id_begin = static_cast< std::size_t >(get_type_qualifier< void * & >);
-static constexpr std::size_t qualifier_id_end = static_cast< std::size_t >(get_type_qualifier< void * volatile >);
+static constexpr std::size_t qualifier_id_begin = static_cast< std::size_t >(type_qualifier_of< void * & >);
+static constexpr std::size_t qualifier_id_end = static_cast< std::size_t >(type_qualifier_of< void * volatile >);
 
 template< typename ...types >
 struct fusor
@@ -410,9 +410,9 @@ struct fusor
     bool
     operator () (std::index_sequence< Q... >, std::index_sequence< K... >) const
     {
-        auto const lhs = visit(static_cast< add_qualifier_t< static_cast< type_qualifiers >(qualifier_id_begin + Q), types > >(*std::get< K >(stuff_))...);
+        auto const lhs = visit(static_cast< add_qualifier_t< static_cast< type_qualifier >(qualifier_id_begin + Q), types > >(*std::get< K >(stuff_))...);
         static_assert(sizeof...(types) == lhs.size());
-        pair< (sizeof...(types) - 1) > const rhs = {{{static_cast< type_qualifiers >(qualifier_id_begin + Q)...}}, {{(std::get< K >(stuff_)->count - 1 - std::get< K >(stuff_)->which())...}}};
+        pair< (sizeof...(types) - 1) > const rhs = {{{static_cast< type_qualifier >(qualifier_id_begin + Q)...}}, {{(std::get< K >(stuff_)->count - 1 - std::get< K >(stuff_)->which())...}}};
         if (lhs == rhs) {
             return false;
         }
@@ -432,7 +432,7 @@ template< typename ...types >
 fusor< types... >
 make_fusor(std::tuple< types *... > const & _stuff)
 {
-    static_assert(((get_type_qualifier< types > == type_qualifiers::value) && ...));
+    static_assert(((type_qualifier_of< types > == type_qualifier::value) && ...));
     return {_stuff};
 }
 
