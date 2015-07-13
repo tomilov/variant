@@ -654,21 +654,12 @@ main()
             V v;
             assert(v.active< B >());
         }
-        {
-            struct A {};
-            struct B;
-            using V = variant< A, B >;
-            struct B {};
-            V v;
-            assert(v.active< A >());
-            v = B{};
-            assert(v.active< B >());
-        }
         { // incomplete
             struct A {};
             struct B;
             using V = variant< A, recursive_wrapper< B > >;
-            V v;
+            struct R : V { using V::V; using V::operator =; };
+            R v;
             assert(v.active< A >());
             struct B {};
             v = B{};
