@@ -327,7 +327,7 @@ struct multivisitor
         return 0;
     }
 
-    static constexpr std::size_t count = M;
+    static constexpr std::size_t width = M;
 
     template< typename ...types >
     constexpr
@@ -412,7 +412,7 @@ struct fusor
     {
         auto const lhs = visit(static_cast< add_qualifier_t< static_cast< type_qualifier >(qualifier_id_begin + Q), types > >(*std::get< K >(stuff_))...);
         static_assert(sizeof...(types) == lhs.size());
-        pair< (sizeof...(types) - 1) > const rhs = {{{static_cast< type_qualifier >(qualifier_id_begin + Q)...}}, {{(std::get< K >(stuff_)->count - 1 - std::get< K >(stuff_)->which())...}}};
+        pair< (sizeof...(types) - 1) > const rhs = {{{static_cast< type_qualifier >(qualifier_id_begin + Q)...}}, {{(std::get< K >(stuff_)->width - 1 - std::get< K >(stuff_)->which())...}}};
         if (lhs == rhs) {
             return false;
         }
@@ -451,7 +451,7 @@ class test_perferct_forwarding
 
     using variant_type = typename decltype(generate_variants(std::make_index_sequence< N >{}))::value_type;
 
-    static_assert(N == variant_type::count);
+    static_assert(N == variant_type::width);
 
     template< std::size_t ...I >
     bool
@@ -590,7 +590,7 @@ main()
         }
         {
             using V = variant< int >;
-            static_assert(V::count == 1, "V::count != 1");
+            static_assert(V::width == 1, "V::count != 1");
             V v;
             static_assert(0 == variadic_index< V, int >{});
             assert(v.which() == 0);

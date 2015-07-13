@@ -28,7 +28,7 @@ public :
 
     using size_type = typename versatile::size_type;
 
-    static constexpr size_type count = sizeof...(types);
+    static constexpr size_type width = sizeof...(types);
 
     size_type
     which() const noexcept
@@ -76,7 +76,7 @@ public :
     {
         using result_type = result_of_t< visitor, first_type &, arguments... >;
         using caller_type = result_type (*)(visitor && _visitor, versatile & _visitable, arguments &&... _arguments);
-        static constexpr caller_type dispatcher_[count] = {variant::caller< types &, result_type, visitor, versatile &, arguments... >...};
+        static constexpr caller_type dispatcher_[width] = {variant::caller< types &, result_type, visitor, versatile &, arguments... >...};
         return dispatcher_[versatile::index - which()](std::forward< visitor >(_visitor), *storage_, std::forward< arguments >(_arguments)...);
     }
 
@@ -86,7 +86,7 @@ public :
     {
         using result_type = result_of_t< visitor, first_type const &, arguments... >;
         using caller_type = result_type (*)(visitor && _visitor, versatile const & _visitable, arguments &&... _arguments);
-        static constexpr caller_type dispatcher_[count] = {variant::caller< types const &, result_type, visitor, versatile const &, arguments... >...};
+        static constexpr caller_type dispatcher_[width] = {variant::caller< types const &, result_type, visitor, versatile const &, arguments... >...};
         return dispatcher_[versatile::index - which()](std::forward< visitor >(_visitor), *storage_, std::forward< arguments >(_arguments)...);
     }
 
@@ -96,7 +96,7 @@ public :
     {
         using result_type = result_of_t< visitor, first_type &&, arguments... >;
         using caller_type = result_type (*)(visitor && _visitor, versatile && _visitable, arguments &&... _arguments);
-        static constexpr caller_type dispatcher_[count] = {variant::caller< types &&, result_type, visitor, versatile &&, arguments... >...};
+        static constexpr caller_type dispatcher_[width] = {variant::caller< types &&, result_type, visitor, versatile &&, arguments... >...};
         return dispatcher_[versatile::index - which()](std::forward< visitor >(_visitor), std::move(*storage_), std::forward< arguments >(_arguments)...);
     }
 
@@ -106,7 +106,7 @@ public :
     {
         using result_type = result_of_t< visitor, first_type const &&, arguments... >;
         using caller_type = result_type (*)(visitor && _visitor, versatile const && _visitable, arguments &&... _arguments);
-        static constexpr caller_type dispatcher_[count] = {variant::caller< types const &&, result_type, visitor, versatile const &&, arguments... >...};
+        static constexpr caller_type dispatcher_[width] = {variant::caller< types const &&, result_type, visitor, versatile const &&, arguments... >...};
         return dispatcher_[versatile::index - which()](std::forward< visitor >(_visitor), std::move(*storage_), std::forward< arguments >(_arguments)...);
     }
 
