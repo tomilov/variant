@@ -32,33 +32,33 @@ struct versatile< first, rest... >
 
 private :
 
-    struct head
-    {
-
-        size_type which_;
-        first value_;
-
-        template< typename ...types >
-        explicit
-        constexpr
-        head(std::experimental::in_place_t, types &&... _values) noexcept(std::is_nothrow_constructible< first, types... >{})
-            : which_{index}
-            , value_(std::forward< types >(_values)...)
-        { ; }
-
-        template< typename type >
-        explicit
-        constexpr
-        head(type && _value) noexcept(std::is_nothrow_constructible< first, type >{})
-            : head(std::experimental::in_place, std::forward< type >(_value))
-        { ; }
-
-    };
-
-    using tail = versatile< rest... >;
-
     union storage
     {
+
+        struct head
+        {
+
+            size_type which_;
+            first value_;
+
+            template< typename ...types >
+            explicit
+            constexpr
+            head(std::experimental::in_place_t, types &&... _values) noexcept(std::is_nothrow_constructible< first, types... >{})
+                : which_{index}
+                , value_(std::forward< types >(_values)...)
+            { ; }
+
+            template< typename type >
+            explicit
+            constexpr
+            head(type && _value) noexcept(std::is_nothrow_constructible< first, type >{})
+                : head(std::experimental::in_place, std::forward< type >(_value))
+            { ; }
+
+        };
+
+        using tail = versatile< rest... >;
 
         head head_;
         tail tail_;
@@ -86,7 +86,9 @@ private :
             }
         }
 
-    } storage_;
+    };
+
+    storage storage_;
 
 public :
 
