@@ -27,8 +27,6 @@ struct versatile< first, rest... >
 
     using size_type = std::size_t;
 
-    static constexpr size_type index = sizeof...(rest); // zero-based right-to-left index of leftmost alternative type
-
 private :
 
     struct dispatcher
@@ -44,7 +42,7 @@ private :
             explicit
             constexpr
             head(std::experimental::in_place_t, types &&... _values) noexcept(std::is_nothrow_constructible< first, types... >{})
-                : which_{index}
+                : which_{1 + sizeof...(rest)}
                 , value_(std::forward< types >(_values)...)
             { ; }
 
@@ -83,7 +81,7 @@ private :
 
         ~dispatcher() noexcept(std::is_nothrow_destructible< head >{} && std::is_nothrow_destructible< tail >{})
         {
-            if (index == head_.which_) {
+            if (1 + sizeof...(rest) == head_.which_) {
                 head_.~head();
             } else {
                 tail_.~tail();
@@ -103,6 +101,23 @@ public :
     which() const noexcept
     {
         return dispatcher_.head_.which_;
+    }
+
+    template< typename type >
+    static
+    constexpr
+    size_type
+    index() noexcept
+    {
+        return index_by_type< type, this_type, unwrap_type_t< rest >..., versatile<> >();
+    }
+
+    template< typename type = this_type >
+    constexpr
+    bool
+    active() const noexcept
+    {
+        return (index< type >() == which());
     }
 
     explicit
@@ -125,19 +140,11 @@ public :
         : dispatcher_(typename std::is_constructible< this_type, types... >::type{}, std::experimental::in_place, std::forward< types >(_values)...)
     { ; }
 
-    template< typename type, typename = std::enable_if_t< !(std::is_same< std::decay_t< type >, versatile >{}) > >
-    constexpr
-    void
-    operator = (type && _value) & noexcept(std::is_nothrow_assignable< std::decay_t< type > &, type >{})
-    {
-        operator std::decay_t< type > & () = std::forward< type >(_value);
-    }
-
     explicit
     constexpr
     operator this_type & () & noexcept
     {
-        assert(index == which());
+        assert(active());
         return static_cast< this_type & >(dispatcher_.head_.value_);
     }
 
@@ -153,7 +160,7 @@ public :
     constexpr
     operator this_type const & () const & noexcept
     {
-        assert(index == which());
+        assert(active());
         return static_cast< this_type const & >(dispatcher_.head_.value_);
     }
 
@@ -169,7 +176,7 @@ public :
     constexpr
     operator this_type && () && noexcept
     {
-        assert(index == which());
+        assert(active());
         //return static_cast< this_type && >(std::move(storage_.head_.value_)); // There is known clang++ bug #19917 for static_cast to rvalue reference.
         return static_cast< this_type && >(static_cast< this_type & >(dispatcher_.head_.value_)); // workaround
     }
@@ -187,7 +194,7 @@ public :
     constexpr
     operator this_type const && () const && noexcept
     {
-        assert(index == which());
+        assert(active());
         //return static_cast< this_type const && >(std::move(head_.value_)); // There is known clang++ bug #19917 for static_cast to rvalue reference.
         return static_cast< this_type const && >(static_cast< this_type const & >(dispatcher_.head_.value_)); // workaround
     }

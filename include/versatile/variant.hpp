@@ -42,14 +42,14 @@ public :
     size_type
     index() noexcept
     {
-        return index_by_type< type, unwrap_type_t< types >... >();
+        return versatile::template index< type >();
     }
 
     template< typename type >
     bool
     active() const noexcept
     {
-        return (index< type >() == which());
+        return storage_->template active< type >();
     }
 
 private :
@@ -120,7 +120,7 @@ private :
         void
         operator () (type && _value) const
         {
-            destination_ = std::forward< type >(_value);
+            static_cast< std::decay_t< type > & >(destination_) = std::forward< type >(_value);
         }
 
     };
@@ -139,14 +139,15 @@ public :
         }
     }
 
-    template< typename type >
-    std::enable_if_t< !(std::is_same< std::decay_t< type >, variant >{}) >
-    assign(type && _rhs)
+    template< typename rhs >
+    std::enable_if_t< !(std::is_same< std::decay_t< rhs >, variant >{}) >
+    assign(rhs && _rhs)
     {
-        if (active< std::decay_t< type > >()) {
-            *storage_ = std::forward< type >(_rhs);
+        using type = std::decay_t< rhs >;
+        if (active< type >()) {
+            static_cast< type & >(*storage_) = std::forward< rhs >(_rhs);
         } else {
-            replace(std::forward< type >(_rhs));
+            replace(std::forward< rhs >(_rhs));
         }
     }
 
