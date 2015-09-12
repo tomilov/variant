@@ -18,6 +18,10 @@ endif()
 set( CMAKE_VERBOSE_MAKEFILE ON )
 set( CMAKE_COLOR_MAKEFILE   ON )
 
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer" )
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address" )
+#set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address" )
+
 set( CMAKE_CXX_COMPILER             "clang++"                                                                 )
 set( CMAKE_CXX_FLAGS                "${CMAKE_CXX_FLAGS} -W -Weverything -pedantic -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded -ftemplate-backtrace-limit=0 -fdiagnostics-color=always" )
 set( CMAKE_CXX_FLAGS                "${CMAKE_CXX_FLAGS} -std=gnu++1z -stdlib=libc++"                          )

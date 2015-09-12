@@ -38,3 +38,26 @@ CONFIG(debug, debug|release) {
     DEFINES += COLS=2 ROWS=2
 }
 
+sanitize_address {
+    QMAKE_CXXFLAGS += -fsanitize=address
+    QMAKE_LFLAGS   += -fsanitize=address
+}
+
+sanitize_memory {
+    QMAKE_CXXFLAGS += -fsanitize=memory
+    QMAKE_LFLAGS   += -fsanitize=memory
+}
+
+sanitize_thread {
+    QMAKE_CXXFLAGS += -fsanitize=thread
+    QMAKE_LFLAGS   += -fsanitize=thread
+}
+
+sanitize_undefined {
+    QMAKE_CXXFLAGS += -fsanitize=undefined
+    QMAKE_LFLAGS   += -fsanitize=undefined
+}
+
+sanitize_address|sanitize_memory|sanitize_thread|sanitize_undefined {
+    QMAKE_CXXFLAGS += -fno-omit-frame-pointer
+}
