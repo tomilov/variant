@@ -53,25 +53,6 @@ static_assert(std::is_same< copy_cv_reference_t< volatile A const &&, B >, volat
 
 }
 
-namespace test_is_visitable
-{
-
-using V = variant< int >;
-static_assert(is_visitable<          V          >{});
-static_assert(is_visitable<          V const    >{});
-static_assert(is_visitable< volatile V          >{});
-static_assert(is_visitable< volatile V const    >{});
-static_assert(is_visitable<          V        & >{});
-static_assert(is_visitable<          V const  & >{});
-static_assert(is_visitable< volatile V        & >{});
-static_assert(is_visitable< volatile V const  & >{});
-static_assert(is_visitable<          V       && >{});
-static_assert(is_visitable<          V const && >{});
-static_assert(is_visitable< volatile V       && >{});
-static_assert(is_visitable< volatile V const && >{});
-
-}
-
 struct introspector
 {
 
@@ -762,23 +743,9 @@ struct is_visitable< test::boost_variant_i< first, rest... > >
 
 };
 
-template< typename visitable, typename first, typename ...rest >
-struct first_type< visitable, test::boost_variant_i< first, rest... > >
-        : identity< copy_cv_reference_t< visitable, unwrap_type_t< first > > >
-{
-
-};
-
 template< typename first, typename ...rest >
 struct is_visitable< test::boost_variant_c< first, rest... > >
         : std::true_type
-{
-
-};
-
-template< typename visitable, typename first, typename ...rest >
-struct first_type< visitable, test::boost_variant_c< first, rest... > >
-        : identity< copy_cv_reference_t< visitable, unwrap_type_t< first > > >
 {
 
 };

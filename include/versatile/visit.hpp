@@ -18,51 +18,6 @@ struct is_visitable
 
 };
 
-template< typename type >
-struct is_visitable< type const >
-        : is_visitable< type >
-{
-
-};
-
-template< typename type >
-struct is_visitable< volatile type >
-        : is_visitable< type >
-{
-
-};
-
-template< typename type >
-struct is_visitable< volatile type const >
-        : is_visitable< type >
-{
-
-};
-
-template< typename type >
-struct is_visitable< type & >
-        : is_visitable< type >
-{
-
-};
-
-template< typename type >
-struct is_visitable< type && >
-        : is_visitable< type >
-{
-
-};
-
-template< typename type, typename = std::decay_t< type > >
-struct first_type
-        : identity< type >
-{
-
-};
-
-template< typename type >
-using first_type_t = typename first_type< type >::type;
-
 namespace details
 {
 
@@ -74,44 +29,31 @@ template< typename visitor,
           template< typename ...types > class visitable_type,
           typename ...types,
           typename ...arguments >
-struct dispatcher< visitor, visitable, visitable_type< types... >, arguments... >
+class dispatcher< visitor, visitable, visitable_type< types... >, arguments... >
 {
-
-    using result_type = result_of_t< visitor, first_type_t< visitable >, arguments... >;
-
-private :
-
-    using caller_type = result_type (*)(visitor &, visitable &, arguments &...);
-
-    static constexpr type_qualifier type_qualifier_ = type_qualifier_of< visitable && >;
-
-    template< typename type >
-    using underlying_type_t = add_qualifier_t< type_qualifier_, unwrap_type_t< type > >;
 
     template< typename type >
     static
-    result_type
+    decltype(auto)
     caller(visitor & _visitor, visitable & _visitable, arguments &... _arguments)
     {
         //return std::forward< visitor >(_visitor)(static_cast< type >(_visitable), std::forward< arguments >(_arguments)...); // There is known clang++ bug #19917 for static_cast to rvalue reference.
         return std::forward< visitor >(_visitor)(static_cast< type >(static_cast< type & >(_visitable)), std::forward< arguments >(_arguments)...); // workaround
     }
 
-    [[noreturn]]
-    static
-    result_type
-    caller(visitor & /*_visitor*/, visitable & /*_visitable*/, arguments &... /*_arguments*/)
-    {
-        throw std::bad_cast{};
-    }
+    static constexpr type_qualifier type_qualifier_ = type_qualifier_of< visitable && >;
+
+    template< typename type >
+    using qualify_type_t = add_qualifier_t< type_qualifier_, unwrap_type_t< type > >;
 
 public :
 
-    result_type
+    decltype(auto)
     operator () (visitor & _visitor, visitable & _visitable, arguments &... _arguments) const
     {
-        static constexpr caller_type callers_[sizeof...(types) + 1] = {dispatcher::caller< underlying_type_t< types > >..., dispatcher::caller};
         assert(!(sizeof...(types) < _visitable.which()));
+        using caller_type = decltype(&dispatcher::caller< qualify_type_t< typename identity< types... >::type > >);
+        static constexpr caller_type callers_[sizeof...(types)] = {dispatcher::caller< qualify_type_t< types > >...};
         return callers_[sizeof...(types) - _visitable.which()](_visitor, _visitable, _arguments...);
     }
 
@@ -123,18 +65,18 @@ template< typename visitor, typename visitable, typename ...arguments >
 decltype(auto)
 visit(visitor && _visitor, visitable && _visitable, arguments &&... _arguments)
 {
-    static_assert(is_visitable< visitable >{}, "not visitable type");
+    static_assert(is_visitable< std::decay_t< visitable > >{});
     return details::dispatcher< visitor, visitable, std::decay_t< visitable >, arguments... >{}(_visitor, _visitable, _arguments...);
 }
 
 namespace details
 {
 
-template< typename result_type, typename supervisitor, typename type, bool = (is_visitable< type >{}) >
+template< typename supervisitor, typename type, bool = (is_visitable< std::decay_t< type > >{}) >
 struct subvisitor;
 
-template< typename result_type, typename supervisitor, typename visitable >
-struct subvisitor< result_type, supervisitor, visitable, true >
+template< typename supervisitor, typename visitable >
+struct subvisitor< supervisitor, visitable, true >
 {
 
     supervisitor & supervisitor_;
@@ -142,7 +84,7 @@ struct subvisitor< result_type, supervisitor, visitable, true >
 
     template< typename ...visited >
     constexpr
-    result_type
+    decltype(auto)
     operator () (visited &&... _visited) const
     {
         return visit(std::forward< supervisitor >(supervisitor_), std::forward< visitable >(visitable_), std::forward< visited >(_visited)...);
@@ -150,8 +92,8 @@ struct subvisitor< result_type, supervisitor, visitable, true >
 
 };
 
-template< typename result_type, typename supervisitor, typename type >
-struct subvisitor< result_type, supervisitor, type, false >
+template< typename supervisitor, typename type >
+struct subvisitor< supervisitor, type, false >
 {
 
     supervisitor & supervisitor_;
@@ -159,7 +101,7 @@ struct subvisitor< result_type, supervisitor, type, false >
 
     template< typename ...visited >
     constexpr
-    result_type
+    decltype(auto)
     operator () (visited &&... _visited) const
     {
         return std::forward< supervisitor >(supervisitor_)(std::forward< type >(value_), std::forward< visited >(_visited)...);
@@ -167,16 +109,16 @@ struct subvisitor< result_type, supervisitor, type, false >
 
 };
 
-template< typename result_type, typename ...visitables >
+template< typename ...visitables >
 struct visitor_partially_applier;
 
-template< typename result_type >
-struct visitor_partially_applier< result_type >
+template<>
+struct visitor_partially_applier<>
 {
 
     template< typename visitor >
     constexpr
-    result_type
+    decltype(auto)
     operator () (visitor && _visitor) const
     {
         return std::forward< visitor >(_visitor)();
@@ -184,17 +126,17 @@ struct visitor_partially_applier< result_type >
 
 };
 
-template< typename result_type, typename first, typename ...rest >
-struct visitor_partially_applier< result_type, first, rest... >
+template< typename first, typename ...rest >
+struct visitor_partially_applier< first, rest... >
 {
 
     template< typename visitor >
     constexpr
-    result_type
+    decltype(auto)
     operator () (visitor && _visitor, first & _first, rest &... _rest) const
     {
-        return visitor_partially_applier< result_type, rest... >{}(subvisitor< result_type, visitor, first >{_visitor, _first}, _rest...);
-}
+        return visitor_partially_applier< rest... >{}(subvisitor< visitor, first >{_visitor, _first}, _rest...);
+    }
 
 };
 
@@ -205,8 +147,7 @@ constexpr
 decltype(auto)
 multivisit(visitor && _visitor, visitables &&... _visitables)
 {
-    using result_type = result_of_t< visitor, first_type_t< visitables >... >;
-    return details::visitor_partially_applier< result_type, visitables... >{}(std::forward< visitor >(_visitor), _visitables...);
+    return details::visitor_partially_applier< visitables... >{}(std::forward< visitor >(_visitor), _visitables...);
 }
 
 namespace details

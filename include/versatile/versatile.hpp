@@ -217,11 +217,4 @@ struct is_visitable< versatile< first, rest... > >
 
 };
 
-template< typename visitable, typename first, typename ...rest >
-struct first_type< visitable, versatile< first, rest... > >
-        : identity< copy_cv_reference_t< visitable, unwrap_type_t< first > > >
-{
-
-};
-
 }
