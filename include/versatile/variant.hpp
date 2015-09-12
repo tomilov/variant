@@ -42,14 +42,15 @@ public :
     size_type
     index() noexcept
     {
-        return index_by_type< type, unwrap_type_t< types >... >();
+        return versatile::template index< type >();
     }
 
     template< typename type >
     bool
     active() const noexcept
     {
-        return (index< type >() == which());
+        assert(!!storage_);
+        return storage_->template active< type >();
     }
 
 private :

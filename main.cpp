@@ -571,7 +571,7 @@ struct boost_variant_i
     std::size_t
     which() const
     {
-        return ((sizeof...(types) - 1) - static_cast< std::size_t >(base::which()));
+        return (sizeof...(types) - static_cast< std::size_t >(base::which()));
     }
 
     template< typename type >
@@ -580,7 +580,7 @@ struct boost_variant_i
     std::size_t
     index() noexcept
     {
-        return index_by_type< type, unwrap_type_t< types >... >();
+        return 1 + index_by_type< type, unwrap_type_t< types >... >();
     }
 
     template< typename type >
@@ -676,7 +676,7 @@ struct boost_variant_c
     std::size_t
     which() const
     {
-        return ((sizeof...(types) - 1) - static_cast< std::size_t >(v.which()));
+        return (sizeof...(types) - static_cast< std::size_t >(v.which()));
     }
 
     template< typename type >
@@ -685,7 +685,7 @@ struct boost_variant_c
     std::size_t
     index() noexcept
     {
-        return index_by_type< type, unwrap_type_t< types >... >();
+        return 1 + index_by_type< type, unwrap_type_t< types >... >();
     }
 
     template< typename type >
@@ -745,6 +745,13 @@ private :
 
 namespace versatile
 {
+
+template< typename recursive_wrapper_type, typename type >
+struct unwrap_type< recursive_wrapper_type, boost::recursive_wrapper< type > >
+        : identity< type >
+{
+
+};
 
 template< typename first, typename ...rest >
 struct is_visitable< test::boost_variant_i< first, rest... > >
@@ -807,6 +814,50 @@ main()
             assert(static_cast< std::false_type >(f) == std::false_type{});
         }
         {
+            using V = versatile< int, double >;
+            V v;
+            assert(v.which() == 2);
+            v = 1.0;
+            assert(v.which() == 1);
+            V u{v};
+            assert(u.which() == 1);
+            V w;
+            v = w;
+            assert(v.which() == 2);
+        }
+        {
+            struct A {};
+            struct B { B() { ; } [[noreturn]] B(B &&) { throw std::runtime_error(""); } B & operator = (B &&) = default; };
+            using V = versatile< A, B >;
+            V v;
+            assert(v.active< A >());
+            bool e = false;
+            try {
+                v = B{};
+            } catch (std::runtime_error const &) {
+                e = true;
+            }
+            assert(e);
+            assert(v.empty());
+        }
+        {
+            struct A {};
+            struct B { int j; B(int i) : j(i) { ; } [[noreturn]] void operator = (B &&) { throw std::runtime_error(""); } B(B &&) = default; };
+            using V = versatile< A, B >;
+            V v{B{2}};
+            assert(v.active< B >());
+            assert(static_cast< B const & >(v).j == 2);
+            bool e = false;
+            try {
+                v = B{3};
+            } catch (std::runtime_error const &) {
+                e = true;
+            }
+            assert(e);
+            assert(v.active< B >());
+            assert(static_cast< B const & >(v).j == 2);
+        }
+        {
             using V = variant< std::true_type, std::false_type >;
             V t;
             assert(static_cast< std::true_type >(t) == std::true_type{});
@@ -841,7 +892,7 @@ main()
             static_assert(V::width == 1, "V::width != 1");
             V v;
             static_assert(0 == variadic_index< V, int >{});
-            assert(v.which() == 0);
+            assert(v.which() == 1);
             assert(v.active< int >());
             assert(static_cast< int >(v) == int{});
             V w(222);
@@ -865,17 +916,17 @@ main()
             assert(static_cast< int >(v) == 223);
             V u = w;
             assert(static_cast< int >(u) == 222);
-            assert(w.which() == 0);
+            assert(w.which() == 1);
             static_assert(variadic_index< V, int >{} == 0);
-            assert(u.which() == 0);
+            assert(u.which() == 1);
         }
         {
             using V = variant< int, float, double, long double >;
-            assert((V{}.which() == variadic_index< V, int >{}));
-            assert((V{0}.which() == variadic_index< V, int >{}));
-            assert((V{1.0f}.which() == variadic_index< V, float >{}));
-            assert((V{2.0}.which() == variadic_index< V, double >{}));
-            assert((V{3.0L}.which() == variadic_index< V, long double >{}));
+            assert((V{}.which() == 1 + variadic_index< V, int >{}));
+            assert((V{0}.which() == 1 + variadic_index< V, int >{}));
+            assert((V{1.0f}.which() == 1 + variadic_index< V, float >{}));
+            assert((V{2.0}.which() == 1 + variadic_index< V, double >{}));
+            assert((V{3.0L}.which() == 1 + variadic_index< V, long double >{}));
             V i;
             assert(i.active< int >());
             V j = 1;
@@ -1466,7 +1517,7 @@ main()
             int operator () (B, A) { return 2; }
             int operator () (B, B) { return 3; }
         } v;
-        using V = boost_variant_i< A, B >;
+        using V = boost_variant_i< boost::recursive_wrapper< A >, B >;
         V a{A{}};
         V b{B{}};
         assert(multivisit(v, a, a) == 0);
@@ -1484,7 +1535,7 @@ main()
             int operator () (B, A) { return 2; }
             int operator () (B, B) { return 3; }
         } v;
-        using V = boost_variant_c< A, B >;
+        using V = boost_variant_c< A, boost::recursive_wrapper< B > >;
         V a{A{}};
         V b{B{}};
         assert(multivisit(v, a, a) == 0);

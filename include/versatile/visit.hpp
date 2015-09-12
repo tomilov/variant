@@ -4,6 +4,7 @@
 
 #include <type_traits>
 #include <utility>
+#include <typeinfo>
 
 #include <cassert>
 
@@ -82,6 +83,11 @@ private :
 
     using caller_type = result_type (*)(visitor &, visitable &, arguments &...);
 
+    static constexpr type_qualifier type_qualifier_ = type_qualifier_of< visitable && >;
+
+    template< typename type >
+    using underlying_type_t = add_qualifier_t< type_qualifier_, unwrap_type_t< type > >;
+
     template< typename type >
     static
     result_type
@@ -91,15 +97,22 @@ private :
         return std::forward< visitor >(_visitor)(static_cast< type >(static_cast< type & >(_visitable)), std::forward< arguments >(_arguments)...); // workaround
     }
 
+    [[noreturn]]
+    static
+    result_type
+    caller(visitor & /*_visitor*/, visitable & /*_visitable*/, arguments &... /*_arguments*/)
+    {
+        throw std::bad_cast{};
+    }
+
 public :
 
     result_type
     operator () (visitor & _visitor, visitable & _visitable, arguments &... _arguments) const
     {
-        constexpr auto type_qualifier_ = type_qualifier_of< visitable && >;
-        static constexpr caller_type callers_[sizeof...(types)] = {dispatcher::caller< add_qualifier_t< type_qualifier_, unwrap_type_t< types > > >...};
-        assert(_visitable.which() < sizeof...(types));
-        return callers_[(sizeof...(types) - 1) - _visitable.which()](_visitor, _visitable, _arguments...);
+        static constexpr caller_type callers_[sizeof...(types) + 1] = {dispatcher::caller< underlying_type_t< types > >..., dispatcher::caller};
+        assert(!(sizeof...(types) < _visitable.which()));
+        return callers_[sizeof...(types) - _visitable.which()](_visitor, _visitable, _arguments...);
     }
 
 };
