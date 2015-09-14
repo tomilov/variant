@@ -724,21 +724,21 @@ private :
 
 };
 
+template< typename T >
+using AW = aggregate_wrapper< T >;
+
+template< typename T >
+using RW = recursive_wrapper< T >;
+
 struct R;
 struct A {};
-using V = variant< A, recursive_wrapper< R > >;
+using V = variant< A, RW< R > >;
 struct R
         : V
 {
     using V::V;
     using V::operator =;
 };
-
-template< typename T >
-using AW = aggregate_wrapper< T >;
-
-template< typename T >
-using RW = recursive_wrapper< T >;
 
 } // namespace test
 
@@ -931,33 +931,36 @@ main()
         { // incomplete
             struct A {};
             struct B;
-            using V = variant< A, recursive_wrapper< B > >;
+            using V = variant< A, RW< B > >;
             V v;
             assert(v.active< A >());
-            struct B {}; // if declard but not defined => compilation error in std::unique_ptr destructor
+            struct B {}; // if declared but not defined then there is compilation error in std::unique_ptr destructor
             v = B{};
             assert(v.active< B >());
+            assert(v.active< RW< B > >());
         }
         { // recursive (composition)
             struct R;
             struct A {};
-            using V = variant< A, recursive_wrapper< R > >;
+            using V = variant< A, RW< R > >;
             V v;
             assert(v.active< A >());
             struct R { V v; };
             v = R{};
             assert(v.active< R >());
+            assert(v.active< RW< R > >());
             assert(static_cast< R & >(v).v.active< A >());
         }
         { // recursive (inheritance)
             struct R;
             struct A {};
-            using V = variant< A, recursive_wrapper< R > >;
+            using V = variant< A, RW< R > >;
             V u;
             assert(u.active< A >());
             struct R : V { using V::V; using V::operator =; };
             u = R{};
             assert(u.active< R >());
+            assert(u.active< RW< R > >());
             R v;
             assert(v.active< A >());
             v = R{};
@@ -966,6 +969,7 @@ main()
             assert(w.active< A >());
             R x{V{R{}}};
             assert(x.active< R >());
+            assert(x.active< RW< R > >());
         }
         { // exact
             using V = variant< int, bool >;
@@ -1068,7 +1072,7 @@ main()
         }
         {
             struct A {};
-            using V = variant< recursive_wrapper< A > >;
+            using V = variant< RW< A > >;
             visitor0 p_;
             visitor0 const cp_{};
             V v;
@@ -1083,7 +1087,7 @@ main()
         }
         {
             struct A {};
-            using V = variant< recursive_wrapper< A > >;
+            using V = variant< RW< A > >;
             visitor1 p_;
             visitor1 const cp_{};
             V v;
@@ -1102,7 +1106,7 @@ main()
         { // multivisitation with forwarding
             struct A {};
             struct B {};
-            using V = variant< recursive_wrapper< A >, recursive_wrapper< B > >;
+            using V = variant< RW< A >, RW< B > >;
             visitor2 v_;
             visitor2 const c_{};
             assert(multivisit(v_, V{B{}}) == std::make_tuple(false, std::tie(typeid(B)), false, false));
@@ -1130,7 +1134,7 @@ main()
 
             struct A {};
             struct B {};
-            using V = variant< recursive_wrapper< A >, recursive_wrapper< B > >;
+            using V = variant< RW< A >, RW< B > >;
             V v;
             V const c(B{});
 
@@ -1171,7 +1175,7 @@ main()
             auto const cdmv = visit(visitor3{});
 
             struct A {};
-            using V = variant< recursive_wrapper< A > >;
+            using V = variant< RW< A > >;
             V v;
             V const cv{};
 
@@ -1212,7 +1216,7 @@ main()
             assert(visit(visitor3{})(V{})  == std::make_tuple(false, false, false, false));
         }
         {
-            using V = variant< recursive_wrapper< int >, double >;
+            using V = variant< RW< int >, double >;
             std::stringstream ss_;
             ss_.str("1");
             V v = 2;
@@ -1284,7 +1288,7 @@ main()
                     A & operator = (A &&) = delete;
 
                 };
-                using V = variant< recursive_wrapper< A > >;
+                using V = variant< RW< A > >;
                 V av{std::experimental::in_place, 0};
                 V const ac{std::experimental::in_place, 1};
                 {
@@ -1417,7 +1421,7 @@ main()
             {
                 auto const l = compose_visitors(l0, l1, l2, l3);
                 struct A {};
-                using V = variant< recursive_wrapper< A > >;
+                using V = variant< RW< A > >;
                 V a;
                 V const c{};
                 {
@@ -1488,7 +1492,10 @@ main()
         } v;
         using V = boost_variant_i< boost::recursive_wrapper< A >, B >;
         V a{A{}};
+        assert(a.active< A >());
+        assert(a.active< boost::recursive_wrapper< A > >());
         V b{B{}};
+        assert(b.active< B >());
         assert(multivisit(v, a, a) == 0);
         assert(multivisit(v, a, b) == 1);
         assert(multivisit(v, b, a) == 2);
@@ -1506,7 +1513,10 @@ main()
         } v;
         using V = boost_variant_c< A, boost::recursive_wrapper< B > >;
         V a{A{}};
+        assert(a.active< A >());
         V b{B{}};
+        assert(b.active< B >());
+        assert(b.active< boost::recursive_wrapper< B > >());
         assert(multivisit(v, a, a) == 0);
         assert(multivisit(v, a, b) == 1);
         assert(multivisit(v, b, a) == 2);
@@ -1527,29 +1537,69 @@ main()
     { // aggregate wrapper
         struct X {};
         struct Y {};
+
         struct XY { X x; Y y; XY() = delete; XY(XY const &) = delete; XY(XY &&) = default; XY & operator = (XY &&) = default; };
         XY xy{}; // value-initialization by empty list initializer
         xy.x = {}; xy.y = {}; // accessible
+        xy = XY{};
         static_assert(std::is_constructible< XY, XY >{});
         static_assert(!std::is_copy_constructible< XY >{});
         static_assert(std::is_move_constructible< XY >{});
         static_assert(!std::is_default_constructible< XY >{});
+
         using WXY = AW< XY >;
-        WXY wxy{std::move(xy)};
-        wxy = std::move(xy);
+        static_assert(std::is_assignable< WXY &, XY >{});
         static_assert(std::is_constructible< WXY, XY >{});
-        static_assert(!std::is_copy_constructible< WXY >{});
+        static_assert(!std::is_copy_constructible< WXY >{}); // mimic
         static_assert(std::is_move_constructible< WXY >{});
         static_assert(!std::is_default_constructible< WXY >{});
+        WXY wxy{std::move(xy)};
+        wxy = XY{};
+        wxy = WXY{XY{}};
+
         using V = variant< WXY >;
+        static_assert(std::is_assignable< V &, XY >{});
+        static_assert(std::is_assignable< V &, WXY >{});
         static_assert(std::is_constructible< V, XY >{});
-        static_assert(std::is_copy_constructible< V >{});
+        static_assert(std::is_copy_constructible< V >{}); // lie
         static_assert(std::is_move_constructible< V >{});
-        static_assert(std::is_default_constructible< V >{}); // wrong for this unary variant, need TODO something
+        static_assert(std::is_default_constructible< V >{});
         V v{std::experimental::in_place, X{}, Y{}};
         assert(v.active< XY >());
-        v = std::move(wxy);
-        v = std::move(xy);
+        assert(v.active< WXY >());
+        v = XY{};
+        v = WXY{XY{}};
+        v = V{WXY{XY{}}};
+    }
+    {
+        struct X {};
+        struct Y {};
+        struct XY { X x; Y y; };
+        using WXY = AW< XY >;
+        using V = variant< WXY, X, Y >;
+        V v;
+        assert(v.active< XY >());
+        v.replace(X{});
+        assert(v.active< X >());
+        v.replace(Y{});
+        assert(v.active< Y >());
+        v.emplace(X{});
+        assert(v.active< XY >());
+        v.emplace(Y{});
+        assert(v.active< Y >());
+    }
+    {
+        struct X {};
+        struct Y {};
+        struct XY { X x; Y y; };
+        using AXY = AW< XY >;
+        using RAXY = RW< AXY >;
+        using V = variant< RAXY >;
+        V v;
+        v = XY{};
+        v = AXY{};
+        v = RAXY{};
+        v = V{};
     }
     {
         assert((test_perferct_forwarding< 2, 2 >{}()));

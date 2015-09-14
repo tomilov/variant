@@ -179,7 +179,7 @@ public :
 
     template< typename type >
     explicit
-    operator type & () &
+    operator type & ()
     {
         if (!active< type >()) {
             throw std::bad_cast{};
@@ -189,34 +189,12 @@ public :
 
     template< typename type >
     explicit
-    operator type const & () const &
+    operator type const & () const
     {
         if (!active< type >()) {
             throw std::bad_cast{};
         }
         return static_cast< type const & >(*storage_);
-    }
-
-    template< typename type >
-    explicit
-    operator type && () &&
-    {
-        if (!active< type >()) {
-            throw std::bad_cast{};
-        }
-        //return static_cast< type && >(std::move(*storage_)); // There is known clang++ bug #19917 for static_cast to rvalue reference.
-        return static_cast< type && >(static_cast< type & >(*storage_)); // workaround
-    }
-
-    template< typename type >
-    explicit
-    operator type const && () const &&
-    {
-        if (!active< type >()) {
-            throw std::bad_cast{};
-        }
-        //return static_cast< type const && >(std::move(*storage_)); // There is known clang++ bug #19917 for static_cast to rvalue reference.
-        return static_cast< type const && >(static_cast< type const & >(*storage_)); // workaround
     }
 
     template< typename ...arguments >

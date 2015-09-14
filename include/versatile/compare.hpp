@@ -28,6 +28,7 @@ struct equal_to
 };
 
 template< typename ...lhs, typename ...rhs >
+constexpr
 bool
 operator == (variant< lhs... > const & _lhs, variant< rhs... > const & _rhs)
 {
@@ -35,6 +36,7 @@ operator == (variant< lhs... > const & _lhs, variant< rhs... > const & _rhs)
 }
 
 template< typename ...lhs, typename rhs >
+constexpr
 bool
 operator == (variant< lhs... > const & _lhs, rhs const & _rhs)
 {
@@ -42,6 +44,7 @@ operator == (variant< lhs... > const & _lhs, rhs const & _rhs)
 }
 
 template< typename lhs, typename ...rhs >
+constexpr
 bool
 operator == (lhs const & _lhs, variant< rhs... > const & _rhs)
 {
@@ -69,6 +72,7 @@ struct less
 };
 
 template< typename ...lhs, typename ...rhs >
+constexpr
 bool
 operator < (variant< lhs... > const & _lhs, variant< rhs... > const & _rhs)
 {
@@ -76,6 +80,7 @@ operator < (variant< lhs... > const & _lhs, variant< rhs... > const & _rhs)
 }
 
 template< typename rhs, typename ...lhs >
+constexpr
 bool
 operator < (variant< lhs... > const & _lhs, rhs const & _rhs)
 {
@@ -83,6 +88,7 @@ operator < (variant< lhs... > const & _lhs, rhs const & _rhs)
 }
 
 template< typename lhs, typename ...rhs >
+constexpr
 bool
 operator < (lhs const & _lhs, variant< rhs... > const & _rhs)
 {

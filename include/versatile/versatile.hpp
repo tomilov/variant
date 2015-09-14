@@ -142,7 +142,7 @@ public :
 
     explicit
     constexpr
-    operator this_type & () & noexcept
+    operator this_type & () noexcept
     {
         assert(active());
         return static_cast< this_type & >(dispatcher_.head_.value_);
@@ -151,14 +151,14 @@ public :
     template< typename type >
     explicit
     constexpr
-    operator type & () & noexcept
+    operator type & () noexcept
     {
         return static_cast< type & >(dispatcher_.tail_);
     }
 
     explicit
     constexpr
-    operator this_type const & () const & noexcept
+    operator this_type const & () const noexcept
     {
         assert(active());
         return static_cast< this_type const & >(dispatcher_.head_.value_);
@@ -167,45 +167,9 @@ public :
     template< typename type >
     explicit
     constexpr
-    operator type const & () const & noexcept
+    operator type const & () const noexcept
     {
         return static_cast< type const & >(dispatcher_.tail_);
-    }
-
-    explicit
-    constexpr
-    operator this_type && () && noexcept
-    {
-        assert(active());
-        //return static_cast< this_type && >(std::move(storage_.head_.value_)); // There is known clang++ bug #19917 for static_cast to rvalue reference.
-        return static_cast< this_type && >(static_cast< this_type & >(dispatcher_.head_.value_)); // workaround
-    }
-
-    template< typename type >
-    explicit
-    constexpr
-    operator type && () && noexcept
-    {
-        //return static_cast< type && >(std::move(storage_.tail_)); // There is known clang++ bug #19917 for static_cast to rvalue reference.
-        return static_cast< type && >(static_cast< type & >(dispatcher_.tail_)); // workaround
-    }
-
-    explicit
-    constexpr
-    operator this_type const && () const && noexcept
-    {
-        assert(active());
-        //return static_cast< this_type const && >(std::move(head_.value_)); // There is known clang++ bug #19917 for static_cast to rvalue reference.
-        return static_cast< this_type const && >(static_cast< this_type const & >(dispatcher_.head_.value_)); // workaround
-    }
-
-    template< typename type >
-    explicit
-    constexpr
-    operator type const && () const && noexcept
-    {
-        //return static_cast< type const && >(std::move(storage_.tail_)); // There is known clang++ bug #19917 for static_cast to rvalue reference.
-        return static_cast< type const && >(static_cast< type const & >(dispatcher_.tail_)); // workaround
     }
 
 };
