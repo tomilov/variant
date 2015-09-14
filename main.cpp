@@ -328,6 +328,13 @@ struct destruct< true >
 {
 
     ~destruct() = default;
+    destruct() = default;
+    destruct(destruct const &) = default;
+    destruct(destruct &) = default;
+    destruct(destruct &&) = default;
+    destruct & operator = (destruct const &) = default;
+    destruct & operator = (destruct &) = default;
+    destruct & operator = (destruct &&) = default;
 
 };
 
@@ -336,6 +343,13 @@ struct destruct< false >
 {
 
     ~destruct() = delete;
+    destruct() = default;
+    destruct(destruct const &) = default;
+    destruct(destruct &) = default;
+    destruct(destruct &&) = default;
+    destruct & operator = (destruct const &) = default;
+    destruct & operator = (destruct &) = default;
+    destruct & operator = (destruct &&) = default;
 
 };
 
@@ -346,6 +360,7 @@ template<>
 struct construct< true, true >
 {
 
+    ~construct() = default;
     construct() = default;
     construct(construct const &) = default;
     construct(construct &) = default;
@@ -360,6 +375,7 @@ template<>
 struct construct< false, false >
 {
 
+    ~construct() = default;
     construct() = default;
     construct(construct const &) = delete;
     construct(construct &) = delete;
@@ -374,6 +390,7 @@ template<>
 struct construct< true, false >
 {
 
+    ~construct() = default;
     construct() = default;
     construct(construct const &) = default;
     construct(construct &) = default;
@@ -388,6 +405,7 @@ template<>
 struct construct< false, true >
 {
 
+    ~construct() = default;
     construct() = default;
     construct(construct const &) = delete;
     construct(construct &) = delete;
@@ -405,6 +423,7 @@ template<>
 struct assign< true, true >
 {
 
+    ~assign() = default;
     assign() = default;
     assign(assign const &) = default;
     assign(assign &) = default;
@@ -419,6 +438,7 @@ template<>
 struct assign< false, false >
 {
 
+    ~assign() = default;
     assign() = default;
     assign(assign const &) = default;
     assign(assign &) = default;
@@ -433,6 +453,7 @@ template<>
 struct assign< true, false >
 {
 
+    ~assign() = default;
     assign() = default;
     assign(assign const &) = default;
     assign(assign &) = default;
@@ -447,6 +468,7 @@ template<>
 struct assign< false, true >
 {
 
+    ~assign() = default;
     assign() = default;
     assign(assign const &) = default;
     assign(assign &) = default;
@@ -458,32 +480,14 @@ struct assign< false, true >
 };
 
 template< typename ...types >
-constexpr bool is_default_constructible = or_< (std::is_default_constructible< types >{})... >{};
-
-template< typename ...types >
-constexpr bool is_destructible = and_< (std::is_destructible< types >{})... >{};
-
-template< typename ...types >
-constexpr bool is_copy_constructible = and_< (std::is_copy_constructible< types >{})... >{};
-
-template< typename ...types >
-constexpr bool is_move_constructible = and_< (std::is_move_constructible< types >{})... >{};
-
-template< typename ...types >
-constexpr bool is_copy_assignable = and_< (std::is_copy_assignable< types >{})... >{};
-
-template< typename ...types >
-constexpr bool is_move_assignable = and_< (std::is_move_assignable< types >{})... >{};
-
-template< typename ...types >
 struct enable_special_functions
-        : default_construct< is_default_constructible< types... >, types... >
-        , destruct< is_destructible< types... > >
-        , construct< is_copy_constructible< types... >, is_move_constructible< types... > >
-        , assign< is_copy_assignable< types... >, is_move_assignable< types... > >
+        : default_construct< (std::is_default_constructible< types >{} || ...), types... >
+        , destruct< (std::is_destructible< types >{} && ...) >
+        , construct< (std::is_copy_constructible< types >{} && ...), (std::is_move_constructible< types >{} && ...) >
+        , assign< (std::is_copy_assignable< types >{} && ...), (std::is_move_assignable< types >{} && ...) >
 {
 
-    using base = default_construct< is_default_constructible< types... >, types... >;
+    using base = default_construct< (std::is_default_constructible< types >{} || ...), types... >;
     using base::which_;
 
     template< std::size_t _id >
@@ -500,10 +504,12 @@ struct cvariant
         : enable_special_functions< unwrap_type_t< types >... >
 {
 
+    static constexpr std::size_t width = sizeof...(types);
+
     using base = enable_special_functions< unwrap_type_t< types >... >;
 
-    cvariant() = default;
     ~cvariant() = default;
+    cvariant() = default;
     cvariant(cvariant const &) = default;
     cvariant(cvariant &) = default;
     cvariant(cvariant &&) = default;
@@ -710,7 +716,10 @@ struct multivisitor
     operator () (types &&... _values) const && noexcept
     {
         return {{{type_qualifier_of< multivisitor const && >, type_qualifier_of< types && >...}}, {{M, _values...}}};
-    }/* volatile qualifier not properly supported in STL
+    }
+
+#if 0
+    //volatile qualifier not properly supported in STL
 
     template< typename ...types >
     constexpr
@@ -742,7 +751,8 @@ struct multivisitor
     operator () (types &&... _values) volatile const && noexcept
     {
         return {{{type_qualifier_of< volatile multivisitor const && >, type_qualifier_of< types && >...}}, {{M, _values...}}};
-    }*/
+    }
+#endif
 
 };
 
@@ -756,6 +766,7 @@ struct fusor
     std::tuple< types *... > const & stuff_;
 
     template< std::size_t ...Q, std::size_t ...K >
+    constexpr
     bool
     operator () (std::index_sequence< Q... >, std::index_sequence< K... >) const
     {
@@ -769,6 +780,7 @@ struct fusor
     }
 
     template< std::size_t ...Q >
+    constexpr
     bool
     operator () (std::index_sequence< Q... >) const
     {
@@ -778,6 +790,7 @@ struct fusor
 };
 
 template< typename ...types >
+constexpr
 fusor< types... >
 make_fusor(std::tuple< types *... > const & _stuff)
 {
@@ -785,12 +798,14 @@ make_fusor(std::tuple< types *... > const & _stuff)
     return {_stuff};
 }
 
-template< std::size_t M, std::size_t N = M > // M - multivisitor arity, N - number of alternative (bounded) types
+template< template< typename ...types > class variant,
+          std::size_t M, std::size_t N = M > // M - multivisitor arity, N - number of alternative (bounded) types
 class test_perferct_forwarding
 {
 
     template< std::size_t ...J >
     static
+    constexpr
     auto
     generate_variants(std::index_sequence< J... >)
     {
@@ -803,11 +818,12 @@ class test_perferct_forwarding
     static_assert(N == variant_type::width);
 
     template< std::size_t ...I >
+    constexpr
     bool
     operator () (std::index_sequence< I... >) const
     {
         static_assert(sizeof...(I) == M);
-        std::size_t indices[M];
+        std::size_t indices[M] = {};
         for (std::size_t & m : indices) {
             m = 0;
         }
@@ -840,6 +856,7 @@ class test_perferct_forwarding
 
 public :
 
+    constexpr
     bool
     operator () () const
     {
@@ -1952,7 +1969,6 @@ main()
         struct B {};
         struct C {};
         using V = cvariant< A, B, C >;
-
         static_assert(std::is_literal_type< V >{});
 
         struct visitor3
@@ -1961,7 +1977,6 @@ main()
             constexpr auto operator () (B, int i = 2) const { return 200 + i; }
             constexpr auto operator () (C, int i = 3) const { return 300 + i; }
         };
-
         static_assert(std::is_literal_type< visitor3 >{});
 
         // rrefs
@@ -1986,9 +2001,55 @@ main()
         static_assert(visit(visitor3_, a, 11) == 111);
         static_assert(visit(visitor3_, b, 22) == 222);
         static_assert(visit(visitor3_, c, 33) == 333);
+
+        struct multivisitor3
+        {
+            constexpr auto operator () (A, int, A) const { return 111; }
+            constexpr auto operator () (A, int, B) const { return 112; }
+            constexpr auto operator () (A, int, C) const { return 113; }
+            constexpr auto operator () (B, int, A) const { return 121; }
+            constexpr auto operator () (B, int, B) const { return 122; }
+            constexpr auto operator () (B, int, C) const { return 123; }
+            constexpr auto operator () (C, int, A) const { return 131; }
+            constexpr auto operator () (C, int, B) const { return 132; }
+            constexpr auto operator () (C, int, C) const { return 133; }
+            constexpr auto operator () (A, double, A) const { return 211; }
+            constexpr auto operator () (A, double, B) const { return 212; }
+            constexpr auto operator () (A, double, C) const { return 213; }
+            constexpr auto operator () (B, double, A) const { return 221; }
+            constexpr auto operator () (B, double, B) const { return 222; }
+            constexpr auto operator () (B, double, C) const { return 223; }
+            constexpr auto operator () (C, double, A) const { return 231; }
+            constexpr auto operator () (C, double, B) const { return 232; }
+            constexpr auto operator () (C, double, C) const { return 233; }
+        };
+        static_assert(std::is_literal_type< multivisitor3 >{});
+
+        constexpr auto multivisitor3_ = visit(multivisitor3{});
+        static_assert(multivisitor3_(a,   0, a) == 111);
+        static_assert(multivisitor3_(a,   0, b) == 112);
+        static_assert(multivisitor3_(a,   0, c) == 113);
+        static_assert(multivisitor3_(b,   0, a) == 121);
+        static_assert(multivisitor3_(b,   0, b) == 122);
+        static_assert(multivisitor3_(b,   0, c) == 123);
+        static_assert(multivisitor3_(c,   0, a) == 131);
+        static_assert(multivisitor3_(c,   0, b) == 132);
+        static_assert(multivisitor3_(c,   0, c) == 133);
+        static_assert(multivisitor3_(a, 0.0, a) == 211);
+        static_assert(multivisitor3_(a, 0.0, b) == 212);
+        static_assert(multivisitor3_(a, 0.0, c) == 213);
+        static_assert(multivisitor3_(b, 0.0, a) == 221);
+        static_assert(multivisitor3_(b, 0.0, b) == 222);
+        static_assert(multivisitor3_(b, 0.0, c) == 223);
+        static_assert(multivisitor3_(c, 0.0, a) == 231);
+        static_assert(multivisitor3_(c, 0.0, b) == 232);
+        static_assert(multivisitor3_(c, 0.0, c) == 233);
     }
     {
-        assert((test_perferct_forwarding< 2, 2 >{}()));
+        //static_assert((test_perferct_forwarding< cvariant, 2, 2 >{}()));
+    }
+    {
+        assert((test_perferct_forwarding< variant, 2, 2 >{}()));
     }
     {
         assert((hard< ROWS, COLS >()));
