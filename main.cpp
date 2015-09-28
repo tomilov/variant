@@ -214,6 +214,26 @@ struct variadic_index< variadic< types... >, type >
 
 };
 
+struct empty { int operator () (int) { return 333; } };
+
+template< typename ...types >
+struct custom_variant
+        : variant< empty, types... >
+{
+
+    using base = variant< empty, types... >;
+
+    using base::base;
+    using base::operator =;
+
+    bool
+    empty() const
+    {
+        return (base::which() + 1 == base::width);
+    }
+
+};
+
 template< typename F, std::size_t ...indices >
 struct enumerator;
 
@@ -533,6 +553,9 @@ hard() noexcept
 {
     return invoke(std::make_index_sequence< M >{}, std::make_index_sequence< N >{});
 }
+
+int f() { return 1; }
+int g() { return 2; }
 
 }
 
@@ -1156,6 +1179,50 @@ main()
                     assert(-11 == std::move(lam)(c));
                 }
             }
+        }
+        {
+            using V = custom_variant< int, char >;
+            V v;
+            assert(v.empty());
+            v = 1;
+            assert(v.active< int >());
+            auto l = compose_visitors([] (int) { return 1; }, [] (empty) { return 2; }, [] (char) { return 3; });
+            assert((v.visit(l) == 1));
+            v = V{char{}};
+            assert(v.active< char >());
+            assert((v.visit(l) == 3));
+            v = empty{};
+            assert((v.visit(l) == 2));
+            assert(v.empty());
+        }
+        {
+            auto l0 = [] (int) { return 222; };
+            auto l1 = [] (int) { return 444; };
+            using F = int (*)(int);
+            using V = custom_variant< F >;
+            V v{std::experimental::in_place, l0};
+            assert(v.active< F >());
+            assert(v(1) == 222);
+            v = static_cast< F >(l1);
+            assert(v.active< F >());
+            assert(v(0) == 444);
+            v = empty{};
+            assert(v.empty());
+            assert(v(-1) == 333);
+        }
+        {
+            using V = variant< decltype(&f), decltype(&g) >;
+            V v = g;
+            assert(v.active< decltype(&f) >());
+            assert(static_cast< decltype(&f) >(v) == &g);
+            assert(v() == 2);
+            v = f;
+            assert(v.active< decltype(&g) >());
+            assert(static_cast< decltype(&g) >(v) == &f);
+            assert(v() == 1);
+            auto l = [] () { return 323; };
+            v = static_cast< decltype(&g) >(l);
+            assert(v() == 323);
         }
     }
     {
