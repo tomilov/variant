@@ -32,7 +32,7 @@ template< typename ...lhs, typename ...rhs >
 bool
 operator == (variant< lhs... > const & _lhs, variant< rhs... > const & _rhs)
 {
-    return visit(equal_to{}, _lhs, _rhs);
+    return multivisit(equal_to{}, _lhs, _rhs);
 }
 
 template< typename ...lhs, typename rhs >
@@ -46,7 +46,7 @@ template< typename lhs, typename ...rhs >
 bool
 operator == (lhs const & _lhs, variant< rhs... > const & _rhs)
 {
-    return visit(equal_to{}, _lhs, _rhs);
+    return multivisit(equal_to{}, _lhs, _rhs);
 }
 
 struct less
@@ -73,7 +73,7 @@ template< typename ...lhs, typename ...rhs >
 bool
 operator < (variant< lhs... > const & _lhs, variant< rhs... > const & _rhs)
 {
-    return visit(less{}, _lhs, _rhs);
+    return multivisit(less{}, _lhs, _rhs);
 }
 
 template< typename rhs, typename ...lhs >
@@ -87,7 +87,7 @@ template< typename lhs, typename ...rhs >
 bool
 operator < (lhs const & _lhs, variant< rhs... > const & _rhs)
 {
-    return visit(less{}, _lhs, _rhs);
+    return multivisit(less{}, _lhs, _rhs);
 }
 
 }

@@ -1,4 +1,4 @@
-#include "versatile/versatile.hpp"
+#include <versatile.hpp>
 
 #include <string>
 #include <array>
@@ -119,6 +119,7 @@ struct visitor1
 
 struct visitor2
 {
+
     template< typename ...types >
     constexpr
     auto
@@ -410,7 +411,7 @@ struct fusor
     bool
     operator () (std::index_sequence< Q... >, std::index_sequence< K... >) const
     {
-        auto const lhs = visit(static_cast< add_qualifier_t< static_cast< type_qualifier >(qualifier_id_begin + Q), types > >(*std::get< K >(stuff_))...);
+        auto const lhs = multivisit(static_cast< add_qualifier_t< static_cast< type_qualifier >(qualifier_id_begin + Q), types > >(*std::get< K >(stuff_))...);
         static_assert(sizeof...(types) == lhs.size());
         pair< (sizeof...(types) - 1) > const rhs = {{{static_cast< type_qualifier >(qualifier_id_begin + Q)...}}, {{(std::get< K >(stuff_)->width - 1 - std::get< K >(stuff_)->which())...}}};
         if (lhs == rhs) {
@@ -520,7 +521,7 @@ constexpr
 bool
 invoke(std::index_sequence< M... >, std::index_sequence< N... >) noexcept
 {
-    return (std::array< std::size_t, sizeof...(N) >{(N % sizeof...(M))...} == visit(visitor{}, variant< T< M >... >{T< (N % sizeof...(M)) >{}}...));
+    return (std::array< std::size_t, sizeof...(N) >{(N % sizeof...(M))...} == multivisit(visitor{}, variant< T< M >... >{T< (N % sizeof...(M)) >{}}...));
 }
 
 #pragma clang diagnostic pop
@@ -542,18 +543,11 @@ main()
     {
         using namespace versatile;
         {
-            using V = versatile< double, int >;
-            V w{1};
-            V v = std::move(w);
-            assert(static_cast< int >(v) == 1);
-            w = 2;
-            assert(static_cast< int >(w) == 2);
-            v = std::move(w);
+            using V = versatile< int >;
+            V w; // equivalent to default construction
+            assert(static_cast< int >(w) == int{});
+            V v{2};
             assert(static_cast< int >(v) == 2);
-            static_assert(std::is_trivially_copy_assignable< V >{});
-            static_assert(std::is_trivially_move_assignable< V >{});
-            static_assert(!std::is_trivially_copy_constructible< V >{});
-            static_assert(!std::is_trivially_move_constructible< V >{});
         }
         {
             using V = versatile< std::true_type, std::false_type >;
@@ -563,13 +557,16 @@ main()
             assert(static_cast< std::false_type >(f) == std::false_type{});
         }
         {
-            using V = versatile< int >;
+            using V = variant< std::true_type, std::false_type >;
+            V t;
+            assert(static_cast< std::true_type >(t) == std::true_type{});
+            V f{std::false_type{}};
+            assert(static_cast< std::false_type >(f) == std::false_type{});
+        }
+        {
+            using V = variant< int >;
             V v{2};
             assert(static_cast< int >(v) == 2);
-            v = versatile<>{}; // no op
-            assert(static_cast< int >(v) == 2);
-            V w{versatile<>{}}; // equivalent to default construction
-            assert(static_cast< int >(w) == int{});
         }
         { // value_or
             using V = variant< double, int >;
@@ -589,8 +586,9 @@ main()
             }
         }
         {
+            using std::swap;
             using V = variant< int >;
-            static_assert(V::width == 1, "V::count != 1");
+            static_assert(V::width == 1, "V::width != 1");
             V v;
             static_assert(0 == variadic_index< V, int >{});
             assert(v.which() == 0);
@@ -609,11 +607,14 @@ main()
             assert(!(v == w));
             assert(static_cast< int >(w) == 222);
             assert(static_cast< int >(v) == 223);
-            v.swap(w);
+            swap(v, w);
             assert(static_cast< int >(w) == 223);
             assert(static_cast< int >(v) == 222);
+            swap(w, v);
+            assert(static_cast< int >(w) == 222);
+            assert(static_cast< int >(v) == 223);
             V u = w;
-            assert(static_cast< int >(u) == 223);
+            assert(static_cast< int >(u) == 222);
             assert(w.which() == 0);
             static_assert(variadic_index< V, int >{} == 0);
             assert(u.which() == 0);
@@ -643,7 +644,8 @@ main()
             assert(d.active< float >());
             f = j;
             assert(f.active< int >());
-            d.swap(j);
+            using std::swap;
+            swap(d, j);
             assert(d.active< int >());
             assert(j.active< float >());
         }
@@ -653,19 +655,22 @@ main()
             using V =  variant< A, B >;
             V v;
             assert(v.active< B >());
+            v = A{};
+            assert(v.active< A >());
+            V w{A{}};
+            assert(w.active< A >());
         }
         { // incomplete
             struct A {};
             struct B;
             using V = variant< A, recursive_wrapper< B > >;
-            struct R : V { using V::V; using V::operator =; };
-            R v;
+            V v;
             assert(v.active< A >());
-            struct B {};
+            struct B {}; // if declard but not defined => compilation error in std::unique_ptr destructor
             v = B{};
             assert(v.active< B >());
         }
-        { // recursive
+        { // recursive (composition)
             struct R;
             struct A {};
             using V = variant< A, recursive_wrapper< R > >;
@@ -674,16 +679,51 @@ main()
             struct R { V v; };
             v = R{};
             assert(v.active< R >());
+            assert(static_cast< R & >(v).v.active< A >());
+        }
+        { // recursive (inheritance)
+            struct R;
+            struct A {};
+            using V = variant< A, recursive_wrapper< R > >;
+            V v;
+            assert(v.active< A >());
+            struct R : V { using V::V; using V::operator =; };
+            v = R{};
+            assert(v.active< R >());
+            R r;
+            assert(r.active< A >());
+            R a{R{}};
+            assert(a.active< A >());
+            R u{V{R{}}};
+            assert(u.active< R >());
+        }
+        { // recursive (inheritance)
+            struct R;
+            struct A {};
+            using V = variant< A, recursive_wrapper< R > >;
+            V u;
+            assert(u.active< A >());
+            struct R : V { using V::V; using V::operator =; };
+            u = R{};
+            assert(u.active< R >());
+            R v;
+            assert(v.active< A >());
+            v = R{};
+            assert(v.active< A >());
+            R w{R{}};
+            assert(w.active< A >());
+            R x{V{R{}}};
+            assert(x.active< R >());
         }
         { // exact
-            using V = variant< int, double >;
+            using V = variant< int, bool >;
             assert(V{} == V{});
             assert(V{} == int{});
             assert(int{} == V{});
             assert(V{1} == 1);
             assert(1 == V{1});
-            assert(V{2.0} == 2.0);
-            assert(2.0 == V{2.0});
+            assert(V{false} == false);
+            assert(true == V{true});
         }
         { // relational
             using V = variant< int, double >;
@@ -734,10 +774,45 @@ main()
         {
             struct A {};
             struct B { B(B &&) = default; B(B const &) = delete; B & operator = (B &&) = default; void operator = (B const &) = delete; };
-            variant< A, B > v;
+            variant< B, A > v;
             assert(v.active< A >());
             v = B{};
             assert(v.active< B >());
+        }
+        {
+            struct A { A(double) { ; } };
+            using V = variant< A, int >;
+            assert(V(std::experimental::in_place, int{0}).active< A >());
+            assert(V{int{0}}.active< int >());
+        }
+        {
+            struct B;
+            struct A { A(B const &) { ; } };
+            struct B {};
+            using V = variant< A, B >;
+            assert(V{}.active< B >());
+            assert(V{B{}}.active< B >());
+            assert((V{std::experimental::in_place, B{}}.active< A >()));
+        }
+        {
+            static int counter = 0;
+            struct A {};
+            struct B { int i; B(int j) : i(j) { ++counter; } B() = delete; B(B const &) = delete; B(B &&) = delete; };
+            struct C {};
+            B b{1};
+            assert(counter == 1);
+            using V = variant< A, B, C >;
+            V v;
+            assert(v.active< A >());
+            assert(counter == 1);
+            v.emplace(2);
+            assert(v.active< B >());
+            assert(static_cast< B const & >(v).i == 2);
+            assert(counter == 2);
+            v.emplace(1);
+            assert(v.active< B >());
+            assert(static_cast< B const & >(v).i == 1);
+            assert(counter == 3);
         }
         {
             struct A {};
@@ -747,12 +822,12 @@ main()
             V v;
             V const cv;
             using B3 = std::array< bool, 3 >;
-            assert((v.visit(p_)    == B3{{false, false, true }}));
-            assert((v.visit(cp_)   == B3{{true,  false, true }}));
-            assert((cv.visit(p_)   == B3{{false, true,  true }}));
-            assert((cv.visit(cp_)  == B3{{true,  true,  true }}));
-            assert((V().visit(p_)  == B3{{false, false, false}}));
-            assert((V().visit(cp_) == B3{{true,  false, false}}));
+            assert((visit(p_, v)    == B3{{false, false, true }}));
+            assert((visit(cp_, v)   == B3{{true,  false, true }}));
+            assert((visit(p_, cv)   == B3{{false, true,  true }}));
+            assert((visit(cp_, cv)  == B3{{true,  true,  true }}));
+            assert((visit(p_, V())  == B3{{false, false, false}}));
+            assert((visit(cp_, V()) == B3{{true,  false, false}}));
         }
         {
             struct A {};
@@ -762,15 +837,15 @@ main()
             V v;
             V const cv{};
             using B4 = std::array< bool, 4 >;
-            assert((v.visit(p_)           == B4{{false, true,  false, true }}));
-            assert((v.visit(cp_)          == B4{{true,  true,  false, true }}));
-            assert((v.visit(visitor1{})   == B4{{false, false, false, true }}));
-            assert((cv.visit(p_)          == B4{{false, true,  true,  true }}));
-            assert((cv.visit(cp_)         == B4{{true,  true,  true,  true }}));
-            assert((cv.visit(visitor1{})  == B4{{false, false, true,  true }}));
-            assert((V().visit(p_)         == B4{{false, true,  false, false}}));
-            assert((V().visit(cp_)        == B4{{true,  true,  false, false}}));
-            assert((V().visit(visitor1{}) == B4{{false, false, false, false}}));
+            assert((visit(p_, v)           == B4{{false, true,  false, true }}));
+            assert((visit(cp_, v)          == B4{{true,  true,  false, true }}));
+            assert((visit(visitor1{}, v)   == B4{{false, false, false, true }}));
+            assert((visit(p_, cv)          == B4{{false, true,  true,  true }}));
+            assert((visit(cp_, cv)         == B4{{true,  true,  true,  true }}));
+            assert((visit(visitor1{}, cv)  == B4{{false, false, true,  true }}));
+            assert((visit(p_, V())         == B4{{false, true,  false, false}}));
+            assert((visit(cp_, V())        == B4{{true,  true,  false, false}}));
+            assert((visit(visitor1{}, V()) == B4{{false, false, false, false}}));
         }
         { // multivisitation with forwarding
             struct A {};
@@ -778,28 +853,28 @@ main()
             using V = variant< A, B >;
             visitor2 v_;
             visitor2 const c_{};
-            assert(visit(v_, V{B{}}) == std::make_tuple(false, std::tie(typeid(B)), false, false));
-            assert(visit(c_, V{B{}}) == std::make_tuple(true, std::tie(typeid(B)), false, false));
-            assert(visit(visitor2{}, V{B{}}) == std::make_tuple(false, std::tie(typeid(B)), false, false));
-            assert(visit(v_, V{}, V{B{}}) == std::make_tuple(false, std::tie(typeid(A)), false, false, std::tie(typeid(B)), false, false));
-            assert(visit(c_, V{}, V{B{}}) == std::make_tuple(true, std::tie(typeid(A)), false, false, std::tie(typeid(B)), false, false));
-            assert(visit(visitor2{}, V{}, V{B{}}) == std::make_tuple(false, std::tie(typeid(A)), false, false, std::tie(typeid(B)), false, false));
+            assert(multivisit(v_, V{B{}}) == std::make_tuple(false, std::tie(typeid(B)), false, false));
+            assert(multivisit(c_, V{B{}}) == std::make_tuple(true, std::tie(typeid(B)), false, false));
+            assert(multivisit(visitor2{}, V{B{}}) == std::make_tuple(false, std::tie(typeid(B)), false, false));
+            assert(multivisit(v_, V{}, V{B{}}) == std::make_tuple(false, std::tie(typeid(A)), false, false, std::tie(typeid(B)), false, false));
+            assert(multivisit(c_, V{}, V{B{}}) == std::make_tuple(true, std::tie(typeid(A)), false, false, std::tie(typeid(B)), false, false));
+            assert(multivisit(visitor2{}, V{}, V{B{}}) == std::make_tuple(false, std::tie(typeid(A)), false, false, std::tie(typeid(B)), false, false));
             // forwarding
             enum class op { eq, lt, gt, nge };
-            assert(visit(v_, V{}, op::eq, V{B{}}) == std::make_tuple(false, std::tie(typeid(A)), false, false, std::tie(typeid(op)), false, false, std::tie(typeid(B)), false, false));
-            assert(visit(c_, V{}, op::eq, V{B{}}) == std::make_tuple(true, std::tie(typeid(A)), false, false, std::tie(typeid(op)), false, false, std::tie(typeid(B)), false, false));
-            assert(visit(visitor2{}, V{}, op::eq, V{B{}}) == std::make_tuple(false, std::tie(typeid(A)), false, false, std::tie(typeid(op)), false, false, std::tie(typeid(B)), false, false));
+            assert(multivisit(v_, V{}, op::eq, V{B{}}) == std::make_tuple(false, std::tie(typeid(A)), false, false, std::tie(typeid(op)), false, false, std::tie(typeid(B)), false, false));
+            assert(multivisit(c_, V{}, op::eq, V{B{}}) == std::make_tuple(true, std::tie(typeid(A)), false, false, std::tie(typeid(op)), false, false, std::tie(typeid(B)), false, false));
+            assert(multivisit(visitor2{}, V{}, op::eq, V{B{}}) == std::make_tuple(false, std::tie(typeid(A)), false, false, std::tie(typeid(op)), false, false, std::tie(typeid(B)), false, false));
         }
         { // delayed visitation
             visitor2 v_;
             visitor2 const c_{};
 
-            auto d0 = make_visitor(v_);
-            auto const d1 = make_visitor(v_);
-            auto d2 = make_visitor(c_);
-            auto const d3 = make_visitor(c_);
-            auto d4 = make_visitor(visitor2{});
-            auto const d5 = make_visitor(visitor2{});
+            auto d0 = visit(v_);
+            auto const d1 = visit(v_);
+            auto d2 = visit(c_);
+            auto const d3 = visit(c_);
+            auto d4 = visit(visitor2{});
+            auto const d5 = visit(visitor2{});
 
             struct A {};
             struct B {};
@@ -836,12 +911,12 @@ main()
             visitor3 v_;
             visitor3 const cv_{};
 
-            auto d = make_visitor(v_);
-            auto const cd = make_visitor(v_);
-            auto dcv = make_visitor(cv_);
-            auto const cdcv = make_visitor(cv_);
-            auto dmv = make_visitor(visitor3{});
-            auto const cdmv = make_visitor(visitor3{});
+            auto d = visit(v_);
+            auto const cd = visit(v_);
+            auto dcv = visit(cv_);
+            auto const cdcv = visit(cv_);
+            auto dmv = visit(visitor3{});
+            auto const cdmv = visit(visitor3{});
 
             struct A {};
             using V = variant< A >;
@@ -850,49 +925,40 @@ main()
 
             assert(d(v)                           == std::make_tuple(false, true,  false, true ));
             assert(cd(v)                          == std::make_tuple(false, true,  false, true )); // ! true, true, false, true
-            assert(make_visitor(v_)(v)           == std::make_tuple(false, false, false, true ));
+            assert(visit(v_)(v)            == std::make_tuple(false, false, false, true ));
 
             assert(dcv(v)                         == std::make_tuple(true,  true,  false, true ));
             assert(cdcv(v)                        == std::make_tuple(true,  true,  false, true ));
-            assert(make_visitor(cv_)(v)          == std::make_tuple(true,  false, false, true )); // if visitor have not `const &&` version of `operator ()`, then `const &` chosen
+            assert(visit(cv_)(v)           == std::make_tuple(true,  false, false, true )); // if visitor have not `const &&` version of `operator ()`, then `const &` chosen
 
             assert(dmv(v)                         == std::make_tuple(false, true,  false, true ));
             assert(cdmv(v)                        == std::make_tuple(true,  true,  false, true ));
-            assert(make_visitor(visitor3{})(v)   == std::make_tuple(false, false, false, true ));
+            assert(visit(visitor3{})(v)    == std::make_tuple(false, false, false, true ));
 
             assert(d(cv)                          == std::make_tuple(false, true,  true,  true ));
             assert(cd(cv)                         == std::make_tuple(false, true,  true,  true )); // ! true, true, true, true
-            assert(make_visitor(v_)(cv)          == std::make_tuple(false, false, true,  true ));
+            assert(visit(v_)(cv)           == std::make_tuple(false, false, true,  true ));
 
             assert(dcv(cv)                        == std::make_tuple(true,  true,  true,  true ));
             assert(cdcv(cv)                       == std::make_tuple(true,  true,  true,  true ));
-            assert(make_visitor(cv_)(cv)         == std::make_tuple(true,  false, true,  true ));
+            assert(visit(cv_)(cv)          == std::make_tuple(true,  false, true,  true ));
 
             assert(dmv(cv)                        == std::make_tuple(false, true,  true,  true ));
             assert(cdmv(cv)                       == std::make_tuple(true,  true,  true,  true ));
-            assert(make_visitor(visitor3{})(cv)  == std::make_tuple(false, false, true,  true ));
+            assert(visit(visitor3{})(cv)   == std::make_tuple(false, false, true,  true ));
 
             assert(d(V{})                         == std::make_tuple(false, true,  false, false));
             assert(cd(V{})                        == std::make_tuple(false, true,  false, false)); // ! true, true, false, false
-            assert(make_visitor(v_)(V{})         == std::make_tuple(false, false, false, false));
+            assert(visit(v_)(V{})          == std::make_tuple(false, false, false, false));
 
             assert(dcv(V{})                       == std::make_tuple(true,  true,  false, false));
             assert(cdcv(V{})                      == std::make_tuple(true,  true,  false, false));
-            assert(make_visitor(cv_)(V{})        == std::make_tuple(true,  false, false, false));
+            assert(visit(cv_)(V{})         == std::make_tuple(true,  false, false, false));
 
             assert(dmv(V{})                       == std::make_tuple(false, true,  false, false));
             assert(cdmv(V{})                      == std::make_tuple(true,  true,  false, false));
-            assert(make_visitor(visitor3{})(V{}) == std::make_tuple(false, false, false, false));
-        }/*
-        {
-            struct A {};
-            struct B {};
-            struct C {};
-            using V = variant< A, B, C >;
-            static_assert((std::is_same< variant< std::reference_wrapper< A >, std::reference_wrapper< B >, std::reference_wrapper< C > >, V::wrap< std::reference_wrapper > >{}), "!");
-            static_assert((std::is_same< std::tuple< A, B, C >, V::wrap< same_t, std::tuple > >{}), "!");
-            static_assert((std::is_same< std::tuple< std::reference_wrapper< A >, std::reference_wrapper< B >, std::reference_wrapper< C > >, V::wrap< std::reference_wrapper, std::tuple > >{}), "!");
-        }*/
+            assert(visit(visitor3{})(V{})  == std::make_tuple(false, false, false, false));
+        }
         {
             using V = variant< int, double >;
             std::stringstream ss_;
@@ -905,6 +971,33 @@ main()
             ss_.clear();
             ss_ << v;
             assert(ss_.str() == "3.5");
+        }
+        { // call
+            struct A { int operator () (int) { return 0; } bool operator () (double) { return true; } };
+            struct B { int operator () (int) { return 1; } bool operator () (double) { return false; } };
+            using V = variant< A, B >;
+            V v;
+            static_assert(std::is_same< int, decltype(v(0)) >{});
+            static_assert(std::is_same< bool, decltype(v(0.0)) >{});
+            assert(v(0) == 0);
+            assert(v(1.0) == true);
+            v = B{};
+            assert(v(0) == 1);
+            assert(v(1.0) == false);
+        }
+        { // call
+            auto a = [] (auto &&... _values) -> int { return +static_cast< int >(sizeof...(_values)); };
+            auto b = [] (auto &&... _values) -> int { return -static_cast< int >(sizeof...(_values)); };
+            using V = variant< decltype(a), decltype(b) >;
+            V v = a;
+            static_assert(std::is_same< int, decltype(v(0)) >{});
+            assert(v(0, 1.0f, 2.0, 3.0L, true) == +5);
+            assert(v() == 0);
+            assert(v(nullptr) == 1);
+            v = std::move(b);
+            assert(v(0, 1.0f, 2.0, 3.0L, true) == -5);
+            assert(v() == 0);
+            assert(v(nullptr) == -1);
         }
         {
             auto const l0 = [] (auto const &) { return 0; };

@@ -1,3 +1,5 @@
 Makefile
 *.o
 versatile.pro.*
+build/
+CMakeLists.txt.user

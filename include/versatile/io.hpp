@@ -29,7 +29,7 @@ template< typename first, typename ...rest >
 std::ostream &
 operator << (std::ostream & _out, variant< first, rest... > const & _variant) // http://stackoverflow.com/questions/23355117/
 {
-    return _variant.visit(details::out{_out});
+    return visit(details::out{_out}, _variant);
 }
 
 namespace details
@@ -55,7 +55,7 @@ template< typename first, typename ...rest >
 std::istream &
 operator >> (std::istream & _in, variant< first, rest... > & _variant) // http://stackoverflow.com/questions/23355117/
 {
-    return _variant.visit(details::in{_in});
+    return visit(details::in{_in}, _variant);
 }
 
 }

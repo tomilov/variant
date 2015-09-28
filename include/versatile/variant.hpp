@@ -59,7 +59,7 @@ private :
     static
     constexpr
     result_type
-    caller(visitor && _visitor, visitable && _visitable, arguments &&... _arguments)
+    caller(visitor & _visitor, visitable & _visitable, arguments &... _arguments)
     {
         //return std::forward< visitor >(_visitor)(static_cast< unwrap_type_t< type > >(std::forward< visitable >(_visitable)), std::forward< arguments >(_arguments)...); // There is known clang++ bug #19917 for static_cast to rvalue reference.
         using T = unwrap_type_t< type >;
@@ -75,9 +75,9 @@ public :
     visit(visitor && _visitor, arguments &&... _arguments) &
     {
         using result_type = result_of_t< visitor, first_type &, arguments... >;
-        using caller_type = result_type (*)(visitor && _visitor, versatile & _visitable, arguments &&... _arguments);
-        static constexpr caller_type dispatcher_[width] = {variant::caller< types &, result_type, visitor, versatile &, arguments... >...};
-        return dispatcher_[versatile::index - which()](std::forward< visitor >(_visitor), *storage_, std::forward< arguments >(_arguments)...);
+        using caller_type = result_type (*)(visitor & _visitor, versatile & _visitable, arguments &... _arguments);
+        static constexpr caller_type dispatcher_[width] = {variant::caller< types &, result_type, visitor, versatile, arguments... >...};
+        return dispatcher_[versatile::index - which()](_visitor, *storage_, _arguments...);
     }
 
     template< typename visitor, typename ...arguments >
@@ -85,9 +85,9 @@ public :
     visit(visitor && _visitor, arguments &&... _arguments) const &
     {
         using result_type = result_of_t< visitor, first_type const &, arguments... >;
-        using caller_type = result_type (*)(visitor && _visitor, versatile const & _visitable, arguments &&... _arguments);
-        static constexpr caller_type dispatcher_[width] = {variant::caller< types const &, result_type, visitor, versatile const &, arguments... >...};
-        return dispatcher_[versatile::index - which()](std::forward< visitor >(_visitor), *storage_, std::forward< arguments >(_arguments)...);
+        using caller_type = result_type (*)(visitor & _visitor, versatile const & _visitable, arguments &... _arguments);
+        static constexpr caller_type dispatcher_[width] = {variant::caller< types const &, result_type, visitor, versatile const, arguments... >...};
+        return dispatcher_[versatile::index - which()](_visitor, *storage_, _arguments...);
     }
 
     template< typename visitor, typename ...arguments >
@@ -95,9 +95,9 @@ public :
     visit(visitor && _visitor, arguments &&... _arguments) &&
     {
         using result_type = result_of_t< visitor, first_type &&, arguments... >;
-        using caller_type = result_type (*)(visitor && _visitor, versatile && _visitable, arguments &&... _arguments);
-        static constexpr caller_type dispatcher_[width] = {variant::caller< types &&, result_type, visitor, versatile &&, arguments... >...};
-        return dispatcher_[versatile::index - which()](std::forward< visitor >(_visitor), std::move(*storage_), std::forward< arguments >(_arguments)...);
+        using caller_type = result_type (*)(visitor & _visitor, versatile & _visitable, arguments &... _arguments);
+        static constexpr caller_type dispatcher_[width] = {variant::caller< types &&, result_type, visitor, versatile, arguments... >...};
+        return dispatcher_[versatile::index - which()](_visitor, *storage_, _arguments...);
     }
 
     template< typename visitor, typename ...arguments >
@@ -105,9 +105,9 @@ public :
     visit(visitor && _visitor, arguments &&... _arguments) const &&
     {
         using result_type = result_of_t< visitor, first_type const &&, arguments... >;
-        using caller_type = result_type (*)(visitor && _visitor, versatile const && _visitable, arguments &&... _arguments);
-        static constexpr caller_type dispatcher_[width] = {variant::caller< types const &&, result_type, visitor, versatile const &&, arguments... >...};
-        return dispatcher_[versatile::index - which()](std::forward< visitor >(_visitor), std::move(*storage_), std::forward< arguments >(_arguments)...);
+        using caller_type = result_type (*)(visitor & _visitor, versatile const & _visitable, arguments &... _arguments);
+        static constexpr caller_type dispatcher_[width] = {variant::caller< types const &&, result_type, visitor, versatile const, arguments... >...};
+        return dispatcher_[versatile::index - which()](_visitor, *storage_, _arguments...);
     }
 
 private :
@@ -187,23 +187,24 @@ public :
 
     template< typename type >
     std::enable_if_t< (std::is_same< std::decay_t< type >, variant >{}) >
-    assign(type && _value)
+    assign(type && _rhs)
     {
-        if (which() == _value.which()) {
-            std::forward< type >(_value).visit(assigner{*storage_});
+        assert(&_rhs != this);
+        if (which() == _rhs.which()) {
+            std::forward< type >(_rhs).visit(assigner{*storage_});
         } else {
-            replace(std::forward< type >(_value));
+            replace(std::forward< type >(_rhs));
         }
     }
 
     template< typename type >
     std::enable_if_t< !(std::is_same< std::decay_t< type >, variant >{}) >
-    assign(type && _value)
+    assign(type && _rhs)
     {
         if (active< std::decay_t< type > >()) {
-            *storage_ = std::forward< type >(_value);
+            *storage_ = std::forward< type >(_rhs);
         } else {
-            replace(std::forward< type >(_value));
+            replace(std::forward< type >(_rhs));
         }
     }
 
@@ -285,6 +286,34 @@ public :
         return static_cast< type const && >(static_cast< type const & >(*storage_)); // workaround
     }
 
+    template< typename ...arguments >
+    decltype(auto)
+    operator () (arguments &&... _arguments) &
+    {
+        return visit([&] (auto & _value) -> decltype(auto) { return _value(std::forward< arguments >(_arguments)...); });
+    }
+
+    template< typename ...arguments >
+    decltype(auto)
+    operator () (arguments &&... _arguments) const &
+    {
+        return visit([&] (auto const & _value) -> decltype(auto) { return _value(std::forward< arguments >(_arguments)...); });
+    }
+
+    template< typename ...arguments >
+    decltype(auto)
+    operator () (arguments &&... _arguments) &&
+    {
+        return visit([&] (auto && _value) -> decltype(auto) { return std::move(_value)(std::forward< arguments >(_arguments)...); });
+    }
+
+    template< typename ...arguments >
+    decltype(auto)
+    operator () (arguments &&... _arguments) const &&
+    {
+        return visit([&] (auto const && _value) -> decltype(auto) { return std::move(_value)(std::forward< arguments >(_arguments)...); });
+    }
+
 };
 
 template< typename ...types >
@@ -337,9 +366,9 @@ struct first_type
 
 };
 
-template< typename visitable, typename ...types >
-struct first_type< visitable, variant< types... > >
-        : identity< copy_cv_reference_t< visitable, typename variant< types... >::first_type > >
+template< typename visitable, typename first, typename ...rest >
+struct first_type< visitable, variant< first, rest... > >
+        : identity< copy_cv_reference_t< visitable, first > >
 {
 
 };

@@ -9,24 +9,59 @@
 namespace versatile
 {
 
+template< typename type >
+struct is_visitable // visitable should have `visit` member function
+        : std::false_type
+{
+
+};
+
+template< typename ...types >
+struct is_visitable< variant< types... > >
+        : std::true_type
+{
+
+};
+
+template< typename type >
+struct is_visitable< type const >
+        : is_variant< type >
+{
+
+};
+
+template< typename type >
+struct is_visitable< volatile type >
+        : is_variant< type >
+{
+
+};
+
+template< typename type >
+struct is_visitable< volatile type const >
+        : is_variant< type >
+{
+
+};
+
 namespace details
 {
 
-template< typename result_type, typename supervisitor, typename type, bool = (is_variant< std::remove_reference_t< type > >{}) >
+template< typename result_type, typename supervisitor, typename type, bool = (is_visitable< std::remove_reference_t< type > >{}) >
 struct subvisitor;
 
 template< typename result_type, typename supervisitor, typename visitable >
 struct subvisitor< result_type, supervisitor, visitable, true >
 {
 
-    supervisitor && supervisitor_;
-    visitable && visitable_;
+    supervisitor & supervisitor_;
+    visitable & visitable_;
 
     template< typename ...visited >
     constexpr
     result_type
     operator () (visited &&... _visited) const
-    { // member function 'visit' grant better compile times then free one
+    {
         return std::forward< visitable >(visitable_).visit(std::forward< supervisitor >(supervisitor_), std::forward< visited >(_visited)...);
     }
 
@@ -36,8 +71,8 @@ template< typename result_type, typename supervisitor, typename type >
 struct subvisitor< result_type, supervisitor, type, false >
 {
 
-    supervisitor && supervisitor_;
-    type && value_;
+    supervisitor & supervisitor_;
+    type & value_;
 
     template< typename ...visited >
     constexpr
@@ -75,7 +110,7 @@ struct visitor_partially_applier< result_type, first, rest... >
     result_type
     operator () (visitor && _visitor, first && _first, rest &&... _rest) const
     {
-        return visitor_partially_applier< result_type, rest... >{}(subvisitor< result_type, visitor, first >{std::forward< visitor >(_visitor), std::forward< first >(_first)}, std::forward< rest >(_rest)...);
+        return visitor_partially_applier< result_type, rest... >{}(subvisitor< result_type, visitor, first >{_visitor, _first}, std::forward< rest >(_rest)...);
     }
 
 };
@@ -85,7 +120,7 @@ struct visitor_partially_applier< result_type, first, rest... >
 template< typename visitor, typename ...types >
 constexpr
 decltype(auto)
-visit(visitor && _visitor, types &&... _values)
+multivisit(visitor && _visitor, types &&... _values)
 {
     using result_type = result_of_t< visitor, first_type_t< types >... >;
     return details::visitor_partially_applier< result_type, types... >{}(std::forward< visitor >(_visitor), std::forward< types >(_values)...);
@@ -107,28 +142,28 @@ struct delayed_visitor
     decltype(auto)
     operator () (types &&... _values) &
     {
-        return visit(visitor_, std::forward< types >(_values)...);
+        return multivisit(visitor_, std::forward< types >(_values)...);
     }
 
     template< typename ...types >
     decltype(auto)
     operator () (types &&... _values) const &
     {
-        return visit(visitor_, std::forward< types >(_values)...);
+        return multivisit(visitor_, std::forward< types >(_values)...);
     }
 
     template< typename ...types >
     decltype(auto)
     operator () (types &&... _values) &&
     {
-        return visit(std::move(visitor_), std::forward< types >(_values)...);
+        return multivisit(std::move(visitor_), std::forward< types >(_values)...);
     }
 
     template< typename ...types >
     decltype(auto)
     operator () (types &&... _values) const &&
     {
-        return visit(std::move(visitor_), std::forward< types >(_values)...);
+        return multivisit(std::move(visitor_), std::forward< types >(_values)...);
     }
 
 private :
@@ -142,7 +177,7 @@ private :
 template< typename visitor >
 constexpr
 details::delayed_visitor< visitor >
-make_visitor(visitor && _visitor) noexcept(std::is_lvalue_reference< visitor >{} || std::is_nothrow_move_constructible< visitor >{})
+visit(visitor && _visitor) noexcept(std::is_lvalue_reference< visitor >{} || std::is_nothrow_move_constructible< visitor >{})
 {
     return std::forward< visitor >(_visitor);
 }
