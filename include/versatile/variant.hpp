@@ -68,13 +68,11 @@ private :
 
 public :
 
-    using first_type = typename versatile::this_type;
-
     template< typename visitor, typename ...arguments >
     decltype(auto)
     visit(visitor && _visitor, arguments &&... _arguments) &
     {
-        using result_type = result_of_t< visitor, first_type &, arguments... >;
+        using result_type = result_of_t< visitor, typename versatile::this_type &, arguments... >;
         using caller_type = result_type (*)(visitor & _visitor, versatile & _visitable, arguments &... _arguments);
         static constexpr caller_type dispatcher_[width] = {variant::caller< types &, result_type, visitor, versatile, arguments... >...};
         return dispatcher_[versatile::index - which()](_visitor, *storage_, _arguments...);
@@ -84,7 +82,7 @@ public :
     decltype(auto)
     visit(visitor && _visitor, arguments &&... _arguments) const &
     {
-        using result_type = result_of_t< visitor, first_type const &, arguments... >;
+        using result_type = result_of_t< visitor, typename versatile::this_type const &, arguments... >;
         using caller_type = result_type (*)(visitor & _visitor, versatile const & _visitable, arguments &... _arguments);
         static constexpr caller_type dispatcher_[width] = {variant::caller< types const &, result_type, visitor, versatile const, arguments... >...};
         return dispatcher_[versatile::index - which()](_visitor, *storage_, _arguments...);
@@ -94,7 +92,7 @@ public :
     decltype(auto)
     visit(visitor && _visitor, arguments &&... _arguments) &&
     {
-        using result_type = result_of_t< visitor, first_type &&, arguments... >;
+        using result_type = result_of_t< visitor, typename versatile::this_type &&, arguments... >;
         using caller_type = result_type (*)(visitor & _visitor, versatile & _visitable, arguments &... _arguments);
         static constexpr caller_type dispatcher_[width] = {variant::caller< types &&, result_type, visitor, versatile, arguments... >...};
         return dispatcher_[versatile::index - which()](_visitor, *storage_, _arguments...);
@@ -104,7 +102,7 @@ public :
     decltype(auto)
     visit(visitor && _visitor, arguments &&... _arguments) const &&
     {
-        using result_type = result_of_t< visitor, first_type const &&, arguments... >;
+        using result_type = result_of_t< visitor, typename versatile::this_type const &&, arguments... >;
         using caller_type = result_type (*)(visitor & _visitor, versatile const & _visitable, arguments &... _arguments);
         static constexpr caller_type dispatcher_[width] = {variant::caller< types const &&, result_type, visitor, versatile const, arguments... >...};
         return dispatcher_[versatile::index - which()](_visitor, *storage_, _arguments...);

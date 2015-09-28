@@ -554,8 +554,8 @@ hard() noexcept
     return invoke(std::make_index_sequence< M >{}, std::make_index_sequence< N >{});
 }
 
-int f() { return 1; }
-int g() { return 2; }
+inline int f() { return 1; }
+inline int g() { return 2; }
 
 }
 
