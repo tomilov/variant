@@ -61,10 +61,11 @@ private :
     result_type
     caller(visitor & _visitor, visitable & _visitable, arguments &... _arguments)
     {
-        //return std::forward< visitor >(_visitor)(static_cast< unwrap_type_t< type > >(std::forward< visitable >(_visitable)), std::forward< arguments >(_arguments)...); // There is known clang++ bug #19917 for static_cast to rvalue reference.
-        using T = unwrap_type_t< type >;
-        return std::forward< visitor >(_visitor)(static_cast< T >(static_cast< T & >(_visitable)), std::forward< arguments >(_arguments)...); // workaround
+        //return std::forward< visitor >(_visitor)(static_cast< type >(std::forward< visitable >(_visitable)), std::forward< arguments >(_arguments)...); // There is known clang++ bug #19917 for static_cast to rvalue reference.
+        return std::forward< visitor >(_visitor)(static_cast< type >(static_cast< type & >(_visitable)), std::forward< arguments >(_arguments)...); // workaround
     }
+
+    using leftmost_type = typename versatile::this_type;
 
 public :
 
@@ -72,9 +73,9 @@ public :
     decltype(auto)
     visit(visitor && _visitor, arguments &&... _arguments) &
     {
-        using result_type = result_of_t< visitor, typename versatile::this_type &, arguments... >;
+        using result_type = result_of_t< visitor, leftmost_type &, arguments... >;
         using caller_type = result_type (*)(visitor & _visitor, versatile & _visitable, arguments &... _arguments);
-        static constexpr caller_type dispatcher_[width] = {variant::caller< types &, result_type, visitor, versatile, arguments... >...};
+        static constexpr caller_type dispatcher_[width] = {variant::caller< unwrap_type_t< types > &, result_type, visitor, versatile, arguments... >...};
         return dispatcher_[versatile::index - which()](_visitor, *storage_, _arguments...);
     }
 
@@ -82,9 +83,9 @@ public :
     decltype(auto)
     visit(visitor && _visitor, arguments &&... _arguments) const &
     {
-        using result_type = result_of_t< visitor, typename versatile::this_type const &, arguments... >;
+        using result_type = result_of_t< visitor, leftmost_type const &, arguments... >;
         using caller_type = result_type (*)(visitor & _visitor, versatile const & _visitable, arguments &... _arguments);
-        static constexpr caller_type dispatcher_[width] = {variant::caller< types const &, result_type, visitor, versatile const, arguments... >...};
+        static constexpr caller_type dispatcher_[width] = {variant::caller< unwrap_type_t< types > const &, result_type, visitor, versatile const, arguments... >...};
         return dispatcher_[versatile::index - which()](_visitor, *storage_, _arguments...);
     }
 
@@ -92,9 +93,9 @@ public :
     decltype(auto)
     visit(visitor && _visitor, arguments &&... _arguments) &&
     {
-        using result_type = result_of_t< visitor, typename versatile::this_type &&, arguments... >;
+        using result_type = result_of_t< visitor, leftmost_type &&, arguments... >;
         using caller_type = result_type (*)(visitor & _visitor, versatile & _visitable, arguments &... _arguments);
-        static constexpr caller_type dispatcher_[width] = {variant::caller< types &&, result_type, visitor, versatile, arguments... >...};
+        static constexpr caller_type dispatcher_[width] = {variant::caller< unwrap_type_t< types > &&, result_type, visitor, versatile, arguments... >...};
         return dispatcher_[versatile::index - which()](_visitor, *storage_, _arguments...);
     }
 
@@ -102,9 +103,9 @@ public :
     decltype(auto)
     visit(visitor && _visitor, arguments &&... _arguments) const &&
     {
-        using result_type = result_of_t< visitor, typename versatile::this_type const &&, arguments... >;
+        using result_type = result_of_t< visitor, leftmost_type const &&, arguments... >;
         using caller_type = result_type (*)(visitor & _visitor, versatile const & _visitable, arguments &... _arguments);
-        static constexpr caller_type dispatcher_[width] = {variant::caller< types const &&, result_type, visitor, versatile const, arguments... >...};
+        static constexpr caller_type dispatcher_[width] = {variant::caller< unwrap_type_t< types > const &&, result_type, visitor, versatile const, arguments... >...};
         return dispatcher_[versatile::index - which()](_visitor, *storage_, _arguments...);
     }
 
@@ -366,7 +367,7 @@ struct first_type
 
 template< typename visitable, typename first, typename ...rest >
 struct first_type< visitable, variant< first, rest... > >
-        : identity< copy_cv_reference_t< visitable, first > >
+        : identity< copy_cv_reference_t< visitable, unwrap_type_t< first > > >
 {
 
 };

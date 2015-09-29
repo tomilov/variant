@@ -218,7 +218,9 @@ template< typename visitor,
 struct dispatcher< visitor, visitable, visitable_type< types... >, arguments... >
 {
 
-    using result_type = result_of_t< visitor, copy_cv_reference_t< visitable, typename identity< types... >::type >, arguments... >;
+    using first_type = unwrap_type_t< typename identity< types... >::type >;
+
+    using result_type = result_of_t< visitor, copy_cv_reference_t< visitable, first_type >, arguments... >;
 
 private :
 
@@ -229,9 +231,8 @@ private :
     result_type
     caller(visitor & _visitor, visitable & _visitable, arguments &... _arguments)
     {
-        //return std::forward< visitor >(_visitor)(static_cast< unwrap_type_t< type > >(_visitable), std::forward< arguments >(_arguments)...); // There is known clang++ bug #19917 for static_cast to rvalue reference.
-        using T = unwrap_type_t< type >;
-        return std::forward< visitor >(_visitor)(static_cast< T >(static_cast< T & >(_visitable)), std::forward< arguments >(_arguments)...); // workaround
+        //return std::forward< visitor >(_visitor)(static_cast< type >(_visitable), std::forward< arguments >(_arguments)...); // There is known clang++ bug #19917 for static_cast to rvalue reference.
+        return std::forward< visitor >(_visitor)(static_cast< type >(static_cast< type & >(_visitable)), std::forward< arguments >(_arguments)...); // workaround
     }
 
 public :
@@ -239,7 +240,8 @@ public :
     result_type
     operator () (visitor & _visitor, visitable & _visitable, arguments &... _arguments) const
     {
-        static constexpr caller_type callers_[sizeof...(types)] = {dispatcher::caller< copy_cv_reference_t< visitable &&, types > >...};
+        constexpr auto type_qualifier_ = type_qualifier_of< visitable && >;
+        static constexpr caller_type callers_[sizeof...(types)] = {dispatcher::caller< add_qualifier_t< type_qualifier_, unwrap_type_t< types > > >...};
         assert(_visitable.which() < sizeof...(types));
         return callers_[(sizeof...(types) - 1) - _visitable.which()](_visitor, _visitable, _arguments...);
     }

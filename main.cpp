@@ -839,7 +839,7 @@ main()
         }
         {
             struct A {};
-            using V = variant< A >;
+            using V = variant< recursive_wrapper< A > >;
             visitor0 p_;
             visitor0 const cp_{};
             V v;
@@ -854,7 +854,7 @@ main()
         }
         {
             struct A {};
-            using V = variant< A >;
+            using V = variant< recursive_wrapper< A > >;
             visitor1 p_;
             visitor1 const cp_{};
             V v;
@@ -873,7 +873,7 @@ main()
         { // multivisitation with forwarding
             struct A {};
             struct B {};
-            using V = variant< A, B >;
+            using V = variant< recursive_wrapper< A >, recursive_wrapper< B > >;
             visitor2 v_;
             visitor2 const c_{};
             assert(multivisit(v_, V{B{}}) == std::make_tuple(false, std::tie(typeid(B)), false, false));
@@ -901,7 +901,7 @@ main()
 
             struct A {};
             struct B {};
-            using V = variant< A, B >;
+            using V = variant< recursive_wrapper< A >, recursive_wrapper< B > >;
             V v;
             V const c(B{});
 
@@ -942,7 +942,7 @@ main()
             auto const cdmv = visit(visitor3{});
 
             struct A {};
-            using V = variant< A >;
+            using V = variant< recursive_wrapper< A > >;
             V v;
             V const cv{};
 
@@ -983,7 +983,7 @@ main()
             assert(visit(visitor3{})(V{})  == std::make_tuple(false, false, false, false));
         }
         {
-            using V = variant< int, double >;
+            using V = variant< recursive_wrapper< int >, double >;
             std::stringstream ss_;
             ss_.str("1");
             V v = 2;
@@ -1052,8 +1052,9 @@ main()
                     A & operator = (A &&) = delete;
 
                 };
-                A av{0};
-                A const ac{1};
+                using V = variant< recursive_wrapper< A > >;
+                V av{std::experimental::in_place, 0};
+                V const ac{std::experimental::in_place, 1};
                 {
                     auto const l = compose_visitors(l0, l1, l2, l3);
                     assert(0 == l(ac));
@@ -1163,20 +1164,21 @@ main()
             {
                 auto const l = compose_visitors(l0, l1, l2, l3);
                 struct A {};
-                A a;
-                A const c{};
+                using V = variant< recursive_wrapper< A > >;
+                V a;
+                V const c{};
                 {
-                    auto const la = compose_visitors(l, [] (A const &) { return -1; });
-                    assert(-1 == la(c));
+                    auto const la = compose_visitors([] (A const &) { return -1; }, l);
+                    assert(-1 == visit(la, c));
                     assert(1 == la(a));
                     assert(2 == la(std::move(c)));
                     assert(3 == la(A{}));
                 }
                 {
-                    struct V { auto operator () (A const &) && { return -11; } };
-                    auto lam = compose_visitors(l, V{});
+                    struct F { auto operator () (A const &) && { return -11; } };
+                    auto lam = compose_visitors(F{}, l);
                     assert(0 == lam(c));
-                    assert(-11 == std::move(lam)(c));
+                    assert(-11 == visit(std::move(lam), c));
                 }
             }
         }

@@ -59,7 +59,7 @@ struct unwrap_type
 
 template< typename recursive_wrapper_type, typename type >
 struct unwrap_type< recursive_wrapper_type, recursive_wrapper< type > >
-        : identity< copy_cv_reference_t< recursive_wrapper_type, typename recursive_wrapper< type >::type > >
+        : identity< type >
 {
 
 };
