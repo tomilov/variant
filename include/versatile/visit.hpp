@@ -10,15 +10,8 @@ namespace versatile
 {
 
 template< typename type >
-struct is_visitable // visitable should have `visit` member function
+struct is_visitable
         : std::false_type
-{
-
-};
-
-template< typename ...types >
-struct is_visitable< variant< types... > >
-        : std::true_type
 {
 
 };
@@ -44,10 +37,38 @@ struct is_visitable< volatile type const >
 
 };
 
+template< typename type >
+struct is_visitable< type & >
+        : is_variant< type >
+{
+
+};
+
+template< typename type >
+struct is_visitable< type && >
+        : is_variant< type >
+{
+
+};
+
+template< typename ...types >
+struct is_visitable< variant< types... > > // specialization for variant
+        : std::true_type
+{
+
+};
+
+template< typename ...types >
+struct is_visitable< versatile< types... > > // specialization for versatile
+        : std::true_type
+{
+
+};
+
 namespace details
 {
 
-template< typename result_type, typename supervisitor, typename type, bool = (is_visitable< std::remove_reference_t< type > >{}) >
+template< typename result_type, typename supervisitor, typename type, bool = (is_visitable< type >{}) >
 struct subvisitor;
 
 template< typename result_type, typename supervisitor, typename visitable >
@@ -62,7 +83,8 @@ struct subvisitor< result_type, supervisitor, visitable, true >
     result_type
     operator () (visited &&... _visited) const
     {
-        return std::forward< visitable >(visitable_).visit(std::forward< supervisitor >(supervisitor_), std::forward< visited >(_visited)...);
+        //return std::forward< visitable >(visitable_).visit(std::forward< supervisitor >(supervisitor_), std::forward< visited >(_visited)...);
+        return visit(std::forward< supervisitor >(supervisitor_), std::forward< visitable >(visitable_), std::forward< visited >(_visited)...);
     }
 
 };

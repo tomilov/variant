@@ -1228,6 +1228,32 @@ main()
         }
     }
     {
+        struct A {};
+        struct B {};
+        using U = versatile< A, B >;
+        using V = versatile< A, B >;
+        struct
+        {
+            int operator () (A, A) { return 0; }
+            int operator () (A, B) { return 1; }
+            int operator () (B, A) { return 2; }
+            int operator () (B, B) { return 3; }
+        } v;
+
+        A a;
+        B b;
+
+        assert(multivisit(v, U{a}, V{a}) == 0);
+        assert(multivisit(v, U{a}, V{b}) == 1);
+        assert(multivisit(v, U{b}, V{a}) == 2);
+        assert(multivisit(v, U{b}, V{b}) == 3);
+
+        assert(multivisit(v, V{a}, U{a}) == 0);
+        assert(multivisit(v, V{a}, U{b}) == 1);
+        assert(multivisit(v, V{b}, U{a}) == 2);
+        assert(multivisit(v, V{b}, U{b}) == 3);
+    }
+    {
         assert((test_perferct_forwarding< 2, 2 >{}()));
     }
     {

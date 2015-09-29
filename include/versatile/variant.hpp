@@ -358,21 +358,4 @@ struct is_variant< volatile type const >
 
 };
 
-template< typename type, typename = std::decay_t< type > >
-struct first_type
-        : identity< type >
-{
-
-};
-
-template< typename visitable, typename first, typename ...rest >
-struct first_type< visitable, variant< first, rest... > >
-        : identity< copy_cv_reference_t< visitable, unwrap_type_t< first > > >
-{
-
-};
-
-template< typename type >
-using first_type_t = typename first_type< type >::type;
-
 }
