@@ -1,5 +1,7 @@
 #include <versatile.hpp>
 
+#include <boost/variant.hpp>
+
 #include <string>
 #include <array>
 #include <utility>
@@ -179,7 +181,7 @@ struct visitor3
 
 // value_or
 template< typename lhs, typename rhs >
-std::enable_if_t< (is_variant< std::remove_reference_t< lhs > >{} && !is_variant< std::remove_reference_t< rhs > >{}), std::remove_reference_t< rhs > >
+std::enable_if_t< (is_visitable< std::remove_reference_t< lhs > >{} && !is_visitable< std::remove_reference_t< rhs > >{}), std::remove_reference_t< rhs > >
 operator || (lhs && _lhs, rhs && _rhs) noexcept
 {
     using result_type = std::remove_reference_t< rhs >;
@@ -191,14 +193,14 @@ operator || (lhs && _lhs, rhs && _rhs) noexcept
 }
 
 template< typename lhs, typename rhs >
-std::enable_if_t< (!is_variant< std::remove_reference_t< lhs > >{} && is_variant< std::remove_reference_t< rhs > >{}), lhs >
+std::enable_if_t< (!is_visitable< std::remove_reference_t< lhs > >{} && is_visitable< std::remove_reference_t< rhs > >{}), lhs >
 operator || (lhs && _lhs, rhs && _rhs) noexcept
 {
     return (std::forward< rhs >(_rhs) || std::forward< lhs >(_lhs));
 }
 
 template< typename lhs, typename rhs >
-std::enable_if_t< (is_variant< std::remove_reference_t< lhs > >{} && is_variant< std::remove_reference_t< rhs > >{}) >
+std::enable_if_t< (is_visitable< std::remove_reference_t< lhs > >{} && is_visitable< std::remove_reference_t< rhs > >{}) >
 operator || (lhs && _lhs, rhs && _rhs) = delete;
 
 template< typename type >
@@ -356,7 +358,7 @@ struct multivisitor
     operator () (types &&... _values) & noexcept
     {
         //static_assert(M == sizeof...(types));
-        //static_assert(!(is_variant< types >{} || ...));
+        //static_assert(!(is_visitable< types >{} || ...));
         return {{{type_qualifier_of< multivisitor & >, type_qualifier_of< types && >...}}, {{M, _values...}}};
     }
 
@@ -557,11 +559,128 @@ hard() noexcept
 inline int f() { return 1; }
 inline int g() { return 2; }
 
-}
+template< typename ...types >
+struct boost_variant
+        : boost::variant< types... >
+{
+
+    using base = boost::variant< types... >;
+
+    using base::base;
+    using base::operator =;
+
+    std::size_t
+    which() const
+    {
+        return (sizeof...(types) - static_cast< std::size_t >(base::which()));
+    }
+
+    template< typename type >
+    static
+    constexpr
+    std::size_t
+    index() noexcept
+    {
+        return index_by_type< type, unwrap_type_t< types >... >();
+    }
+
+    template< typename type >
+    bool
+    active() const noexcept
+    {
+        return (index< type >() == which());
+    }
+
+    template< typename type >
+    explicit
+    operator type & () &
+    {
+        if (!active< type >()) {
+            throw std::bad_cast{};
+        }
+        return boost::get< type & >(static_cast< boost_variant::base & >(*this));
+    }
+
+    template< typename type >
+    explicit
+    operator type const & () const &
+    {
+        if (!active< type >()) {
+            throw std::bad_cast{};
+        }
+        return boost::get< type const & >(static_cast< boost_variant::base const & >(*this));
+    }
+
+    template< typename type >
+    explicit
+    operator type && () &&
+    {
+        if (!active< type >()) {
+            throw std::bad_cast{};
+        }
+        return boost::get< type && >(static_cast< boost_variant::base && >(*this));
+    }
+
+    template< typename type >
+    explicit
+    operator type const && () const &&
+    {
+        if (!active< type >()) {
+            throw std::bad_cast{};
+        }
+        return boost::get< type const && >(static_cast< boost_variant::base const & >(*this));
+    }
+
+};
+
+} // namespace test
+
+namespace versatile
+{
+
+template< typename ...types >
+struct is_visitable< test::boost_variant< types... > >
+        : std::true_type
+{
+
+};
+
+template< typename visitable, typename first, typename ...rest >
+struct first_type< visitable, test::boost_variant< first, rest... > >
+        : identity< copy_cv_reference_t< visitable, unwrap_type_t< first > > >
+{
+
+};
+
+} // namespace versatile
+
+struct R;
+struct A {};
+using V = versatile::variant< A, versatile::recursive_wrapper< R > >;
+struct R
+        : V
+{
+    using V::V;
+    using V::operator =;
+};
 
 int
 main()
 {
+    { // recursive (inheritance)
+        V v;
+        assert(v.active< A >());
+        v = R{};
+        assert(v.active< R >());
+        R r;
+        assert(r.active< A >());
+        R a{R{}};
+        assert(a.active< A >());
+        V vr{R{}};
+        R u{std::move(vr)};
+        assert(u.active< R >());
+    }
+#if 0
     using namespace test;
     {
         using namespace versatile;
@@ -1182,22 +1301,22 @@ main()
                 }
             }
         }
-        {
+        { // custom variant
             using V = custom_variant< int, char >;
             V v;
             assert(v.empty());
             v = 1;
             assert(v.active< int >());
             auto l = compose_visitors([] (int) { return 1; }, [] (empty) { return 2; }, [] (char) { return 3; });
-            assert((v.visit(l) == 1));
+            assert((visit(l, v) == 1));
             v = V{char{}};
             assert(v.active< char >());
-            assert((v.visit(l) == 3));
+            assert((visit(l, v) == 3));
             v = empty{};
-            assert((v.visit(l) == 2));
+            assert((visit(l, v) == 2));
             assert(v.empty());
         }
-        {
+        { // custom variant
             auto l0 = [] (int) { return 222; };
             auto l1 = [] (int) { return 444; };
             using F = int (*)(int);
@@ -1212,7 +1331,7 @@ main()
             assert(v.empty());
             assert(v(-1) == 333);
         }
-        {
+        { // custom variant
             using V = variant< decltype(&f), decltype(&g) >;
             V v = g;
             assert(v.active< decltype(&f) >());
@@ -1227,7 +1346,7 @@ main()
             assert(v() == 323);
         }
     }
-    {
+    { // mixed visitables to multivisit
         struct A {};
         struct B {};
         using U = versatile< A, B >;
@@ -1253,11 +1372,30 @@ main()
         assert(multivisit(v, V{b}, U{a}) == 2);
         assert(multivisit(v, V{b}, U{b}) == 3);
     }
+    { // boost::variant visitation
+        struct A {};
+        struct B {};
+        struct
+        {
+            int operator () (A, A) { return 0; }
+            int operator () (A, B) { return 1; }
+            int operator () (B, A) { return 2; }
+            int operator () (B, B) { return 3; }
+        } v;
+        using V = boost_variant< A, B >;
+        V a{A{}};
+        V b{B{}};
+        assert(multivisit(v, a, a) == 0);
+        assert(multivisit(v, a, b) == 1);
+        assert(multivisit(v, b, a) == 2);
+        assert(multivisit(v, b, b) == 3);
+    }
     {
         assert((test_perferct_forwarding< 2, 2 >{}()));
     }
     {
         assert((hard< ROWS, COLS >()));
     }
+#endif
     return EXIT_SUCCESS;
 }

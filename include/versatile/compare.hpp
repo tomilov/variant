@@ -1,7 +1,6 @@
 #pragma once
 
 #include "variant.hpp"
-#include "visit.hpp"
 
 #include <typeinfo>
 
@@ -39,7 +38,7 @@ template< typename ...lhs, typename rhs >
 bool
 operator == (variant< lhs... > const & _lhs, rhs const & _rhs)
 {
-    return _lhs.visit(equal_to{}, _rhs);
+    return visit(equal_to{}, _lhs, _rhs);
 }
 
 template< typename lhs, typename ...rhs >
@@ -80,7 +79,7 @@ template< typename rhs, typename ...lhs >
 bool
 operator < (variant< lhs... > const & _lhs, rhs const & _rhs)
 {
-    return _lhs.visit(less{}, _rhs);
+    return visit(less{}, _lhs, _rhs);
 }
 
 template< typename lhs, typename ...rhs >

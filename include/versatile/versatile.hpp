@@ -1,7 +1,6 @@
 #pragma once
 
-#include "type_traits.hpp"
-#include "recursive_wrapper.hpp"
+#include "visit.hpp"
 
 #include <type_traits>
 #include <utility>
@@ -204,57 +203,18 @@ public :
 
 };
 
-namespace details
+template< typename ...types >
+struct is_visitable< versatile< types... > >
+        : std::true_type
 {
-
-template< typename visitor, typename visitable, typename visitable_type, typename ...arguments >
-struct dispatcher;
-
-template< typename visitor,
-          typename visitable,
-          template< typename ...types > class visitable_type,
-          typename ...types,
-          typename ...arguments >
-struct dispatcher< visitor, visitable, visitable_type< types... >, arguments... >
-{
-
-    using first_type = unwrap_type_t< typename identity< types... >::type >;
-
-    using result_type = result_of_t< visitor, copy_cv_reference_t< visitable, first_type >, arguments... >;
-
-private :
-
-    using caller_type = result_type (*)(visitor &, visitable &, arguments &...);
-
-    template< typename type >
-    static
-    result_type
-    caller(visitor & _visitor, visitable & _visitable, arguments &... _arguments)
-    {
-        //return std::forward< visitor >(_visitor)(static_cast< type >(_visitable), std::forward< arguments >(_arguments)...); // There is known clang++ bug #19917 for static_cast to rvalue reference.
-        return std::forward< visitor >(_visitor)(static_cast< type >(static_cast< type & >(_visitable)), std::forward< arguments >(_arguments)...); // workaround
-    }
-
-public :
-
-    result_type
-    operator () (visitor & _visitor, visitable & _visitable, arguments &... _arguments) const
-    {
-        constexpr auto type_qualifier_ = type_qualifier_of< visitable && >;
-        static constexpr caller_type callers_[sizeof...(types)] = {dispatcher::caller< add_qualifier_t< type_qualifier_, unwrap_type_t< types > > >...};
-        assert(_visitable.which() < sizeof...(types));
-        return callers_[(sizeof...(types) - 1) - _visitable.which()](_visitor, _visitable, _arguments...);
-    }
 
 };
 
-}
-
-template< typename visitor, typename visitable, typename ...arguments >
-decltype(auto)
-visit(visitor && _visitor, visitable && _visitable, arguments &&... _arguments)
+template< typename visitable, typename first, typename ...rest >
+struct first_type< visitable, versatile< first, rest... > >
+        : identity< copy_cv_reference_t< visitable, unwrap_type_t< first > > >
 {
-    return details::dispatcher< visitor, visitable, std::decay_t< visitable >, arguments... >{}(_visitor, _visitable, _arguments...);
-}
+
+};
 
 }

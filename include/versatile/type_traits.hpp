@@ -5,6 +5,9 @@
 namespace versatile
 {
 
+template< typename type, typename ...arguments >
+using result_of_t = decltype(std::declval< type >()(std::declval< arguments >()...));
+
 template< typename first, typename ...rest >
 struct identity
 {
@@ -63,9 +66,6 @@ template< typename type > constexpr type_qualifier type_qualifier_of< volatile t
 
 template< typename from, typename to >
 using copy_cv_reference_t = add_qualifier_t< type_qualifier_of< from >, to >;
-
-template< typename type, typename ...arguments >
-using result_of_t = decltype(std::declval< type >()(std::declval< arguments >()...));
 
 template< typename type, typename ...types >
 struct index_by_type
