@@ -2,6 +2,9 @@
 
 #include "variant.hpp"
 
+#include <ostream>
+#include <istream>
+
 namespace versatile
 {
 

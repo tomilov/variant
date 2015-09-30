@@ -216,26 +216,6 @@ struct variadic_index< variadic< types... >, type >
 
 };
 
-struct empty { int operator () (int) { return 333; } };
-
-template< typename ...types >
-struct custom_variant
-        : variant< empty, types... >
-{
-
-    using base = variant< empty, types... >;
-
-    using base::base;
-    using base::operator =;
-
-    bool
-    empty() const
-    {
-        return (base::which() + 1 == base::width);
-    }
-
-};
-
 template< typename F, std::size_t ...indices >
 struct enumerator;
 
@@ -560,7 +540,7 @@ inline int f() { return 1; }
 inline int g() { return 2; }
 
 template< typename ...types >
-struct boost_variant
+struct boost_variant_i
         : boost::variant< types... >
 {
 
@@ -572,7 +552,7 @@ struct boost_variant
     std::size_t
     which() const
     {
-        return (sizeof...(types) - static_cast< std::size_t >(base::which()));
+        return ((sizeof...(types) - 1) - static_cast< std::size_t >(base::which()));
     }
 
     template< typename type >
@@ -598,7 +578,7 @@ struct boost_variant
         if (!active< type >()) {
             throw std::bad_cast{};
         }
-        return boost::get< type & >(static_cast< boost_variant::base & >(*this));
+        return boost::get< type & >(static_cast< boost_variant_i::base & >(*this));
     }
 
     template< typename type >
@@ -608,7 +588,7 @@ struct boost_variant
         if (!active< type >()) {
             throw std::bad_cast{};
         }
-        return boost::get< type const & >(static_cast< boost_variant::base const & >(*this));
+        return boost::get< type const & >(static_cast< boost_variant_i::base const & >(*this));
     }
 
     template< typename type >
@@ -618,7 +598,7 @@ struct boost_variant
         if (!active< type >()) {
             throw std::bad_cast{};
         }
-        return boost::get< type && >(static_cast< boost_variant::base && >(*this));
+        return boost::get< type && >(static_cast< boost_variant_i::base && >(*this));
     }
 
     template< typename type >
@@ -628,8 +608,117 @@ struct boost_variant
         if (!active< type >()) {
             throw std::bad_cast{};
         }
-        return boost::get< type const && >(static_cast< boost_variant::base const & >(*this));
+        return boost::get< type const && >(static_cast< boost_variant_i::base const & >(*this));
     }
+
+};
+
+template< typename ...types >
+struct boost_variant_c
+{
+
+    using variant = boost::variant< types... >;
+
+    boost_variant_c(boost_variant_c &) = default;
+    boost_variant_c(boost_variant_c const &) = default;
+    boost_variant_c(boost_variant_c &&) = default;
+
+    boost_variant_c(boost_variant_c const && _rhs)
+        : v(std::move(_rhs.v))
+    { ; }
+
+    template< typename ...arguments >
+    boost_variant_c(arguments &&... _arguments)
+        : v(std::forward< arguments >(_arguments)...)
+    { ; }
+
+    boost_variant_c &
+    operator = (boost_variant_c const &) = default;
+    boost_variant_c &
+    operator = (boost_variant_c &) = default;
+    boost_variant_c &
+    operator = (boost_variant_c &&) = default;
+
+    boost_variant_c &
+    operator = (boost_variant_c const && _rhs)
+    {
+        v = std::move(_rhs.v);
+        return *this;
+    }
+
+    template< typename argument >
+    boost_variant_c &
+    operator = (argument && _argument)
+    {
+        v = std::forward< argument >(_argument);
+        return *this;
+    }
+
+    std::size_t
+    which() const
+    {
+        return ((sizeof...(types) - 1) - static_cast< std::size_t >(v.which()));
+    }
+
+    template< typename type >
+    static
+    constexpr
+    std::size_t
+    index() noexcept
+    {
+        return index_by_type< type, unwrap_type_t< types >... >();
+    }
+
+    template< typename type >
+    bool
+    active() const noexcept
+    {
+        return (index< type >() == which());
+    }
+
+    template< typename type >
+    explicit
+    operator type & () &
+    {
+        if (!active< type >()) {
+            throw std::bad_cast{};
+        }
+        return boost::get< type & >(v);
+    }
+
+    template< typename type >
+    explicit
+    operator type const & () const &
+    {
+        if (!active< type >()) {
+            throw std::bad_cast{};
+        }
+        return boost::get< type const & >(v);
+    }
+
+    template< typename type >
+    explicit
+    operator type && () &&
+    {
+        if (!active< type >()) {
+            throw std::bad_cast{};
+        }
+        return boost::get< type && >(v);
+    }
+
+    template< typename type >
+    explicit
+    operator type const && () const &&
+    {
+        if (!active< type >()) {
+            throw std::bad_cast{};
+        }
+        return boost::get< type const && >(v);
+    }
+
+private :
+
+    boost::variant< types... > v;
 
 };
 
@@ -639,14 +728,28 @@ namespace versatile
 {
 
 template< typename ...types >
-struct is_visitable< test::boost_variant< types... > >
+struct is_visitable< test::boost_variant_i< types... > >
         : std::true_type
 {
 
 };
 
 template< typename visitable, typename first, typename ...rest >
-struct first_type< visitable, test::boost_variant< first, rest... > >
+struct first_type< visitable, test::boost_variant_i< first, rest... > >
+        : identity< copy_cv_reference_t< visitable, unwrap_type_t< first > > >
+{
+
+};
+
+template< typename ...types >
+struct is_visitable< test::boost_variant_c< types... > >
+        : std::true_type
+{
+
+};
+
+template< typename visitable, typename first, typename ...rest >
+struct first_type< visitable, test::boost_variant_c< first, rest... > >
         : identity< copy_cv_reference_t< visitable, unwrap_type_t< first > > >
 {
 
@@ -667,20 +770,6 @@ struct R
 int
 main()
 {
-    { // recursive (inheritance)
-        V v;
-        assert(v.active< A >());
-        v = R{};
-        assert(v.active< R >());
-        R r;
-        assert(r.active< A >());
-        R a{R{}};
-        assert(a.active< A >());
-        V vr{R{}};
-        R u{std::move(vr)};
-        assert(u.active< R >());
-    }
-#if 0
     using namespace test;
     {
         using namespace versatile;
@@ -822,22 +911,6 @@ main()
             v = R{};
             assert(v.active< R >());
             assert(static_cast< R & >(v).v.active< A >());
-        }
-        { // recursive (inheritance)
-            struct R;
-            struct A {};
-            using V = variant< A, recursive_wrapper< R > >;
-            V v;
-            assert(v.active< A >());
-            struct R : V { using V::V; using V::operator =; };
-            v = R{};
-            assert(v.active< R >());
-            R r;
-            assert(r.active< A >());
-            R a{R{}};
-            assert(a.active< A >());
-            R u{V{R{}}};
-            assert(u.active< R >());
         }
         { // recursive (inheritance)
             struct R;
@@ -1146,6 +1219,7 @@ main()
             auto const l1 = [] (auto &) { return 1; };
             auto const l2 = [] (auto const &&) { return 2; };
             auto const l3 = [] (auto &&) { return 3; };
+            auto const l4 = [] (auto && arg) -> std::enable_if_t< std::is_rvalue_reference< decltype(arg) >{}, int > { return 4; };
             {
                 struct A {};
                 using V = variant< A >;
@@ -1180,6 +1254,13 @@ main()
                     assert(1 == l(av));
                     assert(2 == l(std::move(ac)));
                     assert(3 == l(std::move(av)));
+                }
+                {
+                    auto const l = compose_visitors(l0, l1, l2, l4);
+                    assert(0 == l(ac));
+                    assert(1 == l(av));
+                    assert(2 == l(std::move(ac)));
+                    assert(4 == l(std::move(av)));
                 }
                 {
                     auto const l = compose_visitors(l0);
@@ -1266,11 +1347,25 @@ main()
                     assert(3 == l(std::move(av)));
                 }
                 {
+                    auto const l = compose_visitors(l0, l1, l4);
+                    assert(0 == l(ac));
+                    assert(1 == l(av));
+                    assert(4 == l(std::move(ac)));
+                    assert(4 == l(std::move(av)));
+                }
+                {
                     auto const l = compose_visitors(l0, l2, l3);
                     assert(0 == l(ac));
                     assert(3 == l(av));
                     assert(2 == l(std::move(ac)));
                     assert(3 == l(std::move(av)));
+                }
+                {
+                    auto const l = compose_visitors(l0, l2, l4);
+                    assert(0 == l(ac));
+                    assert(0 == l(av));
+                    assert(2 == l(std::move(ac)));
+                    assert(4 == l(std::move(av)));
                 }
                 {
                     auto const l = compose_visitors(l1, l2, l3);
@@ -1301,37 +1396,7 @@ main()
                 }
             }
         }
-        { // custom variant
-            using V = custom_variant< int, char >;
-            V v;
-            assert(v.empty());
-            v = 1;
-            assert(v.active< int >());
-            auto l = compose_visitors([] (int) { return 1; }, [] (empty) { return 2; }, [] (char) { return 3; });
-            assert((visit(l, v) == 1));
-            v = V{char{}};
-            assert(v.active< char >());
-            assert((visit(l, v) == 3));
-            v = empty{};
-            assert((visit(l, v) == 2));
-            assert(v.empty());
-        }
-        { // custom variant
-            auto l0 = [] (int) { return 222; };
-            auto l1 = [] (int) { return 444; };
-            using F = int (*)(int);
-            using V = custom_variant< F >;
-            V v{std::experimental::in_place, l0};
-            assert(v.active< F >());
-            assert(v(1) == 222);
-            v = static_cast< F >(l1);
-            assert(v.active< F >());
-            assert(v(0) == 444);
-            v = empty{};
-            assert(v.empty());
-            assert(v(-1) == 333);
-        }
-        { // custom variant
+        { // function pointers
             using V = variant< decltype(&f), decltype(&g) >;
             V v = g;
             assert(v.active< decltype(&f) >());
@@ -1346,7 +1411,7 @@ main()
             assert(v() == 323);
         }
     }
-    { // mixed visitables to multivisit
+    { // multivisit mixed visitables
         struct A {};
         struct B {};
         using U = versatile< A, B >;
@@ -1382,7 +1447,25 @@ main()
             int operator () (B, A) { return 2; }
             int operator () (B, B) { return 3; }
         } v;
-        using V = boost_variant< A, B >;
+        using V = boost_variant_i< A, B >;
+        V a{A{}};
+        V b{B{}};
+        assert(multivisit(v, a, a) == 0);
+        assert(multivisit(v, a, b) == 1);
+        assert(multivisit(v, b, a) == 2);
+        assert(multivisit(v, b, b) == 3);
+    }
+    { // boost::variant visitation
+        struct A {};
+        struct B {};
+        struct
+        {
+            int operator () (A, A) { return 0; }
+            int operator () (A, B) { return 1; }
+            int operator () (B, A) { return 2; }
+            int operator () (B, B) { return 3; }
+        } v;
+        using V = boost_variant_c< A, B >;
         V a{A{}};
         V b{B{}};
         assert(multivisit(v, a, a) == 0);
@@ -1391,11 +1474,22 @@ main()
         assert(multivisit(v, b, b) == 3);
     }
     {
+        versatile<> empty;
+        using V = versatile< int, double, versatile<> >;
+        V v;
+        auto l = compose_visitors([] (int) { return 0; }, [] (double) { return 1; }, [] (auto x) { static_assert(std::is_same< decltype(x), versatile<> >{}); return 2; });
+        assert(0 == multivisit(l, int{}));
+        assert(1 == multivisit(l, double{}));
+        assert(2 == multivisit(l, empty));
+        assert(0 == multivisit(l, v));
+        assert(1 == multivisit(l, V{double{}}));
+        assert(0 == multivisit(l, V{empty})); // default construction equivalent
+    }
+    {
         assert((test_perferct_forwarding< 2, 2 >{}()));
     }
     {
         assert((hard< ROWS, COLS >()));
     }
-#endif
     return EXIT_SUCCESS;
 }

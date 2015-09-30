@@ -3,8 +3,8 @@
 #include "versatile.hpp"
 
 #include <type_traits>
-#include <experimental/optional>
 #include <utility>
+#include <experimental/optional>
 #include <memory>
 #include <typeinfo>
 
@@ -69,19 +69,19 @@ private :
 public :
 
     variant(variant & _rhs)
-        : storage_(visit(constructor{}, _rhs))
+        : storage_(visit(constructor{}, *_rhs.storage_))
     { ; }
 
     variant(variant const & _rhs)
-        : storage_(visit(constructor{}, _rhs))
+        : storage_(visit(constructor{}, *_rhs.storage_))
     { ; }
 
     variant(variant && _rhs)
-        : storage_(visit(constructor{}, std::move(_rhs)))
+        : storage_(visit(constructor{}, std::move(*_rhs.storage_)))
     { ; }
 
     variant(variant const && _rhs)
-        : storage_(visit(constructor{}, std::move(_rhs)))
+        : storage_(visit(constructor{}, std::move(*_rhs.storage_)))
     { ; }
 
     template< typename ...arguments >
@@ -232,28 +232,40 @@ public :
     decltype(auto)
     operator () (arguments &&... _arguments) &
     {
-        return visit([&] (auto & _value) -> decltype(auto) { return _value(std::forward< arguments >(_arguments)...); }, *this);
+        return visit([&] (auto & _value) -> decltype(auto)
+        {
+            return _value(std::forward< arguments >(_arguments)...);
+        }, *this);
     }
 
     template< typename ...arguments >
     decltype(auto)
     operator () (arguments &&... _arguments) const &
     {
-        return visit([&] (auto const & _value) -> decltype(auto) { return _value(std::forward< arguments >(_arguments)...); }, *this);
+        return visit([&] (auto const & _value) -> decltype(auto)
+        {
+            return _value(std::forward< arguments >(_arguments)...);
+        }, *this);
     }
 
     template< typename ...arguments >
     decltype(auto)
     operator () (arguments &&... _arguments) &&
     {
-        return visit([&] (auto && _value) -> decltype(auto) { return std::move(_value)(std::forward< arguments >(_arguments)...); }, std::move(*this));
+        return visit([&] (auto && _value) -> decltype(auto)
+        {
+            return std::move(_value)(std::forward< arguments >(_arguments)...);
+        }, std::move(*this));
     }
 
     template< typename ...arguments >
     decltype(auto)
     operator () (arguments &&... _arguments) const &&
     {
-        return visit([&] (auto const && _value) -> decltype(auto) { return std::move(_value)(std::forward< arguments >(_arguments)...); }, std::move(*this));
+        return visit([&] (auto const && _value) -> decltype(auto)
+        {
+            return std::move(_value)(std::forward< arguments >(_arguments)...);
+        }, std::move(*this));
     }
 
 };
@@ -266,8 +278,8 @@ swap(variant< types... > & _lhs, variant< types... > & _rhs) noexcept
     _lhs.swap(_rhs);
 }
 
-template< typename ...types >
-struct is_visitable< variant< types... > >
+template< typename first, typename ...rest >
+struct is_visitable< variant< first, rest... > >
         : std::true_type
 {
 

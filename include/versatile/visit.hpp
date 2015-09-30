@@ -10,9 +10,6 @@
 namespace versatile
 {
 
-// requires:
-// 1.) `type` is `template< typename ...types > class T` for some `types...` and `T< types... >` is explicitly convertible to each of them;
-// 2.) `type` has `std::size_t type::which() const` member function, which returns rtl-zero-based-index of active type.
 template< typename type >
 struct is_visitable
         : std::false_type
@@ -72,9 +69,7 @@ template< typename visitor,
 struct dispatcher< visitor, visitable, visitable_type< types... >, arguments... >
 {
 
-    using first_type = unwrap_type_t< typename identity< types... >::type >;
-
-    using result_type = result_of_t< visitor, copy_cv_reference_t< visitable, first_type >, arguments... >;
+    using result_type = result_of_t< visitor, first_type_t< visitable >, arguments... >;
 
 private :
 
@@ -108,6 +103,7 @@ template< typename visitor, typename visitable, typename ...arguments >
 decltype(auto)
 visit(visitor && _visitor, visitable && _visitable, arguments &&... _arguments)
 {
+    static_assert(is_visitable< visitable >{}, "not visitable type");
     return details::dispatcher< visitor, visitable, std::decay_t< visitable >, arguments... >{}(_visitor, _visitable, _arguments...);
 }
 

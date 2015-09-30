@@ -203,8 +203,8 @@ public :
 
 };
 
-template< typename ...types >
-struct is_visitable< versatile< types... > >
+template< typename first, typename ...rest >
+struct is_visitable< versatile< first, rest... > >
         : std::true_type
 {
 
