@@ -270,10 +270,16 @@ public :
 
 };
 
-template< typename ...types >
+template<>
+class variant<>
+{
+
+};
+
+template< typename first, typename ...rest >
 constexpr
 void
-swap(variant< types... > & _lhs, variant< types... > & _rhs) noexcept
+swap(variant< first, rest... > & _lhs, variant< first, rest... > & _rhs) noexcept
 {
     _lhs.swap(_rhs);
 }

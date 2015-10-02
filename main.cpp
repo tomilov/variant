@@ -727,8 +727,8 @@ private :
 namespace versatile
 {
 
-template< typename ...types >
-struct is_visitable< test::boost_variant_i< types... > >
+template< typename first, typename ...rest >
+struct is_visitable< test::boost_variant_i< first, rest... > >
         : std::true_type
 {
 
@@ -741,8 +741,8 @@ struct first_type< visitable, test::boost_variant_i< first, rest... > >
 
 };
 
-template< typename ...types >
-struct is_visitable< test::boost_variant_c< types... > >
+template< typename first, typename ...rest >
+struct is_visitable< test::boost_variant_c< first, rest... > >
         : std::true_type
 {
 

@@ -125,7 +125,6 @@ struct subvisitor< result_type, supervisitor, visitable, true >
     result_type
     operator () (visited &&... _visited) const
     {
-        //return std::forward< visitable >(visitable_).visit(std::forward< supervisitor >(supervisitor_), std::forward< visited >(_visited)...);
         return visit(std::forward< supervisitor >(supervisitor_), std::forward< visitable >(visitable_), std::forward< visited >(_visited)...);
     }
 
@@ -172,22 +171,22 @@ struct visitor_partially_applier< result_type, first, rest... >
     template< typename visitor >
     constexpr
     result_type
-    operator () (visitor && _visitor, first && _first, rest &&... _rest) const
+    operator () (visitor && _visitor, first & _first, rest &... _rest) const
     {
-        return visitor_partially_applier< result_type, rest... >{}(subvisitor< result_type, visitor, first >{_visitor, _first}, std::forward< rest >(_rest)...);
+        return visitor_partially_applier< result_type, rest... >{}(subvisitor< result_type, visitor, first >{_visitor, _first}, _rest...);
     }
 
 };
 
 }
 
-template< typename visitor, typename ...types >
+template< typename visitor, typename ...visitables >
 constexpr
 decltype(auto)
-multivisit(visitor && _visitor, types &&... _values)
+multivisit(visitor && _visitor, visitables &&... _visitables)
 {
-    using result_type = result_of_t< visitor, first_type_t< types >... >;
-    return details::visitor_partially_applier< result_type, types... >{}(std::forward< visitor >(_visitor), std::forward< types >(_values)...);
+    using result_type = result_of_t< visitor, first_type_t< visitables >... >;
+    return details::visitor_partially_applier< result_type, visitables... >{}(std::forward< visitor >(_visitor), _visitables...);
 }
 
 namespace details
@@ -198,7 +197,7 @@ struct delayed_visitor
 {
 
     constexpr
-    delayed_visitor(visitor && _visitor) noexcept(std::is_lvalue_reference< visitor >{} || std::is_nothrow_move_constructible< visitor >{})
+    delayed_visitor(visitor & _visitor) noexcept(std::is_lvalue_reference< visitor >{} || std::is_nothrow_move_constructible< visitor >{})
         : visitor_(std::forward< visitor >(_visitor))
     { ; }
 
@@ -243,7 +242,7 @@ constexpr
 details::delayed_visitor< visitor >
 visit(visitor && _visitor) noexcept(std::is_lvalue_reference< visitor >{} || std::is_nothrow_move_constructible< visitor >{})
 {
-    return std::forward< visitor >(_visitor);
+    return _visitor;
 }
 
 namespace details
@@ -258,9 +257,9 @@ struct composite_visitor
     using std::decay_t< visitor >::operator ();
     using composite_visitor< visitors... >::operator ();
 
-    composite_visitor(visitor && _visitor, visitors &&... _visitors)
+    composite_visitor(visitor & _visitor, visitors &... _visitors)
         : std::decay_t< visitor >(std::forward< visitor >(_visitor))
-        , composite_visitor< visitors... >{std::forward< visitors >(_visitors)...}
+        , composite_visitor< visitors... >{_visitors...}
     { ; }
 
 };
@@ -272,7 +271,7 @@ struct composite_visitor< visitor >
 
     using std::decay_t< visitor >::operator ();
 
-    composite_visitor(visitor && _visitor)
+    composite_visitor(visitor & _visitor)
         : std::decay_t< visitor >(std::forward< visitor >(_visitor))
     { ; }
 
@@ -284,7 +283,7 @@ template< typename visitor, typename ...visitors >
 details::composite_visitor< visitor, visitors... >
 compose_visitors(visitor && _visitor, visitors &&... _visitors)
 {
-    return {std::forward< visitor >(_visitor), std::forward< visitors >(_visitors)...};
+    return {_visitor, _visitors...};
 }
 
 }
