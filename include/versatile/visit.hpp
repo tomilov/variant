@@ -32,6 +32,13 @@ struct is_visitable< volatile type >
 };
 
 template< typename type >
+struct is_visitable< volatile type const >
+        : is_visitable< type >
+{
+
+};
+
+template< typename type >
 struct is_visitable< type & >
         : is_visitable< type >
 {

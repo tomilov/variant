@@ -53,6 +53,25 @@ static_assert(std::is_same< copy_cv_reference_t< volatile A const &&, B >, volat
 
 }
 
+namespace test_is_visitable
+{
+
+using V = variant< int >;
+static_assert(is_visitable<          V          >{});
+static_assert(is_visitable<          V const    >{});
+static_assert(is_visitable< volatile V          >{});
+static_assert(is_visitable< volatile V const    >{});
+static_assert(is_visitable<          V        & >{});
+static_assert(is_visitable<          V const  & >{});
+static_assert(is_visitable< volatile V        & >{});
+static_assert(is_visitable< volatile V const  & >{});
+static_assert(is_visitable<          V       && >{});
+static_assert(is_visitable<          V const && >{});
+static_assert(is_visitable< volatile V       && >{});
+static_assert(is_visitable< volatile V const && >{});
+
+}
+
 struct introspector
 {
 
@@ -364,7 +383,7 @@ struct multivisitor
     operator () (types &&... _values) const && noexcept
     {
         return {{{type_qualifier_of< multivisitor const && >, type_qualifier_of< types && >...}}, {{M, _values...}}};
-    }
+    }/* volatile qualifier not properly supported in STL
 
     template< typename ...types >
     constexpr
@@ -396,7 +415,7 @@ struct multivisitor
     operator () (types &&... _values) volatile const && noexcept
     {
         return {{{type_qualifier_of< volatile multivisitor const && >, type_qualifier_of< types && >...}}, {{M, _values...}}};
-    }
+    }*/
 
 };
 
