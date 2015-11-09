@@ -5,9 +5,6 @@
 namespace versatile
 {
 
-template< typename type, typename ...arguments >
-using result_of_t = decltype(std::declval< type >()(std::declval< arguments >()...));
-
 template< typename ...types >
 struct identity;
 
