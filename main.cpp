@@ -1447,7 +1447,7 @@ main()
         struct A {};
         struct B {};
         using U = versatile< A, B >;
-        using V = versatile< A, B >;
+        using V = variant< A, B >;
         struct
         {
             int operator () (A, A) { return 0; }
