@@ -563,7 +563,7 @@ struct boost_variant_i
     std::size_t
     index() noexcept
     {
-        return index_by_type< type, unwrap_type_t< types >..., void >();
+        return index_by_type< unwrap_type_t< type >, unwrap_type_t< types >..., void >();
     }
 
     template< typename type >
@@ -668,7 +668,7 @@ struct boost_variant_c
     std::size_t
     index() noexcept
     {
-        return index_by_type< type, unwrap_type_t< types >..., void >();
+        return index_by_type< unwrap_type_t< type >, unwrap_type_t< types >..., void >();
     }
 
     template< typename type >
@@ -724,6 +724,22 @@ private :
 
 };
 
+struct R;
+struct A {};
+using V = variant< A, recursive_wrapper< R > >;
+struct R
+        : V
+{
+    using V::V;
+    using V::operator =;
+};
+
+template< typename T >
+using AW = aggregate_wrapper< T >;
+
+template< typename T >
+using RW = recursive_wrapper< T >;
+
 } // namespace test
 
 namespace versatile
@@ -731,7 +747,7 @@ namespace versatile
 
 template< typename recursive_wrapper_type, typename type >
 struct unwrap_type< recursive_wrapper_type, boost::recursive_wrapper< type > >
-        : identity< type >
+        : unwrap_type< type >
 {
 
 };
@@ -752,22 +768,11 @@ struct is_visitable< test::boost_variant_c< first, rest... > >
 
 } // namespace versatile
 
-struct R;
-struct A {};
-using V = versatile::variant< A, versatile::recursive_wrapper< R > >;
-struct R
-        : V
-{
-    using V::V;
-    using V::operator =;
-};
-
 int
 main()
 {
     using namespace test;
     {
-        using namespace versatile;
         {
             using V = versatile< int >;
             V w; // equivalent to default construction
@@ -1257,11 +1262,13 @@ main()
                 using V = variant< A >;
                 V v;
                 V const c{};
-                auto const l = compose_visitors(l0, l1, l2, l3);
+                auto const l = compose_visitors(l0, l1, l2, l3, [] { ; });
                 assert(0 == visit(l, c));
                 assert(1 == visit(l, v));
                 assert(2 == visit(l, std::move(c)));
                 assert(3 == visit(l, std::move(v)));
+                assert(3 == visit(l, std::move(v)));
+                static_assert(std::is_void< decltype(visit(l)()) >{});
             }
             {
                 struct A
@@ -1505,7 +1512,7 @@ main()
         assert(multivisit(v, b, a) == 2);
         assert(multivisit(v, b, b) == 3);
     }
-    {
+    { // handling of the empty
         versatile<> empty;
         using V = versatile< int, double, versatile<> >;
         V v;
@@ -1516,6 +1523,33 @@ main()
         assert(0 == multivisit(l, v));
         assert(1 == multivisit(l, V{double{}}));
         assert(0 == multivisit(l, V{empty})); // default construction equivalent
+    }
+    { // aggregate wrapper
+        struct X {};
+        struct Y {};
+        struct XY { X x; Y y; XY() = delete; XY(XY const &) = delete; XY(XY &&) = default; XY & operator = (XY &&) = default; };
+        XY xy{}; // value-initialization by empty list initializer
+        xy.x = {}; xy.y = {}; // accessible
+        static_assert(std::is_constructible< XY, XY >{});
+        static_assert(!std::is_copy_constructible< XY >{});
+        static_assert(std::is_move_constructible< XY >{});
+        static_assert(!std::is_default_constructible< XY >{});
+        using WXY = AW< XY >;
+        WXY wxy{std::move(xy)};
+        wxy = std::move(xy);
+        static_assert(std::is_constructible< WXY, XY >{});
+        static_assert(!std::is_copy_constructible< WXY >{});
+        static_assert(std::is_move_constructible< WXY >{});
+        static_assert(!std::is_default_constructible< WXY >{});
+        using V = variant< WXY >;
+        static_assert(std::is_constructible< V, XY >{});
+        static_assert(std::is_copy_constructible< V >{});
+        static_assert(std::is_move_constructible< V >{});
+        static_assert(std::is_default_constructible< V >{}); // wrong for this unary variant, need TODO something
+        V v{std::experimental::in_place, X{}, Y{}};
+        assert(v.active< XY >());
+        v = std::move(wxy);
+        v = std::move(xy);
     }
     {
         assert((test_perferct_forwarding< 2, 2 >{}()));

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "recursive_wrapper.hpp"
+#include "wrappers.hpp"
 
 #include <type_traits>
 #include <utility>
@@ -65,14 +65,15 @@ template< typename visitor, typename visitable, typename ...arguments >
 decltype(auto)
 visit(visitor && _visitor, visitable && _visitable, arguments &&... _arguments)
 {
-    static_assert(is_visitable< std::decay_t< visitable > >{});
-    return details::dispatcher< visitor, visitable, std::decay_t< visitable >, arguments... >{}(_visitor, _visitable, _arguments...);
+    using decay_type = unwrap_type_t< visitable >;
+    static_assert(is_visitable< decay_type >{});
+    return details::dispatcher< visitor, visitable, decay_type, arguments... >{}(_visitor, _visitable, _arguments...);
 }
 
 namespace details
 {
 
-template< typename supervisitor, typename type, bool = (is_visitable< std::decay_t< type > >{}) >
+template< typename supervisitor, typename type, bool = (is_visitable< unwrap_type_t< type > >{}) >
 struct subvisitor;
 
 template< typename supervisitor, typename visitable >
@@ -211,15 +212,15 @@ namespace details
 
 template< typename visitor, typename ...visitors >
 struct composite_visitor
-        : std::decay_t< visitor >
+        : unwrap_type_t< visitor >
         , composite_visitor< visitors... >
 {
 
-    using std::decay_t< visitor >::operator ();
+    using unwrap_type_t< visitor >::operator ();
     using composite_visitor< visitors... >::operator ();
 
     composite_visitor(visitor & _visitor, visitors &... _visitors)
-        : std::decay_t< visitor >(std::forward< visitor >(_visitor))
+        : unwrap_type_t< visitor >(std::forward< visitor >(_visitor))
         , composite_visitor< visitors... >{_visitors...}
     { ; }
 
@@ -227,13 +228,13 @@ struct composite_visitor
 
 template< typename visitor >
 struct composite_visitor< visitor >
-        : std::decay_t< visitor >
+        : unwrap_type_t< visitor >
 {
 
-    using std::decay_t< visitor >::operator ();
+    using unwrap_type_t< visitor >::operator ();
 
     composite_visitor(visitor & _visitor)
-        : std::decay_t< visitor >(std::forward< visitor >(_visitor))
+        : unwrap_type_t< visitor >(std::forward< visitor >(_visitor))
     { ; }
 
 };

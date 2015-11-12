@@ -92,21 +92,21 @@ public :
     void
     swap(variant & _other) noexcept
     {
-        storage_.swap(_other.storage_);
+        return storage_.swap(_other.storage_);
     }
 
     template< typename ...arguments >
     void
     emplace(arguments &&... _arguments)
     {
-        variant{std::experimental::in_place, std::forward< arguments >(_arguments)...}.swap(*this);
+        return variant{std::experimental::in_place, std::forward< arguments >(_arguments)...}.swap(*this);
     }
 
     template< typename type >
     void
     replace(type && _value)
     {
-        variant{std::forward< type >(_value)}.swap(*this);
+        return variant{std::forward< type >(_value)}.swap(*this);
     }
 
 private :
@@ -120,7 +120,7 @@ private :
         void
         operator () (type && _value) const
         {
-            static_cast< std::decay_t< type > & >(destination_) = std::forward< type >(_value);
+            static_cast< unwrap_type_t< type > & >(destination_) = std::forward< type >(_value);
         }
 
     };
@@ -128,7 +128,7 @@ private :
 public :
 
     template< typename type >
-    std::enable_if_t< (std::is_same< std::decay_t< type >, variant >{}) >
+    variant &
     assign(type && _rhs)
     {
         assert(&_rhs != this);
@@ -137,53 +137,43 @@ public :
         } else {
             replace(std::forward< type >(_rhs));
         }
-    }
-
-    template< typename rhs >
-    std::enable_if_t< !(std::is_same< std::decay_t< rhs >, variant >{}) >
-    assign(rhs && _rhs)
-    {
-        using type = std::decay_t< rhs >;
-        if (active< type >()) {
-            static_cast< type & >(*storage_) = std::forward< rhs >(_rhs);
-        } else {
-            replace(std::forward< rhs >(_rhs));
-        }
+        return *this;
     }
 
     variant &
     operator = (variant & _rhs) &
     {
-        assign(_rhs);
-        return *this;
+        return assign(_rhs);
     }
 
     variant &
     operator = (variant const & _rhs) &
     {
-        assign(_rhs);
-        return *this;
+        return assign(_rhs);
     }
 
     variant &
     operator = (variant && _rhs) &
     {
-        assign(std::move(_rhs));
-        return *this;
+        return assign(std::move(_rhs));
     }
 
     variant &
     operator = (variant const && _rhs) &
     {
-        assign(std::move(_rhs));
-        return *this;
+        return assign(std::move(_rhs));
     }
 
     template< typename type >
     variant &
     operator = (type && _value) &
     {
-        assign(std::forward< type >(_value));
+        using decay_type = unwrap_type_t< type >;
+        if (active< decay_type >()) {
+            static_cast< decay_type & >(*storage_) = std::forward< type >(_value);
+        } else {
+            replace(std::forward< type >(_value));
+        }
         return *this;
     }
 

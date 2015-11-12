@@ -36,7 +36,7 @@ include_directories( include/ )
 set( HEADERS
     "include/versatile.hpp"
     "include/versatile/type_traits.hpp"
-    "include/versatile/recursive_wrapper.hpp"
+    "include/versatile/wrappers.hpp"
     "include/versatile/versatile.hpp"
     "include/versatile/variant.hpp"
     "include/versatile/visit.hpp"

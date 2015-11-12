@@ -109,7 +109,7 @@ public :
     size_type
     index() noexcept
     {
-        return index_by_type< type, this_type, unwrap_type_t< rest >..., versatile<> >();
+        return index_by_type< unwrap_type_t< type >, this_type, unwrap_type_t< rest >..., versatile<> >();
     }
 
     template< typename type = this_type >
@@ -117,27 +117,27 @@ public :
     bool
     active() const noexcept
     {
-        return (index< type >() == which());
+        return (index< unwrap_type_t< type > >() == which());
     }
 
     explicit
     constexpr
-    versatile(versatile<> = {}) noexcept(std::is_nothrow_constructible< dispatcher, typename std::is_default_constructible< this_type >::type, std::experimental::in_place_t >{})
-        : dispatcher_(typename std::is_default_constructible< this_type >::type{}, std::experimental::in_place)
+    versatile(versatile<> = {}) noexcept(std::is_nothrow_constructible< dispatcher, typename std::is_default_constructible< first >::type, std::experimental::in_place_t >{})
+        : dispatcher_(typename std::is_default_constructible< first >::type{}, std::experimental::in_place)
     { ; }
 
-    template< typename type, typename = std::enable_if_t< !(std::is_same< std::decay_t< type >, versatile >{}) > >
+    template< typename type, typename = std::enable_if_t< !(std::is_same< unwrap_type_t< type >, versatile >{}) > >
     explicit
     constexpr
-    versatile(type && _value) noexcept(std::is_nothrow_constructible< dispatcher, typename std::is_same< std::decay_t< type >, this_type >::type, type >{})
-        : dispatcher_(typename std::is_same< std::decay_t< type >, this_type >::type{}, std::forward< type >(_value))
+    versatile(type && _value) noexcept(std::is_nothrow_constructible< dispatcher, typename std::is_same< unwrap_type_t< type >, this_type >::type, type >{})
+        : dispatcher_(typename std::is_same< unwrap_type_t< type >, this_type >::type{}, std::forward< type >(_value))
     { ; }
 
     template< typename ...types >
     explicit
     constexpr
-    versatile(std::experimental::in_place_t, types &&... _values) noexcept(std::is_nothrow_constructible< dispatcher, typename std::is_constructible< this_type, types... >::type, std::experimental::in_place_t, types... >{})
-        : dispatcher_(typename std::is_constructible< this_type, types... >::type{}, std::experimental::in_place, std::forward< types >(_values)...)
+    versatile(std::experimental::in_place_t, types &&... _values) noexcept(std::is_nothrow_constructible< dispatcher, typename std::is_constructible< first, types... >::type, std::experimental::in_place_t, types... >{})
+        : dispatcher_(typename std::is_constructible< first, types... >::type{}, std::experimental::in_place, std::forward< types >(_values)...)
     { ; }
 
     explicit
