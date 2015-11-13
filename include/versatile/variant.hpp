@@ -197,46 +197,6 @@ public :
         return static_cast< type const & >(*storage_);
     }
 
-    template< typename ...arguments >
-    decltype(auto)
-    operator () (arguments &&... _arguments) &
-    {
-        return visit([&] (auto & _value) -> decltype(auto)
-        {
-            return _value(std::forward< arguments >(_arguments)...);
-        }, *this);
-    }
-
-    template< typename ...arguments >
-    decltype(auto)
-    operator () (arguments &&... _arguments) const &
-    {
-        return visit([&] (auto const & _value) -> decltype(auto)
-        {
-            return _value(std::forward< arguments >(_arguments)...);
-        }, *this);
-    }
-
-    template< typename ...arguments >
-    decltype(auto)
-    operator () (arguments &&... _arguments) &&
-    {
-        return visit([&] (auto && _value) -> decltype(auto)
-        {
-            return std::move(_value)(std::forward< arguments >(_arguments)...);
-        }, std::move(*this));
-    }
-
-    template< typename ...arguments >
-    decltype(auto)
-    operator () (arguments &&... _arguments) const &&
-    {
-        return visit([&] (auto const && _value) -> decltype(auto)
-        {
-            return std::move(_value)(std::forward< arguments >(_arguments)...);
-        }, std::move(*this));
-    }
-
 };
 
 template<>

@@ -34,6 +34,7 @@ class dispatcher< visitor, visitable, visitable_type< types... >, arguments... >
 
     template< typename type >
     static
+    constexpr
     decltype(auto)
     caller(visitor & _visitor, visitable & _visitable, arguments &... _arguments)
     {
@@ -164,6 +165,7 @@ struct delayed_visitor
     { ; }
 
     template< typename ...types >
+    constexpr
     decltype(auto)
     operator () (types &&... _values) &
     {
@@ -171,6 +173,7 @@ struct delayed_visitor
     }
 
     template< typename ...types >
+    constexpr
     decltype(auto)
     operator () (types &&... _values) const &
     {
@@ -178,6 +181,7 @@ struct delayed_visitor
     }
 
     template< typename ...types >
+    constexpr
     decltype(auto)
     operator () (types &&... _values) &&
     {
@@ -185,6 +189,7 @@ struct delayed_visitor
     }
 
     template< typename ...types >
+    constexpr
     decltype(auto)
     operator () (types &&... _values) const &&
     {
@@ -216,12 +221,16 @@ struct composite_visitor
         , composite_visitor< visitors... >
 {
 
-    using unwrap_type_t< visitor >::operator ();
-    using composite_visitor< visitors... >::operator ();
+    using head = unwrap_type_t< visitor >;
+    using tail = composite_visitor< visitors... >;
 
-    composite_visitor(visitor & _visitor, visitors &... _visitors)
-        : unwrap_type_t< visitor >(std::forward< visitor >(_visitor))
-        , composite_visitor< visitors... >{_visitors...}
+    using head::operator ();
+    using tail::operator ();
+
+    constexpr
+    composite_visitor(visitor & _visitor, visitors &... _visitors) noexcept(std::is_nothrow_constructible< head, visitor >{} && std::is_nothrow_constructible< tail, visitors &... >{})
+        : head(std::forward< visitor >(_visitor))
+        , tail{_visitors...}
     { ; }
 
 };
@@ -231,10 +240,13 @@ struct composite_visitor< visitor >
         : unwrap_type_t< visitor >
 {
 
-    using unwrap_type_t< visitor >::operator ();
+    using base = unwrap_type_t< visitor >;
 
-    composite_visitor(visitor & _visitor)
-        : unwrap_type_t< visitor >(std::forward< visitor >(_visitor))
+    using base::operator ();
+
+    constexpr
+    composite_visitor(visitor & _visitor) noexcept(std::is_nothrow_constructible< base, visitor >{})
+        : base(std::forward< visitor >(_visitor))
     { ; }
 
 };
@@ -242,10 +254,21 @@ struct composite_visitor< visitor >
 }
 
 template< typename visitor, typename ...visitors >
+constexpr
 details::composite_visitor< visitor, visitors... >
 compose_visitors(visitor && _visitor, visitors &&... _visitors)
 {
     return {_visitor, _visitors...};
+}
+
+template< typename visitable, typename ...arguments >
+decltype(auto)
+call(visitable && _visitable, arguments &&... _arguments)
+{
+    return visit([&] (auto && _value) -> decltype(auto)
+    {
+        return std::forward< decltype(_value) >(_value)(std::forward< arguments >(_arguments)...);
+    }, std::forward< visitable >(_visitable));
 }
 
 }

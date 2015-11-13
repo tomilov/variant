@@ -39,7 +39,7 @@ enum class type_qualifier
     volatile_const_lref,
     volatile_const_rref,
 
-    count
+    count_
 };
 
 template< type_qualifier type_qualifier, typename type > struct add_type_qualifier;

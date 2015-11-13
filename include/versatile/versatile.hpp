@@ -25,6 +25,8 @@ template< typename first, typename ...rest >
 struct versatile< first, rest... >
 {
 
+    static_assert(std::is_standard_layout< first >{});
+
     using size_type = std::size_t;
 
 private :

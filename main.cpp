@@ -808,6 +808,7 @@ main()
             v = w;
             assert(v.active< int >());
         }
+#if 0
         { // non-standard layout (really UB http://talesofcpp.fusionfenix.com/post-21/)
             struct A { int i; };
             struct B : A { A a; B(int i, int j) : A{i}, a{j} { ; } };
@@ -832,6 +833,7 @@ main()
             assert(static_cast< D >(v).B::i == 1);
             assert(static_cast< D >(v).C::i == 2);
         }
+#endif
         {
             using V = variant< int >;
             V v{2};
@@ -1233,27 +1235,27 @@ main()
             struct B { int operator () (int) { return 1; } bool operator () (double) { return false; } };
             using V = variant< A, B >;
             V v;
-            static_assert(std::is_same< int, decltype(v(0)) >{});
-            static_assert(std::is_same< bool, decltype(v(0.0)) >{});
-            assert(v(0) == 0);
-            assert(v(1.0) == true);
+            static_assert(std::is_same< int, decltype(call(v, 0)) >{});
+            static_assert(std::is_same< bool, decltype(call(v, 0.0)) >{});
+            assert(call(v, 0) == 0);
+            assert(call(v, 1.0) == true);
             v = B{};
-            assert(v(0) == 1);
-            assert(v(1.0) == false);
+            assert(call(v, 0) == 1);
+            assert(call(v, 1.0) == false);
         }
         { // call
             auto a = [] (auto &&... _values) -> int { return +static_cast< int >(sizeof...(_values)); };
             auto b = [] (auto &&... _values) -> int { return -static_cast< int >(sizeof...(_values)); };
             using V = variant< decltype(a), decltype(b) >;
             V v = a;
-            static_assert(std::is_same< int, decltype(v(0)) >{});
-            assert(v(0, 1.0f, 2.0, 3.0L, true) == +5);
-            assert(v() == 0);
-            assert(v(nullptr) == 1);
+            static_assert(std::is_same< int, decltype(call(v, 0)) >{});
+            assert(call(v, 0, 1.0f, 2.0, 3.0L, true) == +5);
+            assert(call(v) == 0);
+            assert(call(v, nullptr) == 1);
             v = std::move(b);
-            assert(v(0, 1.0f, 2.0, 3.0L, true) == -5);
-            assert(v() == 0);
-            assert(v(nullptr) == -1);
+            assert(call(v, 0, 1.0f, 2.0, 3.0L, true) == -5);
+            assert(call(v) == 0);
+            assert(call(v, nullptr) == -1);
         }
         {
             auto const l0 = [] (auto const &) { return 0; };
@@ -1444,14 +1446,14 @@ main()
             V v = g;
             assert(v.active< decltype(&f) >());
             assert(static_cast< decltype(&f) >(v) == &g);
-            assert(v() == 2);
+            assert(call(v) == 2);
             v = f;
             assert(v.active< decltype(&g) >());
             assert(static_cast< decltype(&g) >(v) == &f);
-            assert(v() == 1);
-            auto l = [] () { return 323; };
+            assert(call(v) == 1);
+            auto l = [] { return 323; };
             v = static_cast< decltype(&g) >(l);
-            assert(v() == 323);
+            assert(call(v) == 323);
         }
     }
     { // multivisit mixed visitables
