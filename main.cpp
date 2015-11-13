@@ -740,6 +740,40 @@ struct R
     using V::operator =;
 };
 
+template< typename ...types >
+struct cvariant
+{
+
+    constexpr std::size_t which() const { return i; }
+
+    template< typename type >
+    constexpr cvariant(type) : i{index_by_type< type, types..., void >{}} { ; }
+
+    template< typename type >
+    constexpr operator type const & () const
+    {
+        return value< type >;
+    }
+
+    template< typename type >
+    constexpr operator type & () const
+    {
+        return value< type >;
+    }
+
+private :
+
+    std::size_t i;
+
+    template< typename type >
+    static type value;
+
+};
+
+template< typename ...types >
+template< typename type >
+type cvariant< types... >::value = {};
+
 } // namespace test
 
 namespace versatile
@@ -1573,7 +1607,7 @@ main()
         v = WXY{XY{}};
         v = V{WXY{XY{}}};
     }
-    {
+    { // aggregates
         struct X {};
         struct Y {};
         struct XY { X x; Y y; };
@@ -1590,7 +1624,7 @@ main()
         v.emplace(Y{});
         assert(v.active< Y >());
     }
-    {
+    { // aggregates
         struct X {};
         struct Y {};
         struct XY { X x; Y y; };
@@ -1602,6 +1636,46 @@ main()
         v = AXY{};
         v = RAXY{};
         v = V{};
+    }
+    { // constexpr
+        struct A {};
+        struct B {};
+        struct C {};
+        using V = cvariant< A, B, C >;
+
+        static_assert(std::is_literal_type< V >{});
+
+        struct visitor3
+        {
+            constexpr auto operator () (A, int i = 1) const { return 100 + i; }
+            constexpr auto operator () (B, int i = 2) const { return 200 + i; }
+            constexpr auto operator () (C, int i = 3) const { return 300 + i; }
+        };
+
+        static_assert(std::is_literal_type< visitor3 >{});
+
+        // rrefs
+        static_assert(visit(visitor3{}, V{A{}}) == 101);
+        static_assert(visit(visitor3{}, V{B{}}) == 202);
+        static_assert(visit(visitor3{}, V{C{}}) == 303);
+
+        static_assert(visit(visitor3{}, V{A{}}, 10) == 110);
+        static_assert(visit(visitor3{}, V{B{}}, 20) == 220);
+        static_assert(visit(visitor3{}, V{C{}}, 30) == 330);
+
+        // lrefs
+        constexpr visitor3 visitor3_{};
+        constexpr V a{A{}};
+        constexpr V b{B{}};
+        constexpr V c{C{}};
+
+        static_assert(visit(visitor3_, a) == 101);
+        static_assert(visit(visitor3_, b) == 202);
+        static_assert(visit(visitor3_, c) == 303);
+
+        static_assert(visit(visitor3_, a, 11) == 111);
+        static_assert(visit(visitor3_, b, 22) == 222);
+        static_assert(visit(visitor3_, c, 33) == 333);
     }
     {
         assert((test_perferct_forwarding< 2, 2 >{}()));

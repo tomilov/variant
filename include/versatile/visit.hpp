@@ -21,25 +21,33 @@ struct is_visitable
 namespace details
 {
 
-template< typename visitor, typename visitable, typename visitable_type, typename ...arguments >
+template< typename visitor, typename visitable, typename decay_type = unwrap_type_t< visitable > >
 struct dispatcher;
 
-template< typename visitor,
-          typename visitable,
-          template< typename ...types > class visitable_type,
-          typename ...types,
-          typename ...arguments >
-class dispatcher< visitor, visitable, visitable_type< types... >, arguments... >
+template< typename visitor, typename visitable,
+          template< typename ...types > class decay_type, typename ...types >
+struct dispatcher< visitor, visitable, decay_type< types... > >
 {
 
-    template< typename type >
+    template< typename ...arguments >
     static
     constexpr
     decltype(auto)
     caller(visitor & _visitor, visitable & _visitable, arguments &... _arguments)
     {
-        //return std::forward< visitor >(_visitor)(static_cast< type >(_visitable), std::forward< arguments >(_arguments)...); // There is known clang++ bug #19917 for static_cast to rvalue reference.
-        return std::forward< visitor >(_visitor)(static_cast< type >(static_cast< type & >(_visitable)), std::forward< arguments >(_arguments)...); // workaround
+        assert(!(sizeof...(types) < _visitable.which()));
+        return callies_< arguments... >[sizeof...(types) - _visitable.which()](_visitor, _visitable, _arguments...);
+    }
+
+private :
+
+    template< typename type, typename ...arguments >
+    static
+    constexpr
+    decltype(auto)
+    callee(visitor & _visitor, visitable & _visitable, arguments &... _arguments)
+    {
+        return std::forward< visitor >(_visitor)(static_cast< type >(static_cast< type & >(_visitable)), std::forward< arguments >(_arguments)...);
     }
 
     static constexpr type_qualifier type_qualifier_ = type_qualifier_of< visitable && >;
@@ -47,28 +55,27 @@ class dispatcher< visitor, visitable, visitable_type< types... >, arguments... >
     template< typename type >
     using qualify_type_t = add_qualifier_t< type_qualifier_, unwrap_type_t< type > >;
 
-public :
+    template< typename ...arguments >
+    using callee_type = decltype(&dispatcher::template callee< qualify_type_t< typename identity< types... >::type >, arguments... >);
 
-    decltype(auto)
-    operator () (visitor & _visitor, visitable & _visitable, arguments &... _arguments) const
-    {
-        assert(!(sizeof...(types) < _visitable.which()));
-        using caller_type = decltype(&dispatcher::caller< qualify_type_t< typename identity< types... >::type > >);
-        static constexpr caller_type callers_[sizeof...(types)] = {dispatcher::caller< qualify_type_t< types > >...};
-        return callers_[sizeof...(types) - _visitable.which()](_visitor, _visitable, _arguments...);
-    }
+    template< typename ...arguments >
+    static constexpr callee_type< arguments... > callies_[sizeof...(types)] = {dispatcher::template callee< qualify_type_t< types >, arguments... >...};
 
 };
+
+template< typename visitor, typename visitable,
+          template< typename ...types > class decay_type, typename ...types >
+template< typename ...arguments >
+constexpr typename dispatcher< visitor, visitable, decay_type< types... > >::template callee_type< arguments... > dispatcher< visitor, visitable, decay_type< types... > >::callies_[sizeof...(types)];
 
 }
 
 template< typename visitor, typename visitable, typename ...arguments >
+constexpr
 decltype(auto)
 visit(visitor && _visitor, visitable && _visitable, arguments &&... _arguments)
 {
-    using decay_type = unwrap_type_t< visitable >;
-    static_assert(is_visitable< decay_type >{});
-    return details::dispatcher< visitor, visitable, decay_type, arguments... >{}(_visitor, _visitable, _arguments...);
+    return details::template dispatcher< visitor, visitable >::template caller< arguments... >(_visitor, _visitable, _arguments...);
 }
 
 namespace details

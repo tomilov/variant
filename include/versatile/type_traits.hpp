@@ -42,7 +42,7 @@ enum class type_qualifier
     count_
 };
 
-template< type_qualifier type_qualifier, typename type > struct add_type_qualifier;
+template< type_qualifier _type_qualifier, typename type > struct add_type_qualifier;
 template< typename to > struct add_type_qualifier< type_qualifier::value                , to > { using type =          to         ; };
 template< typename to > struct add_type_qualifier< type_qualifier::lref                 , to > { using type =          to       & ; };
 template< typename to > struct add_type_qualifier< type_qualifier::rref                 , to > { using type =          to       &&; };
@@ -56,8 +56,8 @@ template< typename to > struct add_type_qualifier< type_qualifier::volatile_cons
 template< typename to > struct add_type_qualifier< type_qualifier::volatile_const_lref  , to > { using type = volatile to const & ; };
 template< typename to > struct add_type_qualifier< type_qualifier::volatile_const_rref  , to > { using type = volatile to const &&; };
 
-template< type_qualifier type_qualifier, typename to >
-using add_qualifier_t = typename add_type_qualifier< type_qualifier, to >::type;
+template< type_qualifier _type_qualifier, typename to >
+using add_qualifier_t = typename add_type_qualifier< _type_qualifier, to >::type;
 
 template< typename type > constexpr type_qualifier type_qualifier_of                           = type_qualifier::value                ;
 template< typename type > constexpr type_qualifier type_qualifier_of<          type       &  > = type_qualifier::lref                 ;
