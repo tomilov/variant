@@ -79,8 +79,6 @@ template< typename type, typename ...types >
 struct index_by_type
 {
 
-    static_assert((0 < sizeof...(types)), "type is not contained within types provided");
-
 };
 
 template< typename type, typename ...rest >
@@ -100,8 +98,6 @@ struct index_by_type< type, first, rest... >
 template< std::size_t index, typename ...types >
 struct type_by_index
 {
-
-    static_assert((index < sizeof...(types)), "index exceed the number of types provided");
 
 };
 

@@ -209,14 +209,358 @@ using same_t = type;
 template< typename variadic, typename type >
 struct variadic_index;
 
-template< template< typename ...types > class variadic,
-          typename type,
-          typename ...types >
+template< template< typename ...types > class variadic, typename ...types,
+          typename type >
 struct variadic_index< variadic< types... >, type >
         : index_by_type< type, types..., void >
 {
 
 };
+
+template< bool ...values >
+struct index
+{
+
+};
+
+template< bool ...rest >
+struct index< true, rest... >
+        : std::integral_constant< std::size_t, sizeof...(rest) >
+{
+
+};
+
+template< bool ...rest >
+struct index< false, rest... >
+        : index< rest... >
+{
+
+};
+
+template< bool ...values >
+struct or_
+        : std::false_type
+{
+
+};
+
+template< bool ...rest >
+struct or_< true, rest... >
+        : std::true_type
+{
+
+};
+
+template< bool ...rest >
+struct or_< false, rest... >
+        : or_< rest... >
+{
+
+};
+
+template< bool ...values >
+struct and_
+        : std::true_type
+{
+
+};
+
+template< bool ...rest >
+struct and_< false, rest... >
+        : std::false_type
+{
+
+};
+
+template< bool ...rest >
+struct and_< true, rest... >
+        : and_< rest... >
+{
+
+};
+
+template< std::size_t _id >
+struct id
+{
+
+};
+
+template< bool, typename ...types >
+struct default_construct;
+
+template< typename ...types >
+struct default_construct< true, types... >
+{
+
+    default_construct() = default;
+    default_construct(default_construct const &) = default;
+    default_construct(default_construct &) = default;
+    default_construct(default_construct &&) = default;
+    default_construct & operator = (default_construct const &) = default;
+    default_construct & operator = (default_construct &) = default;
+    default_construct & operator = (default_construct &&) = default;
+
+    std::size_t which_ = 1 + index< (std::is_default_constructible< types >{})... >{};
+
+};
+
+template< typename ...types >
+struct default_construct< false, types... >
+{
+
+    default_construct() = delete;
+    default_construct(default_construct const &) = default;
+    default_construct(default_construct &) = default;
+    default_construct(default_construct &&) = default;
+    default_construct & operator = (default_construct const &) = default;
+    default_construct & operator = (default_construct &) = default;
+    default_construct & operator = (default_construct &&) = default;
+
+    std::size_t which_;
+
+};
+
+template< bool >
+struct destruct;
+
+template<>
+struct destruct< true >
+{
+
+    ~destruct() = default;
+
+};
+
+template<>
+struct destruct< false >
+{
+
+    ~destruct() = delete;
+
+};
+
+template< bool _copy, bool _move >
+struct construct;
+
+template<>
+struct construct< true, true >
+{
+
+    construct() = default;
+    construct(construct const &) = default;
+    construct(construct &) = default;
+    construct(construct &&) = default;
+    construct & operator = (construct const &) = default;
+    construct & operator = (construct &) = default;
+    construct & operator = (construct &&) = default;
+
+};
+
+template<>
+struct construct< false, false >
+{
+
+    construct() = default;
+    construct(construct const &) = delete;
+    construct(construct &) = delete;
+    construct(construct &&) = delete;
+    construct & operator = (construct const &) = default;
+    construct & operator = (construct &) = default;
+    construct & operator = (construct &&) = default;
+
+};
+
+template<>
+struct construct< true, false >
+{
+
+    construct() = default;
+    construct(construct const &) = default;
+    construct(construct &) = default;
+    construct(construct &&) = delete;
+    construct & operator = (construct const &) = default;
+    construct & operator = (construct &) = default;
+    construct & operator = (construct &&) = default;
+
+};
+
+template<>
+struct construct< false, true >
+{
+
+    construct() = default;
+    construct(construct const &) = delete;
+    construct(construct &) = delete;
+    construct(construct &&) = default;
+    construct & operator = (construct const &) = default;
+    construct & operator = (construct &) = default;
+    construct & operator = (construct &&) = default;
+
+};
+
+template< bool _copy, bool _move >
+struct assign;
+
+template<>
+struct assign< true, true >
+{
+
+    assign() = default;
+    assign(assign const &) = default;
+    assign(assign &) = default;
+    assign(assign &&) = default;
+    assign & operator = (assign const &) = default;
+    assign & operator = (assign &) = default;
+    assign & operator = (assign &&) = default;
+
+};
+
+template<>
+struct assign< false, false >
+{
+
+    assign() = default;
+    assign(assign const &) = default;
+    assign(assign &) = default;
+    assign(assign &&) = default;
+    assign & operator = (assign const &) = delete;
+    assign & operator = (assign &) = delete;
+    assign & operator = (assign &&) = delete;
+
+};
+
+template<>
+struct assign< true, false >
+{
+
+    assign() = default;
+    assign(assign const &) = default;
+    assign(assign &) = default;
+    assign(assign &&) = default;
+    assign & operator = (assign const &) = default;
+    assign & operator = (assign &) = default;
+    assign & operator = (assign &&) = delete;
+
+};
+
+template<>
+struct assign< false, true >
+{
+
+    assign() = default;
+    assign(assign const &) = default;
+    assign(assign &) = default;
+    assign(assign &&) = default;
+    assign & operator = (assign const &) = delete;
+    assign & operator = (assign &) = delete;
+    assign & operator = (assign &&) = default;
+
+};
+
+template< typename ...types >
+constexpr bool is_default_constructible = or_< (std::is_default_constructible< types >{})... >{};
+
+template< typename ...types >
+constexpr bool is_destructible = and_< (std::is_destructible< types >{})... >{};
+
+template< typename ...types >
+constexpr bool is_copy_constructible = and_< (std::is_copy_constructible< types >{})... >{};
+
+template< typename ...types >
+constexpr bool is_move_constructible = and_< (std::is_move_constructible< types >{})... >{};
+
+template< typename ...types >
+constexpr bool is_copy_assignable = and_< (std::is_copy_assignable< types >{})... >{};
+
+template< typename ...types >
+constexpr bool is_move_assignable = and_< (std::is_move_assignable< types >{})... >{};
+
+template< typename ...types >
+struct enable_special_functions
+        : default_construct< is_default_constructible< types... >, types... >
+        , destruct< is_destructible< types... > >
+        , construct< is_copy_constructible< types... >, is_move_constructible< types... > >
+        , assign< is_copy_assignable< types... >, is_move_assignable< types... > >
+{
+
+    using base = default_construct< is_default_constructible< types... >, types... >;
+    using base::which_;
+
+    template< std::size_t _id >
+    constexpr
+    enable_special_functions(id< _id >)
+        : base{_id}
+    { ; }
+
+};
+
+
+template< typename ...types >
+struct cvariant
+        : enable_special_functions< unwrap_type_t< types >... >
+{
+
+    using base = enable_special_functions< unwrap_type_t< types >... >;
+
+    cvariant() = default;
+    ~cvariant() = default;
+    cvariant(cvariant const &) = default;
+    cvariant(cvariant &) = default;
+    cvariant(cvariant &&) = default;
+    cvariant & operator = (cvariant const &) = default;
+    cvariant & operator = (cvariant &) = default;
+    cvariant & operator = (cvariant &&) = default;
+
+    constexpr std::size_t which() const { return base::which_; }
+
+    template< typename type >
+    using index_by_type_t = index_by_type< unwrap_type_t< type >, unwrap_type_t< types >..., void >;
+
+    template< typename type, std::size_t _which = index_by_type_t< type >{} >
+    constexpr cvariant(type &&) : base{id< _which >{}} { ; }
+
+    template< typename ...arguments, std::size_t _which = 1 + index< (std::is_constructible< unwrap_type_t< types >, arguments... >{})... >{} >
+    constexpr cvariant(arguments &&...) : base{id< _which >{}} { ; }
+
+    template< typename type, std::size_t = index_by_type_t< type >{} >
+    constexpr operator type const & () const
+    {
+        return value< type >;
+    }
+
+    template< typename type, std::size_t = index_by_type_t< type >{} >
+    constexpr operator type & ()
+    {
+        return value< type >;
+    }
+
+private :
+
+    template< typename type >
+    static type value;
+
+};
+
+template< typename ...types >
+template< typename type >
+type cvariant< types... >::value = {};
+
+} // namespace test
+
+namespace versatile
+{
+
+template< typename first, typename ...rest >
+struct is_visitable< test::cvariant< first, rest... > >
+        : std::true_type
+{
+
+};
+
+}
+
+namespace test
+{
 
 template< typename F, std::size_t ...indices >
 struct enumerator;
@@ -739,40 +1083,6 @@ struct R
     using V::V;
     using V::operator =;
 };
-
-template< typename ...types >
-struct cvariant
-{
-
-    constexpr std::size_t which() const { return i; }
-
-    template< typename type >
-    constexpr cvariant(type) : i{index_by_type< type, types..., void >{}} { ; }
-
-    template< typename type >
-    constexpr operator type const & () const
-    {
-        return value< type >;
-    }
-
-    template< typename type >
-    constexpr operator type & () const
-    {
-        return value< type >;
-    }
-
-private :
-
-    std::size_t i;
-
-    template< typename type >
-    static type value;
-
-};
-
-template< typename ...types >
-template< typename type >
-type cvariant< types... >::value = {};
 
 } // namespace test
 
