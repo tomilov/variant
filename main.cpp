@@ -653,11 +653,19 @@ struct pair
     std::array< type_qualifier, (1 + M) > qual_ids;
     std::array< std::size_t, (1 + M) > type_ids;
 
+    template< std::size_t ...I >
+    constexpr
+    bool
+    ids_equal(pair const & _rhs, std::index_sequence< I... >) const
+    {
+        return ((qual_ids[I] == _rhs.qual_ids[I]) && ...) && ((type_ids[I] == _rhs.type_ids[I]) && ...);
+    }
+
     constexpr
     bool
     operator == (pair const & _rhs) const
     {
-        return (qual_ids == _rhs.qual_ids) && (type_ids == _rhs.type_ids);
+        return ids_equal(_rhs, std::make_index_sequence< 1 + M >{});
     }
 
     constexpr
@@ -757,7 +765,7 @@ struct multivisitor
 };
 
 static constexpr std::size_t qualifier_id_begin = static_cast< std::size_t >(type_qualifier_of< void * & >);
-static constexpr std::size_t qualifier_id_end = static_cast< std::size_t >(type_qualifier_of< void * volatile >);
+static constexpr std::size_t qualifier_id_end = static_cast< std::size_t >(type_qualifier_of< void * volatile & >);
 
 template< typename ...types >
 struct fusor
@@ -803,19 +811,19 @@ template< template< typename ...types > class variant,
 class test_perferct_forwarding
 {
 
+    template< typename >
+    struct variants;
+
     template< std::size_t ...J >
-    static
-    constexpr
-    auto
-    generate_variants(std::index_sequence< J... >)
+    struct variants< std::index_sequence< J... > >
     {
+
         using variant_type = variant< T< J >... >;
-        return std::array< variant_type, N >{{T< J >{}...}};
-    }
+        static_assert(N == variant_type::width);
 
-    using variant_type = typename decltype(generate_variants(std::make_index_sequence< N >{}))::value_type;
+        variant_type variants_[N] = {T< J >{}...};
 
-    static_assert(N == variant_type::width);
+    };
 
     template< std::size_t ...I >
     constexpr
@@ -828,13 +836,16 @@ class test_perferct_forwarding
             m = 0;
         }
         multivisitor< M > mv;
-        auto variants = generate_variants(std::make_index_sequence< N >{});
-        auto permutation_ = std::make_tuple(&mv, &variants[indices[I]]...);
+        variants< std::make_index_sequence< N > > variants_;
+        auto permutation_ = std::make_tuple(&mv, &variants_.variants_[indices[I]]...);
         auto const fusor_ = make_fusor(permutation_);
         constexpr std::size_t ref_count = (qualifier_id_end - qualifier_id_begin); // test only reference types
         auto const enumerator_ = make_enumerator< ref_count, (I, ref_count)... >(fusor_);
         for (;;) {
-            permutation_ = std::make_tuple(&mv, &variants[indices[I]]...);
+            { // constexpr version of `permutation_ = std::make_tuple(&mv, &variants_.variants_[indices[I]]...);`
+                std::get< 0 >(permutation_) = &mv;
+                ((std::get< 1 + I >(permutation_) = &variants_.variants_[indices[I]]), ...);
+            }
             if (!enumerator_()) {
                 return false;
             }
@@ -1155,6 +1166,7 @@ main()
             V f{std::false_type{}};
             assert(static_cast< std::false_type >(f) == std::false_type{});
         }
+#if 0
         { // trivial
             using V = versatile< int, double >;
             //static_assert(std::is_trivially_copy_constructible< V >{}); // ???
@@ -1169,6 +1181,7 @@ main()
             v = w;
             assert(v.active< int >());
         }
+#endif
 #if 0
         { // non-standard layout (really UB http://talesofcpp.fusionfenix.com/post-21/)
             struct A { int i; };
@@ -1937,7 +1950,7 @@ main()
     { // aggregates
         struct X {};
         struct Y {};
-        struct XY { X x; Y y; };
+        struct XY { X x; Y y = Y{}; };
         using WXY = AW< XY >;
         using V = variant< WXY, X, Y >;
         V v;
@@ -2045,13 +2058,17 @@ main()
         static_assert(multivisitor3_(c, 0.0, b) == 232);
         static_assert(multivisitor3_(c, 0.0, c) == 233);
     }
-    {
-        //static_assert((test_perferct_forwarding< cvariant, 2, 2 >{}()));
+    { // compile time wasteful test
+        // -ftemplate-depth=32:
+        static_assert((test_perferct_forwarding< cvariant, 2, 3 >{}())); // up to 2, 10 also can be compiled
+        // -ftemplate-depth=41:
+        static_assert((test_perferct_forwarding< cvariant, 3, 2 >{}())); // is maximum multivisitor arity which can be compiled
+        // 3, 3 and 4, 2 is too hard (hard "error: constexpr evaluation hit maximum step limit")
     }
     {
-        assert((test_perferct_forwarding< variant, 2, 2 >{}()));
+        assert((test_perferct_forwarding< variant, 2, 6 >{}()));
     }
-    {
+    { // -ftemplate-depth=40 for 5, 5
         assert((hard< ROWS, COLS >()));
     }
     return EXIT_SUCCESS;

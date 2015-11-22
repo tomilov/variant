@@ -67,6 +67,11 @@ private :
 
         };
 
+        dispatcher(dispatcher const &) = delete;
+        dispatcher(dispatcher &) = delete;
+        dispatcher(dispatcher const &&) = delete;
+        dispatcher(dispatcher &&) = delete;
+
         template< typename ...types >
         explicit
         constexpr
@@ -128,7 +133,12 @@ public :
         : dispatcher_(typename std::is_default_constructible< first >::type{}, std::experimental::in_place)
     { ; }
 
-    template< typename type, typename = std::enable_if_t< !(std::is_same< unwrap_type_t< type >, versatile >{}) > >
+    versatile(versatile const &) = delete;
+    versatile(versatile &) = delete;
+    versatile(versatile const &&) = delete;
+    versatile(versatile &&) = delete;
+
+    template< typename type >
     explicit
     constexpr
     versatile(type && _value) noexcept(std::is_nothrow_constructible< dispatcher, typename std::is_same< unwrap_type_t< type >, this_type >::type, type >{})
