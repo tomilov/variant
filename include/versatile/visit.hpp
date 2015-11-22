@@ -21,19 +21,21 @@ struct is_visitable
 namespace details
 {
 
-template< typename visitor, typename visitable, typename decay_type = unwrap_type_t< visitable > >
+template< type_qualifier _type_qualifier, typename visitor, typename visitable >
 struct dispatcher;
 
-template< typename visitor, typename visitable,
+template< type_qualifier _type_qualifier, typename visitor,
           template< typename ...types > class decay_type, typename ...types >
-struct dispatcher< visitor, visitable, decay_type< types... > >
+struct dispatcher< _type_qualifier, visitor, decay_type< types... > >
 {
+
+    using visitable = add_qualifier_t< _type_qualifier, decay_type< types... > >;
 
     template< typename ...arguments >
     static
     constexpr
     decltype(auto)
-    caller(visitor & _visitor, visitable & _visitable, arguments &... _arguments)
+    caller(visitor & _visitor, visitable & _visitable, arguments &... _arguments) noexcept(is_noexcept< arguments... >)
     {
         assert(!(sizeof...(types) < _visitable.which()));
         return callies_< arguments... >[sizeof...(types) - _visitable.which()](_visitor, _visitable, _arguments...);
@@ -45,15 +47,13 @@ private :
     static
     constexpr
     decltype(auto)
-    callee(visitor & _visitor, visitable & _visitable, arguments &... _arguments)
+    callee(visitor & _visitor, visitable & _visitable, arguments &... _arguments) noexcept(noexcept(std::declval< visitor >()(std::declval< type >(), std::declval< arguments >()...)))
     {
         return std::forward< visitor >(_visitor)(static_cast< type >(static_cast< type & >(_visitable)), std::forward< arguments >(_arguments)...);
     }
 
-    static constexpr type_qualifier type_qualifier_ = type_qualifier_of< visitable && >;
-
     template< typename type >
-    using qualify_type_t = add_qualifier_t< type_qualifier_, unwrap_type_t< type > >;
+    using qualify_type_t = add_qualifier_t< _type_qualifier, unwrap_type_t< type > >;
 
     template< typename ...arguments >
     using callee_type = decltype(&dispatcher::template callee< qualify_type_t< typename identity< types... >::type >, arguments... >);
@@ -61,21 +61,29 @@ private :
     template< typename ...arguments >
     static constexpr callee_type< arguments... > callies_[sizeof...(types)] = {dispatcher::template callee< qualify_type_t< types >, arguments... >...};
 
+public :
+
+    template< typename ...arguments >
+    static constexpr bool is_noexcept = (noexcept(dispatcher::template callee< qualify_type_t< types >, arguments... >(std::declval< visitor & >(), std::declval< visitable & >(), std::declval< arguments & >()...)) && ...);
+
 };
 
-template< typename visitor, typename visitable,
+template< type_qualifier _type_qualifier, typename visitor,
           template< typename ...types > class decay_type, typename ...types >
 template< typename ...arguments >
-constexpr typename dispatcher< visitor, visitable, decay_type< types... > >::template callee_type< arguments... > dispatcher< visitor, visitable, decay_type< types... > >::callies_[sizeof...(types)];
+constexpr typename dispatcher< _type_qualifier, visitor, decay_type< types... > >::template callee_type< arguments... > dispatcher< _type_qualifier, visitor, decay_type< types... > >::callies_[sizeof...(types)];
 
 }
 
-template< typename visitor, typename visitable, typename ...arguments >
+template< typename visitor, typename visitable, typename ...arguments,
+          typename decay_type = unwrap_type_t< visitable >,
+          typename dispatcher = details::template dispatcher< type_qualifier_of< visitable && >, visitor, decay_type > >
 constexpr
 decltype(auto)
-visit(visitor && _visitor, visitable && _visitable, arguments &&... _arguments)
+visit(visitor && _visitor, visitable && _visitable, arguments &&... _arguments) noexcept(dispatcher::template is_noexcept< arguments... >)
 {
-    return details::template dispatcher< visitor, visitable >::template caller< arguments... >(_visitor, _visitable, _arguments...);
+    static_assert(is_visitable< decay_type >{});
+    return dispatcher::template caller< arguments... >(_visitor, _visitable, _arguments...);
 }
 
 namespace details
