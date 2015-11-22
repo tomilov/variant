@@ -12,6 +12,9 @@
 namespace versatile
 {
 
+using std::experimental::in_place_t;
+using std::experimental::in_place;
+
 template< typename ...types >
 struct versatile;
 
@@ -43,7 +46,7 @@ private :
             template< typename ...types >
             explicit
             constexpr
-            head(std::experimental::in_place_t, types &&... _values) noexcept(std::is_nothrow_constructible< first, types... >{})
+            head(in_place_t, types &&... _values) noexcept(std::is_nothrow_constructible< first, types... >{})
                 : which_{1 + sizeof...(rest)}
                 , value_(std::forward< types >(_values)...)
             { ; }
@@ -52,7 +55,7 @@ private :
             explicit
             constexpr
             head(type && _value) noexcept(std::is_nothrow_constructible< first, type >{})
-                : head(std::experimental::in_place, std::forward< type >(_value))
+                : head(in_place, std::forward< type >(_value))
             { ; }
 
         };
@@ -129,8 +132,8 @@ public :
 
     explicit
     constexpr
-    versatile(versatile<> = {}) noexcept(std::is_nothrow_constructible< dispatcher, typename std::is_default_constructible< first >::type, std::experimental::in_place_t >{})
-        : dispatcher_(typename std::is_default_constructible< first >::type{}, std::experimental::in_place)
+    versatile(versatile<> = {}) noexcept(std::is_nothrow_constructible< dispatcher, typename std::is_default_constructible< first >::type, in_place_t >{})
+        : dispatcher_(typename std::is_default_constructible< first >::type{}, in_place)
     { ; }
 
     versatile(versatile const &) = delete;
@@ -148,8 +151,8 @@ public :
     template< typename ...types >
     explicit
     constexpr
-    versatile(std::experimental::in_place_t, types &&... _values) noexcept(std::is_nothrow_constructible< dispatcher, typename std::is_constructible< first, types... >::type, std::experimental::in_place_t, types... >{})
-        : dispatcher_(typename std::is_constructible< first, types... >::type{}, std::experimental::in_place, std::forward< types >(_values)...)
+    versatile(in_place_t, types &&... _values) noexcept(std::is_nothrow_constructible< dispatcher, typename std::is_constructible< first, types... >::type, in_place_t, types... >{})
+        : dispatcher_(typename std::is_constructible< first, types... >::type{}, in_place, std::forward< types >(_values)...)
     { ; }
 
     explicit

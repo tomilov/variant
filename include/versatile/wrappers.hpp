@@ -9,40 +9,40 @@
 namespace versatile
 {
 
-template< typename type, typename decay_type = std::decay_t< type > >
+template< typename type >
 struct unwrap_type
-        : identity< decay_type >
+        : identity< type >
 {
 
 };
 
 template< typename type >
-using unwrap_type_t = typename unwrap_type< type >::type;
+using unwrap_type_t = typename unwrap_type< std::decay_t< type > >::type;
 
-template< typename aggregate >
+template< typename type >
 struct aggregate_wrapper
-    : aggregate
+    : type
 {
 
     constexpr
     aggregate_wrapper() = default;
 
-    template< typename argument, bool is_noexcept = noexcept(aggregate(std::declval< argument >())) >
+    template< typename argument, bool is_noexcept = noexcept(type(std::declval< argument >())) >
     constexpr
-    aggregate_wrapper(argument && _aggregate) noexcept(is_noexcept)
-        : aggregate(std::forward< argument >(_aggregate))
+    aggregate_wrapper(argument && _argument) noexcept(is_noexcept)
+        : type(std::forward< argument >(_argument))
     { ; }
 
-    template< typename ...arguments, bool is_noexcept = noexcept(aggregate{std::declval< arguments >()...}) >
+    template< typename ...arguments, bool is_noexcept = noexcept(type{std::declval< arguments >()...}) >
     constexpr
     aggregate_wrapper(arguments &&... _arguments) noexcept(is_noexcept)
-        : aggregate{std::forward< arguments >(_arguments)...}
+        : type{std::forward< arguments >(_arguments)...}
     { ; }
 
 };
 
-template< typename aggregate_wrapper_type, typename type >
-struct unwrap_type< aggregate_wrapper_type, aggregate_wrapper< type > >
+template< typename type >
+struct unwrap_type< aggregate_wrapper< type > >
         : unwrap_type< type >
 {
 
@@ -50,7 +50,6 @@ struct unwrap_type< aggregate_wrapper_type, aggregate_wrapper< type > >
 
 template< typename type >
 struct recursive_wrapper
-        : identity< type >
 {
 
     template< typename ...arguments, typename = decltype(type(std::declval< arguments >()...)) >
@@ -58,16 +57,14 @@ struct recursive_wrapper
         : storage_(std::make_unique< type >(std::forward< arguments >(_arguments)...))
     { ; }
 
-    using this_type = unwrap_type_t< type >;
-
-    operator this_type & () noexcept
+    operator type & () noexcept
     {
-        return static_cast< this_type & >(*storage_);
+        return static_cast< type & >(*storage_);
     }
 
-    operator this_type const & () const noexcept
+    operator type const & () const noexcept
     {
-        return static_cast< this_type const & >(*storage_);
+        return static_cast< type const & >(*storage_);
     }
 
 private :
@@ -76,8 +73,8 @@ private :
 
 };
 
-template< typename recursive_wrapper_type, typename type >
-struct unwrap_type< recursive_wrapper_type, recursive_wrapper< type > >
+template< typename type >
+struct unwrap_type< recursive_wrapper< type > >
         : unwrap_type< type >
 {
 

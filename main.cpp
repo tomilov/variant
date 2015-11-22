@@ -1117,8 +1117,8 @@ struct R
 namespace versatile
 {
 
-template< typename recursive_wrapper_type, typename type >
-struct unwrap_type< recursive_wrapper_type, boost::recursive_wrapper< type > >
+template< typename type >
+struct unwrap_type< boost::recursive_wrapper< type > >
         : unwrap_type< type >
 {
 
@@ -1383,8 +1383,8 @@ main()
                 int i;
             };
             using V = variant< A >;
-            V x{std::experimental::in_place, 1};
-            V y{std::experimental::in_place, 2};
+            V x{in_place, 1};
+            V y{in_place, 2};
             y = std::move(x);
             assert(x == A{0});
             assert(y == A{1});
@@ -1393,10 +1393,10 @@ main()
             struct A { A(int &, int) {} };
             struct B { B(int const &, int) {} };
             using V = variant< A, B >;
-            V v{std::experimental::in_place, 1, 2};
+            V v{in_place, 1, 2};
             assert(v.active< B >());
             int i{1};
-            V w{std::experimental::in_place, i, 2};
+            V w{in_place, i, 2};
             assert(w.active< A >());
         }
         {
@@ -1414,7 +1414,7 @@ main()
         {
             struct A { A(double) { ; } };
             using V = variant< A, int >;
-            assert(V(std::experimental::in_place, int{0}).active< A >());
+            assert(V(in_place, int{0}).active< A >());
             assert(V{int{0}}.active< int >());
         }
         {
@@ -1424,7 +1424,7 @@ main()
             using V = variant< A, B >;
             assert(V{}.active< B >());
             assert(V{B{}}.active< B >());
-            assert((V{std::experimental::in_place, B{}}.active< A >()));
+            assert((V{in_place, B{}}.active< A >()));
         }
         {
             static int counter = 0;
@@ -1665,8 +1665,8 @@ main()
 
                 };
                 using V = variant< RW< A > >;
-                V av{std::experimental::in_place, 0};
-                V const ac{std::experimental::in_place, 1};
+                V av{in_place, 0};
+                V const ac{in_place, 1};
                 {
                     auto const l = compose_visitors(l0, l1, l2, l3);
                     assert(0 == l(ac));
@@ -1940,7 +1940,7 @@ main()
         static_assert(std::is_copy_constructible< V >{}); // lie
         static_assert(std::is_move_constructible< V >{});
         static_assert(std::is_default_constructible< V >{});
-        V v{std::experimental::in_place, X{}, Y{}};
+        V v{in_place, X{}, Y{}};
         assert(v.active< XY >());
         assert(v.active< WXY >());
         v = XY{};
@@ -2060,10 +2060,10 @@ main()
     }
     { // compile time wasteful test
         // -ftemplate-depth=32:
-        static_assert((test_perferct_forwarding< cvariant, 2, 3 >{}())); // up to 2, 10 also can be compiled
+        static_assert((test_perferct_forwarding< cvariant, 2, 3 >{}())); // up to 2, 10 can be compiled too
         // -ftemplate-depth=41:
-        static_assert((test_perferct_forwarding< cvariant, 3, 2 >{}())); // is maximum multivisitor arity which can be compiled
-        // 3, 3 and 4, 2 is too hard (hard "error: constexpr evaluation hit maximum step limit")
+        static_assert((test_perferct_forwarding< cvariant, 3, 2 >{}())); // 3 is maximum multivisitor arity for test which can be compiled
+        // 3, 3 and 4, 2 is too hard for clang++ (hard "error: constexpr evaluation hit maximum step limit")
     }
     {
         assert((test_perferct_forwarding< variant, 2, 6 >{}()));

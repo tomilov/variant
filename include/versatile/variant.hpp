@@ -99,7 +99,7 @@ public :
     void
     emplace(arguments &&... _arguments)
     {
-        return variant{std::experimental::in_place, std::forward< arguments >(_arguments)...}.swap(*this);
+        return variant{in_place, std::forward< arguments >(_arguments)...}.swap(*this);
     }
 
     template< typename type >

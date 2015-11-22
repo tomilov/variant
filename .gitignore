@@ -3,3 +3,4 @@ Makefile
 versatile.pro.*
 build/
 CMakeLists.txt.user
+CMakeLists.txt.user.*
