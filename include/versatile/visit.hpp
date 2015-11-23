@@ -77,7 +77,7 @@ visit(visitor && _visitor, visitable && _visitable, arguments &&... _arguments)
 {
     using decay_type = unwrap_type_t< visitable >;
     static_assert(is_visitable< decay_type >{});
-    return details::template dispatcher< type_qualifier_of< visitable && >, visitor, decay_type >::template caller< arguments... >(_visitor, _visitable, _arguments...);
+    return details::dispatcher< type_qualifier_of< visitable && >, visitor, decay_type >::template caller< arguments... >(_visitor, _visitable, _arguments...);
 }
 
 namespace details
@@ -128,9 +128,10 @@ struct visitor_partially_applier<>
 {
 
     template< typename visitor >
+    static
     constexpr
     decltype(auto)
-    operator () (visitor && _visitor) const
+    call(visitor && _visitor)
     {
         return std::forward< visitor >(_visitor)();
     }
@@ -142,11 +143,12 @@ struct visitor_partially_applier< first, rest... >
 {
 
     template< typename visitor >
+    static
     constexpr
     decltype(auto)
-    operator () (visitor && _visitor, first & _first, rest &... _rest) const
+    call(visitor && _visitor, first & _first, rest &... _rest)
     {
-        return visitor_partially_applier< rest... >{}(subvisitor< visitor, first >{_visitor, _first}, _rest...);
+        return visitor_partially_applier< rest... >::template call< subvisitor< visitor, first > >({_visitor, _first}, _rest...);
     }
 
 };
@@ -158,7 +160,7 @@ constexpr
 decltype(auto)
 multivisit(visitor && _visitor, visitables &&... _visitables)
 {
-    return details::visitor_partially_applier< visitables... >{}(std::forward< visitor >(_visitor), _visitables...);
+    return details::visitor_partially_applier< visitables... >::template call< visitor >(std::forward< visitor >(_visitor), _visitables...);
 }
 
 namespace details
