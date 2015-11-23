@@ -24,16 +24,17 @@ struct aggregate_wrapper
     : type
 {
 
-    constexpr
     aggregate_wrapper() = default;
 
-    template< typename argument, bool is_noexcept = noexcept(type(std::declval< argument >())) >
+    template< typename argument,
+              bool is_noexcept = noexcept(type(std::declval< argument >())) >
     constexpr
     aggregate_wrapper(argument && _argument) noexcept(is_noexcept)
         : type(std::forward< argument >(_argument))
     { ; }
 
-    template< typename ...arguments, bool is_noexcept = noexcept(type{std::declval< arguments >()...}) >
+    template< typename ...arguments,
+              bool is_noexcept = noexcept(type{std::declval< arguments >()...}) >
     constexpr
     aggregate_wrapper(arguments &&... _arguments) noexcept(is_noexcept)
         : type{std::forward< arguments >(_arguments)...}
@@ -52,7 +53,8 @@ template< typename type >
 struct recursive_wrapper
 {
 
-    template< typename ...arguments, typename = decltype(type(std::declval< arguments >()...)) >
+    template< typename ...arguments,
+              typename = decltype(type(std::declval< arguments >()...)) >
     recursive_wrapper(arguments &&... _arguments)
         : storage_(std::make_unique< type >(std::forward< arguments >(_arguments)...))
     { ; }

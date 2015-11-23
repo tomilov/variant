@@ -43,18 +43,20 @@ private :
             size_type which_;
             first value_;
 
-            template< typename ...types >
+            template< typename ...types,
+                      bool is_noexcept = noexcept(first(std::declval< types >()...)) >
             explicit
             constexpr
-            head(in_place_t, types &&... _values) noexcept(std::is_nothrow_constructible< first, types... >{})
+            head(in_place_t, types &&... _values) noexcept(is_noexcept)
                 : which_{1 + sizeof...(rest)}
                 , value_(std::forward< types >(_values)...)
             { ; }
 
-            template< typename type >
+            template< typename type,
+                      bool is_noexcept = noexcept(first(std::declval< type >())) >
             explicit
             constexpr
-            head(type && _value) noexcept(std::is_nothrow_constructible< first, type >{})
+            head(type && _value) noexcept(is_noexcept)
                 : head(in_place, std::forward< type >(_value))
             { ; }
 
@@ -70,26 +72,26 @@ private :
 
         };
 
-        dispatcher(dispatcher const &) = delete;
-        dispatcher(dispatcher &) = delete;
-        dispatcher(dispatcher const &&) = delete;
-        dispatcher(dispatcher &&) = delete;
+        dispatcher(dispatcher const &) = default;
+        dispatcher(dispatcher &) = default;
+        dispatcher(dispatcher &&) = default;
 
-        template< typename ...types >
+        template< typename ...types,
+                  bool is_noexcept = noexcept(head(std::declval< types >()...)) >
         explicit
         constexpr
-        dispatcher(std::true_type, types &&... _values) noexcept(std::is_nothrow_constructible< head, types... >{})
+        dispatcher(std::true_type, types &&... _values) noexcept(is_noexcept)
             : head_(std::forward< types >(_values)...)
         { ; }
 
         template< typename ...types >
         explicit
         constexpr
-        dispatcher(std::false_type, types &&... _values) noexcept(std::is_nothrow_constructible< tail, types... >{})
+        dispatcher(std::false_type, types &&... _values) noexcept(noexcept(tail(std::declval< types >()...)))
             : tail_(std::forward< types >(_values)...)
         { ; }
 
-        ~dispatcher() noexcept(std::is_nothrow_destructible< head >{} && std::is_nothrow_destructible< tail >{})
+        ~dispatcher() noexcept(noexcept(std::declval< head >().~head()) && noexcept(std::declval< tail >().~tail()))
         {
             if (1 + sizeof...(rest) == head_.which_) {
                 head_.~head();
@@ -114,45 +116,41 @@ public :
     }
 
     template< typename type >
-    static
-    constexpr
-    size_type
-    index() noexcept
-    {
-        return index_by_type< unwrap_type_t< type >, this_type, unwrap_type_t< rest >..., versatile<> >();
-    }
+    static constexpr size_type index = index_by_type< unwrap_type_t< type >, this_type, unwrap_type_t< rest >..., versatile<> >();
 
     template< typename type = this_type >
     constexpr
     bool
     active() const noexcept
     {
-        return (index< unwrap_type_t< type > >() == which());
+        return (index< unwrap_type_t< type > > == which());
     }
 
+    template< typename is_default_constructible = typename std::is_default_constructible< first >::type >
     explicit
     constexpr
-    versatile(versatile<> = {}) noexcept(std::is_nothrow_constructible< dispatcher, typename std::is_default_constructible< first >::type, in_place_t >{})
-        : dispatcher_(typename std::is_default_constructible< first >::type{}, in_place)
+    versatile(versatile<> = {}) noexcept(noexcept(dispatcher(is_default_constructible{}, in_place)))
+        : dispatcher_(is_default_constructible{}, in_place)
     { ; }
 
-    versatile(versatile const &) = delete;
-    versatile(versatile &) = delete;
-    versatile(versatile const &&) = delete;
-    versatile(versatile &&) = delete;
+    versatile(versatile const &) = default;
+    versatile(versatile &) = default;
+    versatile(versatile &&) = default;
 
-    template< typename type >
+    template< typename type,
+              typename is_same = typename std::is_same< unwrap_type_t< type >, this_type >::type >
     explicit
     constexpr
-    versatile(type && _value) noexcept(std::is_nothrow_constructible< dispatcher, typename std::is_same< unwrap_type_t< type >, this_type >::type, type >{})
-        : dispatcher_(typename std::is_same< unwrap_type_t< type >, this_type >::type{}, std::forward< type >(_value))
+    versatile(type && _value) noexcept(noexcept(dispatcher(is_same{}, std::declval< type >())))
+        : dispatcher_(is_same{}, std::forward< type >(_value))
     { ; }
 
-    template< typename ...types >
+    template< typename ...types,
+              typename is_constructible = typename std::is_constructible< first, types... >::type >
     explicit
     constexpr
-    versatile(in_place_t, types &&... _values) noexcept(std::is_nothrow_constructible< dispatcher, typename std::is_constructible< first, types... >::type, in_place_t, types... >{})
-        : dispatcher_(typename std::is_constructible< first, types... >::type{}, in_place, std::forward< types >(_values)...)
+    versatile(in_place_t, types &&... _values) noexcept(noexcept(dispatcher(is_constructible{}, in_place, std::declval< types >()...)))
+        : dispatcher_(is_constructible{}, in_place, std::forward< types >(_values)...)
     { ; }
 
     explicit
