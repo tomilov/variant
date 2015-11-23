@@ -1484,8 +1484,98 @@ main()
             assert(multivisit(c_, V{}, op::eq, V{B{}}) == std::make_tuple(true, std::tie(typeid(A)), false, false, std::tie(typeid(op)), false, false, std::tie(typeid(B)), false, false));
             assert(multivisit(visitor2{}, V{}, op::eq, V{B{}}) == std::make_tuple(false, std::tie(typeid(A)), false, false, std::tie(typeid(op)), false, false, std::tie(typeid(B)), false, false));
         }
-        {
-            // TODO: delayed visitor
+        { // delayed visitation
+            visitor2 v_;
+            visitor2 const c_{};
+
+            auto d0 = visit(v_);
+            auto const d1 = visit(v_);
+            auto d2 = visit(c_);
+            auto const d3 = visit(c_);
+            auto d4 = visit(visitor2{});
+            auto const d5 = visit(visitor2{});
+
+            struct A {};
+            struct B {};
+            using V = variant< RW< A >, RW< B > >;
+            V v;
+            V const c(B{});
+
+            assert(d0(v) ==   std::make_tuple(false, std::tie(typeid(A)), false, true ));
+            assert(d0(c) ==   std::make_tuple(false, std::tie(typeid(B)), true,  true ));
+            assert(d0(V{}) == std::make_tuple(false, std::tie(typeid(A)), false, false));
+
+            assert(d1(v) ==   std::make_tuple(true, std::tie(typeid(A)), false, true ));
+            assert(d1(c) ==   std::make_tuple(true, std::tie(typeid(B)), true,  true ));
+            assert(d1(V{}) == std::make_tuple(true, std::tie(typeid(A)), false, false));
+
+            assert(d2(v) ==   std::make_tuple(true,  std::tie(typeid(A)), false, true ));
+            assert(d2(c) ==   std::make_tuple(true,  std::tie(typeid(B)), true,  true ));
+            assert(d2(V{}) == std::make_tuple(true,  std::tie(typeid(A)), false, false));
+
+            assert(d3(v) ==   std::make_tuple(true,  std::tie(typeid(A)), false, true ));
+            assert(d3(c) ==   std::make_tuple(true,  std::tie(typeid(B)), true,  true ));
+            assert(d3(V{}) == std::make_tuple(true,  std::tie(typeid(A)), false, false));
+
+            assert(d4(v) ==   std::make_tuple(false, std::tie(typeid(A)), false, true ));
+            assert(d4(c) ==   std::make_tuple(false, std::tie(typeid(B)), true,  true ));
+            assert(d4(V{}) == std::make_tuple(false, std::tie(typeid(A)), false, false));
+
+            assert(d5(v) ==   std::make_tuple(true,  std::tie(typeid(A)), false, true ));
+            assert(d5(c) ==   std::make_tuple(true,  std::tie(typeid(B)), true,  true ));
+            assert(d5(V{}) == std::make_tuple(true,  std::tie(typeid(A)), false, false));
+        }
+        { // delayed visitation
+            visitor3 v_;
+            visitor3 const cv_{};
+
+            auto d = visit(v_);
+            auto const cd = visit(v_);
+            auto dcv = visit(cv_);
+            auto const cdcv = visit(cv_);
+            auto dmv = visit(visitor3{});
+            auto const cdmv = visit(visitor3{});
+
+            struct A {};
+            using V = variant< RW< A > >;
+            V v;
+            V const cv{};
+
+            assert(d(v)                    == std::make_tuple(false, true,  false, true ));
+            assert(cd(v)                   == std::make_tuple(true,  true,  false, true ));
+            assert(visit(v_)(v)            == std::make_tuple(false, false, false, true ));
+
+            assert(dcv(v)                  == std::make_tuple(true,  true,  false, true ));
+            assert(cdcv(v)                 == std::make_tuple(true,  true,  false, true ));
+            assert(visit(cv_)(v)           == std::make_tuple(true,  false, false, true ));
+
+            assert(dmv(v)                  == std::make_tuple(false, true,  false, true ));
+            assert(cdmv(v)                 == std::make_tuple(true,  true,  false, true ));
+            assert(visit(visitor3{})(v)    == std::make_tuple(false, false, false, true ));
+
+            assert(d(cv)                   == std::make_tuple(false, true,  true,  true ));
+            assert(cd(cv)                  == std::make_tuple(true,  true,  true,  true ));
+            assert(visit(v_)(cv)           == std::make_tuple(false, false, true,  true ));
+
+            assert(dcv(cv)                 == std::make_tuple(true,  true,  true,  true ));
+            assert(cdcv(cv)                == std::make_tuple(true,  true,  true,  true ));
+            assert(visit(cv_)(cv)          == std::make_tuple(true,  false, true,  true ));
+
+            assert(dmv(cv)                 == std::make_tuple(false, true,  true,  true ));
+            assert(cdmv(cv)                == std::make_tuple(true,  true,  true,  true ));
+            assert(visit(visitor3{})(cv)   == std::make_tuple(false, false, true,  true ));
+
+            assert(d(V{})                  == std::make_tuple(false, true,  false, false));
+            assert(cd(V{})                 == std::make_tuple(true,  true,  false, false));
+            assert(visit(v_)(V{})          == std::make_tuple(false, false, false, false));
+
+            assert(dcv(V{})                == std::make_tuple(true,  true,  false, false));
+            assert(cdcv(V{})               == std::make_tuple(true,  true,  false, false));
+            assert(visit(cv_)(V{})         == std::make_tuple(true,  false, false, false));
+
+            assert(dmv(V{})                == std::make_tuple(false, true,  false, false));
+            assert(cdmv(V{})               == std::make_tuple(true,  true,  false, false));
+            assert(visit(visitor3{})(V{})  == std::make_tuple(false, false, false, false));
         }
         {
             using V = variant< RW< int >, double >;
@@ -1500,32 +1590,32 @@ main()
             ss_ << v;
             assert(ss_.str() == "3.5");
         }
-        { // call
+        { // invoke
             struct A { int operator () (int) { return 0; } bool operator () (double) { return true; } };
             struct B { int operator () (int) { return 1; } bool operator () (double) { return false; } };
             using V = variant< A, B >;
             V v;
-            static_assert(std::is_same< int, decltype(call(v, 0)) >{});
-            static_assert(std::is_same< bool, decltype(call(v, 0.0)) >{});
-            assert(call(v, 0) == 0);
-            assert(call(v, 1.0) == true);
+            static_assert(std::is_same< int, decltype(invoke(v, 0)) >{});
+            static_assert(std::is_same< bool, decltype(invoke(v, 0.0)) >{});
+            assert(invoke(v, 0) == 0);
+            assert(invoke(v, 1.0) == true);
             v = B{};
-            assert(call(v, 0) == 1);
-            assert(call(v, 1.0) == false);
+            assert(invoke(v, 0) == 1);
+            assert(invoke(v, 1.0) == false);
         }
-        { // call
+        { // invoke
             auto a = [] (auto &&... _values) -> int { return +static_cast< int >(sizeof...(_values)); };
             auto b = [] (auto &&... _values) -> int { return -static_cast< int >(sizeof...(_values)); };
             using V = variant< decltype(a), decltype(b) >;
             V v = a;
-            static_assert(std::is_same< int, decltype(call(v, 0)) >{});
-            assert(call(v, 0, 1.0f, 2.0, 3.0L, true) == +5);
-            assert(call(v) == 0);
-            assert(call(v, nullptr) == 1);
+            static_assert(std::is_same< int, decltype(invoke(v, 0)) >{});
+            assert(invoke(v, 0, 1.0f, 2.0, 3.0L, true) == +5);
+            assert(invoke(v) == 0);
+            assert(invoke(v, nullptr) == 1);
             v = std::move(b);
-            assert(call(v, 0, 1.0f, 2.0, 3.0L, true) == -5);
-            assert(call(v) == 0);
-            assert(call(v, nullptr) == -1);
+            assert(invoke(v, 0, 1.0f, 2.0, 3.0L, true) == -5);
+            assert(invoke(v) == 0);
+            assert(invoke(v, nullptr) == -1);
         }
         {
             auto const l0 = [] (auto const &) { return 0; };
@@ -1716,14 +1806,14 @@ main()
             V v = g;
             assert(v.active< decltype(&f) >());
             assert(static_cast< decltype(&f) >(v) == &g);
-            assert(call(v) == 2);
+            assert(invoke(v) == 2);
             v = f;
             assert(v.active< decltype(&g) >());
             assert(static_cast< decltype(&g) >(v) == &f);
-            assert(call(v) == 1);
+            assert(invoke(v) == 1);
             auto l = [] { return 323; };
             v = static_cast< decltype(&g) >(l);
-            assert(call(v) == 323);
+            assert(invoke(v) == 323);
         }
     }
     { // multivisit mixed visitables

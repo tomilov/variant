@@ -24,7 +24,6 @@ struct aggregate_wrapper
     : type
 {
 
-    constexpr
     aggregate_wrapper() = default;
 
     template< typename argument,

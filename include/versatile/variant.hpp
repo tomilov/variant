@@ -37,13 +37,7 @@ public :
     }
 
     template< typename type >
-    static
-    constexpr
-    size_type
-    index() noexcept
-    {
-        return versatile::template index< type >();
-    }
+    static constexpr size_type index = versatile::template index< type >;
 
     template< typename type >
     bool
@@ -133,7 +127,7 @@ public :
     {
         assert(&_rhs != this);
         if (which() == _rhs.which()) {
-           visit(assigner{*storage_},  std::forward< type >(_rhs));
+            visit(assigner{*storage_},  std::forward< type >(_rhs));
         } else {
             replace(std::forward< type >(_rhs));
         }

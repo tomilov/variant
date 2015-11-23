@@ -22,26 +22,14 @@ namespace details
 {
 
 template< type_qualifier _type_qualifier, typename visitor, typename visitable >
-struct dispatcher;
+class dispatcher;
 
 template< type_qualifier _type_qualifier, typename visitor,
           template< typename ...types > class decay_type, typename ...types >
-struct dispatcher< _type_qualifier, visitor, decay_type< types... > >
+class dispatcher< _type_qualifier, visitor, decay_type< types... > >
 {
 
     using visitable = add_qualifier_t< _type_qualifier, decay_type< types... > >;
-
-    template< typename ...arguments >
-    static
-    constexpr
-    decltype(auto)
-    caller(visitor & _visitor, visitable & _visitable, arguments &... _arguments)
-    {
-        assert(!(sizeof...(types) < _visitable.which()));
-        return callies_< arguments... >[sizeof...(types) - _visitable.which()](_visitor, _visitable, _arguments...);
-    }
-
-private :
 
     template< typename type, typename ...arguments >
     static
@@ -60,6 +48,18 @@ private :
 
     template< typename ...arguments >
     static constexpr callee_type< arguments... > callies_[sizeof...(types)] = {dispatcher::template callee< qualify_type_t< types >, arguments... >...};
+
+public :
+
+    template< typename ...arguments >
+    static
+    constexpr
+    decltype(auto)
+    caller(visitor & _visitor, visitable & _visitable, arguments &... _arguments)
+    {
+        assert(!(sizeof...(types) < _visitable.which()));
+        return callies_< arguments... >[sizeof...(types) - _visitable.which()](_visitor, _visitable, _arguments...);
+    }
 
 };
 
@@ -188,7 +188,7 @@ struct delayed_visitor
     decltype(auto)
     operator () (types &&... _values) const &
     {
-        return multivisit(visitor_, std::forward< types >(_values)...);
+        return multivisit(std::as_const(visitor_), std::forward< types >(_values)...);
     }
 
     template< typename ...types >
@@ -204,12 +204,12 @@ struct delayed_visitor
     decltype(auto)
     operator () (types &&... _values) const &&
     {
-        return multivisit(std::move(visitor_), std::forward< types >(_values)...);
+        return multivisit(std::move(std::as_const(visitor_)), std::forward< types >(_values)...);
     }
 
 private :
 
-    unwrap_type_t< visitor > visitor_;
+    visitor visitor_;
 
 };
 
@@ -218,7 +218,7 @@ private :
 template< typename visitor >
 constexpr
 details::delayed_visitor< visitor >
-visit(visitor && _visitor) noexcept(std::is_nothrow_constructible< unwrap_type_t< visitor >, visitor >{})
+visit(visitor && _visitor) noexcept(std::is_lvalue_reference< visitor >{} || std::is_nothrow_move_constructible< visitor >{})
 {
     return _visitor;
 }
@@ -239,7 +239,7 @@ struct composite_visitor
     using tail::operator ();
 
     constexpr
-    composite_visitor(visitor & _visitor, visitors &... _visitors) noexcept(std::is_nothrow_constructible< head, visitor >{} && std::is_nothrow_constructible< tail, visitors &... >{})
+    composite_visitor(visitor & _visitor, visitors &... _visitors) noexcept(noexcept(head(std::declval< visitor >())) && noexcept(tail(_visitors...)))
         : head(std::forward< visitor >(_visitor))
         , tail{_visitors...}
     { ; }
@@ -256,7 +256,7 @@ struct composite_visitor< visitor >
     using base::operator ();
 
     constexpr
-    composite_visitor(visitor & _visitor) noexcept(std::is_nothrow_constructible< base, visitor >{})
+    composite_visitor(visitor & _visitor) noexcept(noexcept(base(std::declval< visitor >())))
         : base(std::forward< visitor >(_visitor))
     { ; }
 
@@ -267,14 +267,14 @@ struct composite_visitor< visitor >
 template< typename visitor, typename ...visitors >
 constexpr
 details::composite_visitor< visitor, visitors... >
-compose_visitors(visitor && _visitor, visitors &&... _visitors)
+compose_visitors(visitor && _visitor, visitors &&... _visitors) noexcept(noexcept(details::composite_visitor< visitor, visitors... >{_visitor, _visitors...}))
 {
     return {_visitor, _visitors...};
 }
 
 template< typename visitable, typename ...arguments >
 decltype(auto)
-call(visitable && _visitable, arguments &&... _arguments)
+invoke(visitable && _visitable, arguments &&... _arguments)
 {
     return visit([&] (auto && _value) -> decltype(auto)
     {
