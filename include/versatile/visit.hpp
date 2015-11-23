@@ -209,7 +209,7 @@ struct delayed_visitor
 
 private :
 
-    visitor visitor_;
+    unwrap_type_t< visitor > visitor_;
 
 };
 
@@ -218,7 +218,7 @@ private :
 template< typename visitor >
 constexpr
 details::delayed_visitor< visitor >
-visit(visitor && _visitor) noexcept(std::is_lvalue_reference< visitor >{} || std::is_nothrow_move_constructible< visitor >{})
+visit(visitor && _visitor) noexcept(std::is_nothrow_constructible< unwrap_type_t< visitor >, visitor >{})
 {
     return _visitor;
 }

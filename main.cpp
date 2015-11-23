@@ -31,10 +31,10 @@
 namespace test
 {
 
-using namespace versatile;
-
 namespace test_traits
 {
+
+using namespace versatile;
 
 struct A {};
 struct B {};
@@ -181,7 +181,7 @@ struct visitor3
 
 // value_or
 template< typename lhs, typename rhs >
-std::enable_if_t< (is_visitable< std::remove_reference_t< lhs > >{} && !is_visitable< std::remove_reference_t< rhs > >{}), std::remove_reference_t< rhs > >
+std::enable_if_t< (versatile::is_visitable< std::remove_reference_t< lhs > >{} && !versatile::is_visitable< std::remove_reference_t< rhs > >{}), std::remove_reference_t< rhs > >
 operator || (lhs && _lhs, rhs && _rhs) noexcept
 {
     using result_type = std::remove_reference_t< rhs >;
@@ -193,14 +193,14 @@ operator || (lhs && _lhs, rhs && _rhs) noexcept
 }
 
 template< typename lhs, typename rhs >
-std::enable_if_t< (!is_visitable< std::remove_reference_t< lhs > >{} && is_visitable< std::remove_reference_t< rhs > >{}), lhs >
+std::enable_if_t< (!versatile::is_visitable< std::remove_reference_t< lhs > >{} && versatile::is_visitable< std::remove_reference_t< rhs > >{}), lhs >
 operator || (lhs && _lhs, rhs && _rhs) noexcept
 {
     return (std::forward< rhs >(_rhs) || std::forward< lhs >(_lhs));
 }
 
 template< typename lhs, typename rhs >
-std::enable_if_t< (is_visitable< std::remove_reference_t< lhs > >{} && is_visitable< std::remove_reference_t< rhs > >{}) >
+std::enable_if_t< (versatile::is_visitable< std::remove_reference_t< lhs > >{} && versatile::is_visitable< std::remove_reference_t< rhs > >{}) >
 operator || (lhs && _lhs, rhs && _rhs) = delete;
 
 template< typename type >
@@ -212,7 +212,7 @@ struct variadic_index;
 template< template< typename ...types > class variadic, typename ...types,
           typename type >
 struct variadic_index< variadic< types... >, type >
-        : index_by_type< type, types..., void >
+        : versatile::index_by_type< type, types..., void >
 {
 
 };
@@ -237,48 +237,6 @@ struct index< false, rest... >
 
 };
 
-template< bool ...values >
-struct or_
-        : std::false_type
-{
-
-};
-
-template< bool ...rest >
-struct or_< true, rest... >
-        : std::true_type
-{
-
-};
-
-template< bool ...rest >
-struct or_< false, rest... >
-        : or_< rest... >
-{
-
-};
-
-template< bool ...values >
-struct and_
-        : std::true_type
-{
-
-};
-
-template< bool ...rest >
-struct and_< false, rest... >
-        : std::false_type
-{
-
-};
-
-template< bool ...rest >
-struct and_< true, rest... >
-        : and_< rest... >
-{
-
-};
-
 template< std::size_t _id >
 struct id
 {
@@ -286,208 +244,220 @@ struct id
 };
 
 template< bool, typename ...types >
-struct default_construct;
+struct enable_default_construct;
 
 template< typename ...types >
-struct default_construct< true, types... >
+struct enable_default_construct< true, types... >
 {
 
-    default_construct() = default;
-    default_construct(default_construct const &) = default;
-    default_construct(default_construct &) = default;
-    default_construct(default_construct &&) = default;
-    default_construct & operator = (default_construct const &) = default;
-    default_construct & operator = (default_construct &) = default;
-    default_construct & operator = (default_construct &&) = default;
+    enable_default_construct() = default;
+    enable_default_construct(enable_default_construct const &) = default;
+    enable_default_construct(enable_default_construct &) = default;
+    enable_default_construct(enable_default_construct &&) = default;
+    enable_default_construct & operator = (enable_default_construct const &) = default;
+    enable_default_construct & operator = (enable_default_construct &) = default;
+    enable_default_construct & operator = (enable_default_construct &&) = default;
 
     std::size_t which_ = 1 + index< (std::is_default_constructible< types >{})... >{};
 
 };
 
 template< typename ...types >
-struct default_construct< false, types... >
+struct enable_default_construct< false, types... >
 {
 
-    default_construct() = delete;
-    default_construct(default_construct const &) = default;
-    default_construct(default_construct &) = default;
-    default_construct(default_construct &&) = default;
-    default_construct & operator = (default_construct const &) = default;
-    default_construct & operator = (default_construct &) = default;
-    default_construct & operator = (default_construct &&) = default;
+    enable_default_construct() = delete;
+    enable_default_construct(enable_default_construct const &) = default;
+    enable_default_construct(enable_default_construct &) = default;
+    enable_default_construct(enable_default_construct &&) = default;
+    enable_default_construct & operator = (enable_default_construct const &) = default;
+    enable_default_construct & operator = (enable_default_construct &) = default;
+    enable_default_construct & operator = (enable_default_construct &&) = default;
 
     std::size_t which_;
 
 };
 
 template< bool >
-struct destruct;
+struct enable_destruct;
 
 template<>
-struct destruct< true >
+struct enable_destruct< true >
 {
 
-    ~destruct() = default;
-    destruct() = default;
-    destruct(destruct const &) = default;
-    destruct(destruct &) = default;
-    destruct(destruct &&) = default;
-    destruct & operator = (destruct const &) = default;
-    destruct & operator = (destruct &) = default;
-    destruct & operator = (destruct &&) = default;
+    ~enable_destruct() = default;
+    enable_destruct() = default;
+    enable_destruct(enable_destruct const &) = default;
+    enable_destruct(enable_destruct &) = default;
+    enable_destruct(enable_destruct &&) = default;
+    enable_destruct & operator = (enable_destruct const &) = default;
+    enable_destruct & operator = (enable_destruct &) = default;
+    enable_destruct & operator = (enable_destruct &&) = default;
 
 };
 
 template<>
-struct destruct< false >
+struct enable_destruct< false >
 {
 
-    ~destruct() = delete;
-    destruct() = default;
-    destruct(destruct const &) = default;
-    destruct(destruct &) = default;
-    destruct(destruct &&) = default;
-    destruct & operator = (destruct const &) = default;
-    destruct & operator = (destruct &) = default;
-    destruct & operator = (destruct &&) = default;
+    ~enable_destruct() = delete;
+    enable_destruct() = default;
+    enable_destruct(enable_destruct const &) = default;
+    enable_destruct(enable_destruct &) = default;
+    enable_destruct(enable_destruct &&) = default;
+    enable_destruct & operator = (enable_destruct const &) = default;
+    enable_destruct & operator = (enable_destruct &) = default;
+    enable_destruct & operator = (enable_destruct &&) = default;
+
+};
+
+template< bool _copy, bool _move > // 2 * 2 == 2 + 2
+struct enable_construct;
+
+template<>
+struct enable_construct< true, true >
+{
+
+    ~enable_construct() = default;
+    enable_construct() = default;
+    enable_construct(enable_construct const &) = default;
+    enable_construct(enable_construct &) = default;
+    enable_construct(enable_construct &&) = default;
+    enable_construct & operator = (enable_construct const &) = default;
+    enable_construct & operator = (enable_construct &) = default;
+    enable_construct & operator = (enable_construct &&) = default;
+
+};
+
+template<>
+struct enable_construct< false, false >
+{
+
+    ~enable_construct() = default;
+    enable_construct() = default;
+    enable_construct(enable_construct const &) = delete;
+    enable_construct(enable_construct &) = delete;
+    enable_construct(enable_construct &&) = delete;
+    enable_construct & operator = (enable_construct const &) = default;
+    enable_construct & operator = (enable_construct &) = default;
+    enable_construct & operator = (enable_construct &&) = default;
+
+};
+
+template<>
+struct enable_construct< true, false >
+{
+
+    ~enable_construct() = default;
+    enable_construct() = default;
+    enable_construct(enable_construct const &) = default;
+    enable_construct(enable_construct &) = default;
+    enable_construct(enable_construct &&) = delete;
+    enable_construct & operator = (enable_construct const &) = default;
+    enable_construct & operator = (enable_construct &) = default;
+    enable_construct & operator = (enable_construct &&) = default;
+
+};
+
+template<>
+struct enable_construct< false, true >
+{
+
+    ~enable_construct() = default;
+    enable_construct() = default;
+    enable_construct(enable_construct const &) = delete;
+    enable_construct(enable_construct &) = delete;
+    enable_construct(enable_construct &&) = default;
+    enable_construct & operator = (enable_construct const &) = default;
+    enable_construct & operator = (enable_construct &) = default;
+    enable_construct & operator = (enable_construct &&) = default;
 
 };
 
 template< bool _copy, bool _move >
-struct construct;
+struct enable_assign;
 
 template<>
-struct construct< true, true >
+struct enable_assign< true, true >
 {
 
-    ~construct() = default;
-    construct() = default;
-    construct(construct const &) = default;
-    construct(construct &) = default;
-    construct(construct &&) = default;
-    construct & operator = (construct const &) = default;
-    construct & operator = (construct &) = default;
-    construct & operator = (construct &&) = default;
+    ~enable_assign() = default;
+    enable_assign() = default;
+    enable_assign(enable_assign const &) = default;
+    enable_assign(enable_assign &) = default;
+    enable_assign(enable_assign &&) = default;
+    enable_assign & operator = (enable_assign const &) = default;
+    enable_assign & operator = (enable_assign &) = default;
+    enable_assign & operator = (enable_assign &&) = default;
 
 };
 
 template<>
-struct construct< false, false >
+struct enable_assign< false, false >
 {
 
-    ~construct() = default;
-    construct() = default;
-    construct(construct const &) = delete;
-    construct(construct &) = delete;
-    construct(construct &&) = delete;
-    construct & operator = (construct const &) = default;
-    construct & operator = (construct &) = default;
-    construct & operator = (construct &&) = default;
+    ~enable_assign() = default;
+    enable_assign() = default;
+    enable_assign(enable_assign const &) = default;
+    enable_assign(enable_assign &) = default;
+    enable_assign(enable_assign &&) = default;
+    enable_assign & operator = (enable_assign const &) = delete;
+    enable_assign & operator = (enable_assign &) = delete;
+    enable_assign & operator = (enable_assign &&) = delete;
 
 };
 
 template<>
-struct construct< true, false >
+struct enable_assign< true, false >
 {
 
-    ~construct() = default;
-    construct() = default;
-    construct(construct const &) = default;
-    construct(construct &) = default;
-    construct(construct &&) = delete;
-    construct & operator = (construct const &) = default;
-    construct & operator = (construct &) = default;
-    construct & operator = (construct &&) = default;
+    ~enable_assign() = default;
+    enable_assign() = default;
+    enable_assign(enable_assign const &) = default;
+    enable_assign(enable_assign &) = default;
+    enable_assign(enable_assign &&) = default;
+    enable_assign & operator = (enable_assign const &) = default;
+    enable_assign & operator = (enable_assign &) = default;
+    enable_assign & operator = (enable_assign &&) = delete;
 
 };
 
 template<>
-struct construct< false, true >
+struct enable_assign< false, true >
 {
 
-    ~construct() = default;
-    construct() = default;
-    construct(construct const &) = delete;
-    construct(construct &) = delete;
-    construct(construct &&) = default;
-    construct & operator = (construct const &) = default;
-    construct & operator = (construct &) = default;
-    construct & operator = (construct &&) = default;
-
-};
-
-template< bool _copy, bool _move >
-struct assign;
-
-template<>
-struct assign< true, true >
-{
-
-    ~assign() = default;
-    assign() = default;
-    assign(assign const &) = default;
-    assign(assign &) = default;
-    assign(assign &&) = default;
-    assign & operator = (assign const &) = default;
-    assign & operator = (assign &) = default;
-    assign & operator = (assign &&) = default;
-
-};
-
-template<>
-struct assign< false, false >
-{
-
-    ~assign() = default;
-    assign() = default;
-    assign(assign const &) = default;
-    assign(assign &) = default;
-    assign(assign &&) = default;
-    assign & operator = (assign const &) = delete;
-    assign & operator = (assign &) = delete;
-    assign & operator = (assign &&) = delete;
-
-};
-
-template<>
-struct assign< true, false >
-{
-
-    ~assign() = default;
-    assign() = default;
-    assign(assign const &) = default;
-    assign(assign &) = default;
-    assign(assign &&) = default;
-    assign & operator = (assign const &) = default;
-    assign & operator = (assign &) = default;
-    assign & operator = (assign &&) = delete;
-
-};
-
-template<>
-struct assign< false, true >
-{
-
-    ~assign() = default;
-    assign() = default;
-    assign(assign const &) = default;
-    assign(assign &) = default;
-    assign(assign &&) = default;
-    assign & operator = (assign const &) = delete;
-    assign & operator = (assign &) = delete;
-    assign & operator = (assign &&) = default;
+    ~enable_assign() = default;
+    enable_assign() = default;
+    enable_assign(enable_assign const &) = default;
+    enable_assign(enable_assign &) = default;
+    enable_assign(enable_assign &&) = default;
+    enable_assign & operator = (enable_assign const &) = delete;
+    enable_assign & operator = (enable_assign &) = delete;
+    enable_assign & operator = (enable_assign &&) = default;
 
 };
 
 template< typename ...types >
+using enable_default_construct_t = enable_default_construct< (std::is_default_constructible< types >{} || ...), types... >;
+
+template< typename ...types >
+using enable_destruct_t = enable_destruct< (std::is_destructible< types >{} && ...) >;
+
+template< typename ...types >
+using enable_construct_t = enable_construct< (std::is_copy_constructible< types >{} && ...), (std::is_move_constructible< types >{} && ...) >;
+
+template< typename ...types >
+using enable_assign_t = enable_assign< (std::is_copy_assignable< types >{} && ...), (std::is_move_assignable< types >{} && ...) >;
+
+template< typename ...types >
 struct enable_special_functions
-        : default_construct< (std::is_default_constructible< types >{} || ...), types... >
-        , destruct< (std::is_destructible< types >{} && ...) >
-        , construct< (std::is_copy_constructible< types >{} && ...), (std::is_move_constructible< types >{} && ...) >
-        , assign< (std::is_copy_assignable< types >{} && ...), (std::is_move_assignable< types >{} && ...) >
+        : enable_default_construct_t< types... >
+        , enable_destruct_t< types... >
+        , enable_construct_t< types... >
+        , enable_assign_t< types... >
 {
 
-    using base = default_construct< (std::is_default_constructible< types >{} || ...), types... >;
+    using base = enable_default_construct_t< types... >;
     using base::which_;
 
     template< std::size_t _id >
@@ -501,12 +471,12 @@ struct enable_special_functions
 
 template< typename ...types >
 struct cvariant
-        : enable_special_functions< unwrap_type_t< types >... >
+        : enable_special_functions< versatile::unwrap_type_t< types >... >
 {
 
     static constexpr std::size_t width = sizeof...(types);
 
-    using base = enable_special_functions< unwrap_type_t< types >... >;
+    using base = enable_special_functions< versatile::unwrap_type_t< types >... >;
 
     ~cvariant() = default;
     cvariant() = default;
@@ -520,12 +490,12 @@ struct cvariant
     constexpr std::size_t which() const { return base::which_; }
 
     template< typename type >
-    using index_by_type_t = index_by_type< unwrap_type_t< type >, unwrap_type_t< types >..., void >;
+    using index_by_type_t = versatile::index_by_type< versatile::unwrap_type_t< type >, versatile::unwrap_type_t< types >..., void >;
 
     template< typename type, std::size_t _which = index_by_type_t< type >{} >
     constexpr cvariant(type &&) : base{id< _which >{}} { ; }
 
-    template< typename ...arguments, std::size_t _which = 1 + index< (std::is_constructible< unwrap_type_t< types >, arguments... >{})... >{} >
+    template< typename ...arguments, std::size_t _which = 1 + index< (std::is_constructible< versatile::unwrap_type_t< types >, arguments... >{})... >{} >
     constexpr cvariant(arguments &&...) : base{id< _which >{}} { ; }
 
     template< typename type, std::size_t = index_by_type_t< type >{} >
@@ -650,7 +620,7 @@ template< std::size_t M >
 struct pair
 {
 
-    std::array< type_qualifier, (1 + M) > qual_ids;
+    std::array< versatile::type_qualifier, (1 + M) > qual_ids;
     std::array< std::size_t, (1 + M) > type_ids;
 
     template< std::size_t ...I >
@@ -699,7 +669,7 @@ struct multivisitor
     {
         //static_assert(M == sizeof...(types));
         //static_assert(!(is_visitable< types >{} || ...));
-        return {{{type_qualifier_of< multivisitor & >, type_qualifier_of< types && >...}}, {{M, _values...}}};
+        return {{{versatile::type_qualifier_of< multivisitor & >, versatile::type_qualifier_of< types && >...}}, {{M, _values...}}};
     }
 
     template< typename ...types >
@@ -707,7 +677,7 @@ struct multivisitor
     result_type
     operator () (types &&... _values) const & noexcept
     {
-        return {{{type_qualifier_of< multivisitor const & >, type_qualifier_of< types && >...}}, {{M, _values...}}};
+        return {{{versatile::type_qualifier_of< multivisitor const & >, versatile::type_qualifier_of< types && >...}}, {{M, _values...}}};
     }
 
     template< typename ...types >
@@ -715,7 +685,7 @@ struct multivisitor
     result_type
     operator () (types &&... _values) && noexcept
     {
-        return {{{type_qualifier_of< multivisitor && >, type_qualifier_of< types && >...}}, {{M, _values...}}};
+        return {{{versatile::type_qualifier_of< multivisitor && >, versatile::type_qualifier_of< types && >...}}, {{M, _values...}}};
     }
 
     template< typename ...types >
@@ -723,7 +693,7 @@ struct multivisitor
     result_type
     operator () (types &&... _values) const && noexcept
     {
-        return {{{type_qualifier_of< multivisitor const && >, type_qualifier_of< types && >...}}, {{M, _values...}}};
+        return {{{versatile::type_qualifier_of< multivisitor const && >, versatile::type_qualifier_of< types && >...}}, {{M, _values...}}};
     }
 
 #if 0
@@ -734,7 +704,7 @@ struct multivisitor
     result_type
     operator () (types &&... _values) volatile & noexcept
     {
-        return {{{type_qualifier_of< volatile multivisitor & >, type_qualifier_of< types && >...}}, {{M, _values...}}};
+        return {{{versatile::type_qualifier_of< volatile multivisitor & >, versatile::type_qualifier_of< types && >...}}, {{M, _values...}}};
     }
 
     template< typename ...types >
@@ -742,7 +712,7 @@ struct multivisitor
     result_type
     operator () (types &&... _values) volatile const & noexcept
     {
-        return {{{type_qualifier_of< volatile multivisitor const & >, type_qualifier_of< types && >...}}, {{M, _values...}}};
+        return {{{versatile::type_qualifier_of< volatile multivisitor const & >, versatile::type_qualifier_of< types && >...}}, {{M, _values...}}};
     }
 
     template< typename ...types >
@@ -750,7 +720,7 @@ struct multivisitor
     result_type
     operator () (types &&... _values) volatile && noexcept
     {
-        return {{{type_qualifier_of< volatile multivisitor && >, type_qualifier_of< types && >...}}, {{M, _values...}}};
+        return {{{versatile::type_qualifier_of< volatile multivisitor && >, versatile::type_qualifier_of< types && >...}}, {{M, _values...}}};
     }
 
     template< typename ...types >
@@ -758,14 +728,14 @@ struct multivisitor
     result_type
     operator () (types &&... _values) volatile const && noexcept
     {
-        return {{{type_qualifier_of< volatile multivisitor const && >, type_qualifier_of< types && >...}}, {{M, _values...}}};
+        return {{{versatile::type_qualifier_of< volatile multivisitor const && >, versatile::type_qualifier_of< types && >...}}, {{M, _values...}}};
     }
 #endif
 
 };
 
-static constexpr std::size_t qualifier_id_begin = static_cast< std::size_t >(type_qualifier_of< void * & >);
-static constexpr std::size_t qualifier_id_end = static_cast< std::size_t >(type_qualifier_of< void * volatile & >);
+static constexpr std::size_t qualifier_id_begin = static_cast< std::size_t >(versatile::type_qualifier_of< void * & >);
+static constexpr std::size_t qualifier_id_end = static_cast< std::size_t >(versatile::type_qualifier_of< void * volatile & >);
 
 template< typename ...types >
 struct fusor
@@ -773,26 +743,28 @@ struct fusor
 
     std::tuple< types *... > const & stuff_;
 
-    template< std::size_t ...Q, std::size_t ...K >
-    constexpr
-    bool
-    operator () (std::index_sequence< Q... >, std::index_sequence< K... >) const
-    {
-        auto const lhs = multivisit(static_cast< add_qualifier_t< static_cast< type_qualifier >(qualifier_id_begin + Q), types > >(*std::get< K >(stuff_))...);
-        static_assert(sizeof...(types) == lhs.size());
-        pair< (sizeof...(types) - 1) > const rhs = {{{static_cast< type_qualifier >(qualifier_id_begin + Q)...}}, {{(std::get< K >(stuff_)->width - 1 - std::get< K >(stuff_)->which())...}}};
-        if (lhs == rhs) {
-            return false;
-        }
-        return true;
-    }
-
     template< std::size_t ...Q >
     constexpr
     bool
     operator () (std::index_sequence< Q... >) const
     {
-        return operator () (std::index_sequence< Q... >{}, std::index_sequence_for< types... >{});
+        return call< Q... >(std::index_sequence_for< types... >{});
+    }
+
+private :
+
+    template< std::size_t ...Q, std::size_t ...K >
+    constexpr
+    bool
+    call(std::index_sequence< K... >) const
+    {
+        auto const lhs = versatile::multivisit(static_cast< versatile::add_qualifier_t< static_cast< versatile::type_qualifier >(qualifier_id_begin + Q), types > >(*std::get< K >(stuff_))...);
+        static_assert(sizeof...(types) == lhs.size());
+        pair< (sizeof...(types) - 1) > const rhs = {{{static_cast< versatile::type_qualifier >(qualifier_id_begin + Q)...}}, {{(std::get< K >(stuff_)->width - 1 - std::get< K >(stuff_)->which())...}}};
+        if (lhs == rhs) {
+            return false;
+        }
+        return true;
     }
 
 };
@@ -802,7 +774,7 @@ constexpr
 fusor< types... >
 make_fusor(std::tuple< types *... > const & _stuff)
 {
-    static_assert(((type_qualifier_of< types > == type_qualifier::value) && ...));
+    static_assert(((versatile::type_qualifier_of< types > == versatile::type_qualifier::value) && ...));
     return {_stuff};
 }
 
@@ -897,7 +869,7 @@ constexpr
 bool
 invoke(std::index_sequence< M... >, std::index_sequence< N... >) noexcept
 {
-    return (std::array< std::size_t, sizeof...(N) >{(N % sizeof...(M))...} == multivisit(visitor{}, variant< T< M >... >{T< (N % sizeof...(M)) >{}}...));
+    return (std::array< std::size_t, sizeof...(N) >{(N % sizeof...(M))...} == multivisit(visitor{}, versatile::variant< T< M >... >{T< (N % sizeof...(M)) >{}}...));
 }
 
 #pragma clang diagnostic pop
@@ -935,7 +907,7 @@ struct boost_variant_i
     std::size_t
     index() noexcept
     {
-        return index_by_type< unwrap_type_t< type >, unwrap_type_t< types >..., void >();
+        return versatile::index_by_type< versatile::unwrap_type_t< type >, versatile::unwrap_type_t< types >..., void >();
     }
 
     template< typename type >
@@ -1040,7 +1012,7 @@ struct boost_variant_c
     std::size_t
     index() noexcept
     {
-        return index_by_type< unwrap_type_t< type >, unwrap_type_t< types >..., void >();
+        return versatile::index_by_type< versatile::unwrap_type_t< type >, versatile::unwrap_type_t< types >..., void >();
     }
 
     template< typename type >
@@ -1097,14 +1069,14 @@ private :
 };
 
 template< typename T >
-using AW = aggregate_wrapper< T >;
+using AW = versatile::aggregate_wrapper< T >;
 
 template< typename T >
-using RW = recursive_wrapper< T >;
+using RW = versatile::recursive_wrapper< T >;
 
 struct R;
 struct A {};
-using V = variant< A, RW< R > >;
+using V = versatile::variant< A, RW< R > >;
 struct R
         : V
 {
@@ -1138,12 +1110,27 @@ struct is_visitable< test::boost_variant_c< first, rest... > >
 
 };
 
+template< typename type >
+struct unwrap_type< std::reference_wrapper< type > >
+        : unwrap_type< type >
+{
+
+    static_assert(!std::is_const< type >{});
+
+};
+
 } // namespace versatile
 
 int
 main()
 {
     using namespace test;
+    using versatile::visit;
+    using versatile::multivisit;
+    using versatile::compose_visitors;
+    using versatile::in_place;
+    using versatile::variant;
+    using versatile::versatile;
     {
         {
             using V = versatile< int >;
@@ -1497,99 +1484,8 @@ main()
             assert(multivisit(c_, V{}, op::eq, V{B{}}) == std::make_tuple(true, std::tie(typeid(A)), false, false, std::tie(typeid(op)), false, false, std::tie(typeid(B)), false, false));
             assert(multivisit(visitor2{}, V{}, op::eq, V{B{}}) == std::make_tuple(false, std::tie(typeid(A)), false, false, std::tie(typeid(op)), false, false, std::tie(typeid(B)), false, false));
         }
-        { // delayed visitation
-            visitor2 v_;
-            visitor2 const c_{};
-
-            auto d0 = visit(v_);
-            auto const d1 = visit(v_);
-            auto d2 = visit(c_);
-            auto const d3 = visit(c_);
-            auto d4 = visit(visitor2{});
-            auto const d5 = visit(visitor2{});
-
-            struct A {};
-            struct B {};
-            using V = variant< RW< A >, RW< B > >;
-            V v;
-            V const c(B{});
-
-            assert(d0(v) ==   std::make_tuple(false, std::tie(typeid(A)), false, true ));
-            assert(d0(c) ==   std::make_tuple(false, std::tie(typeid(B)), true,  true ));
-            assert(d0(V{}) == std::make_tuple(false, std::tie(typeid(A)), false, false));
-
-            assert(d1(v) ==   std::make_tuple(false, std::tie(typeid(A)), false, true ));
-            assert(d1(c) ==   std::make_tuple(false, std::tie(typeid(B)), true,  true ));
-            assert(d1(V{}) == std::make_tuple(false, std::tie(typeid(A)), false, false));
-
-            assert(d2(v) ==   std::make_tuple(true,  std::tie(typeid(A)), false, true ));
-            assert(d2(c) ==   std::make_tuple(true,  std::tie(typeid(B)), true,  true ));
-            assert(d2(V{}) == std::make_tuple(true,  std::tie(typeid(A)), false, false));
-
-            assert(d3(v) ==   std::make_tuple(true,  std::tie(typeid(A)), false, true ));
-            assert(d3(c) ==   std::make_tuple(true,  std::tie(typeid(B)), true,  true ));
-            assert(d3(V{}) == std::make_tuple(true,  std::tie(typeid(A)), false, false));
-
-            assert(d4(v) ==   std::make_tuple(false, std::tie(typeid(A)), false, true ));
-            assert(d4(c) ==   std::make_tuple(false, std::tie(typeid(B)), true,  true ));
-            assert(d4(V{}) == std::make_tuple(false, std::tie(typeid(A)), false, false));
-
-            // to use mutable visitor it is mandatory to have non-const delayed visitor instance
-            assert(d5(v) ==   std::make_tuple(true,  std::tie(typeid(A)), false, true ));
-            assert(d5(c) ==   std::make_tuple(true,  std::tie(typeid(B)), true,  true ));
-            assert(d5(V{}) == std::make_tuple(true,  std::tie(typeid(A)), false, false));
-        }
-        { // delayed visitation
-            visitor3 v_;
-            visitor3 const cv_{};
-
-            auto d = visit(v_);
-            auto const cd = visit(v_);
-            auto dcv = visit(cv_);
-            auto const cdcv = visit(cv_);
-            auto dmv = visit(visitor3{});
-            auto const cdmv = visit(visitor3{});
-
-            struct A {};
-            using V = variant< RW< A > >;
-            V v;
-            V const cv{};
-
-            assert(d(v)                           == std::make_tuple(false, true,  false, true ));
-            assert(cd(v)                          == std::make_tuple(false, true,  false, true )); // ! true, true, false, true
-            assert(visit(v_)(v)            == std::make_tuple(false, false, false, true ));
-
-            assert(dcv(v)                         == std::make_tuple(true,  true,  false, true ));
-            assert(cdcv(v)                        == std::make_tuple(true,  true,  false, true ));
-            assert(visit(cv_)(v)           == std::make_tuple(true,  false, false, true )); // if visitor have not `const &&` version of `operator ()`, then `const &` chosen
-
-            assert(dmv(v)                         == std::make_tuple(false, true,  false, true ));
-            assert(cdmv(v)                        == std::make_tuple(true,  true,  false, true ));
-            assert(visit(visitor3{})(v)    == std::make_tuple(false, false, false, true ));
-
-            assert(d(cv)                          == std::make_tuple(false, true,  true,  true ));
-            assert(cd(cv)                         == std::make_tuple(false, true,  true,  true )); // ! true, true, true, true
-            assert(visit(v_)(cv)           == std::make_tuple(false, false, true,  true ));
-
-            assert(dcv(cv)                        == std::make_tuple(true,  true,  true,  true ));
-            assert(cdcv(cv)                       == std::make_tuple(true,  true,  true,  true ));
-            assert(visit(cv_)(cv)          == std::make_tuple(true,  false, true,  true ));
-
-            assert(dmv(cv)                        == std::make_tuple(false, true,  true,  true ));
-            assert(cdmv(cv)                       == std::make_tuple(true,  true,  true,  true ));
-            assert(visit(visitor3{})(cv)   == std::make_tuple(false, false, true,  true ));
-
-            assert(d(V{})                         == std::make_tuple(false, true,  false, false));
-            assert(cd(V{})                        == std::make_tuple(false, true,  false, false)); // ! true, true, false, false
-            assert(visit(v_)(V{})          == std::make_tuple(false, false, false, false));
-
-            assert(dcv(V{})                       == std::make_tuple(true,  true,  false, false));
-            assert(cdcv(V{})                      == std::make_tuple(true,  true,  false, false));
-            assert(visit(cv_)(V{})         == std::make_tuple(true,  false, false, false));
-
-            assert(dmv(V{})                       == std::make_tuple(false, true,  false, false));
-            assert(cdmv(V{})                      == std::make_tuple(true,  true,  false, false));
-            assert(visit(visitor3{})(V{})  == std::make_tuple(false, false, false, false));
+        {
+            // TODO: delayed visitor
         }
         {
             using V = variant< RW< int >, double >;
@@ -2057,6 +1953,18 @@ main()
         static_assert(multivisitor3_(c, 0.0, a) == 231);
         static_assert(multivisitor3_(c, 0.0, b) == 232);
         static_assert(multivisitor3_(c, 0.0, c) == 233);
+    }
+    { // reference_wrapper
+        struct A {};
+        using RA = std::reference_wrapper< A >;
+        using V = variant< RA >;
+        A a;
+        RA ra{a};
+        V v{a};
+        V w{ra};
+        v = a;
+        v = ra;
+        v = w;
     }
     { // compile time wasteful test
         // -ftemplate-depth=32:
