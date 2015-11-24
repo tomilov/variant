@@ -116,14 +116,14 @@ public :
     }
 
     template< typename type >
-    static constexpr size_type index = index_by_type< unwrap_type_t< type >, this_type, unwrap_type_t< rest >..., versatile<> >();
+    using index = index_by_type< unwrap_type_t< type >, this_type, unwrap_type_t< rest >..., versatile<> >;
 
     template< typename type = this_type >
     constexpr
     bool
     active() const noexcept
     {
-        return (index< unwrap_type_t< type > > == which());
+        return (index< unwrap_type_t< type > >{} == which());
     }
 
     template< typename is_default_constructible = typename std::is_default_constructible< first >::type >

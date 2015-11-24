@@ -37,7 +37,7 @@ public :
     }
 
     template< typename type >
-    static constexpr size_type index = versatile::template index< type >;
+    using index = typename versatile::template index< type >;
 
     template< typename type >
     bool
