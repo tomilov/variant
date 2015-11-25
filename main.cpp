@@ -434,7 +434,7 @@ public :
     }
 
     template< typename type,
-              typename = get_index_t< (__has_trivial_assign(type) && ... && __has_trivial_assign(types)) >, // enable_if_t
+              typename = get_index_t< (__has_trivial_copy(unwrap_type_t< type >) && ... && __has_trivial_assign(types)) >, // enable_if_t
               typename index = index_at_t< unwrap_type_t< type >, unwrap_type_t< types >..., void > >
     constexpr
     variant &
