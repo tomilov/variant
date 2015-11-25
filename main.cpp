@@ -1,4 +1,9 @@
 #if 1
+#if defined(DEBUG) || defined(_DEBUG)
+#include <iostream>
+#include <iomanip>
+#endif
+
 #include <versatile/wrappers.hpp>
 
 #include <utility>
@@ -284,9 +289,11 @@ struct destructor< true, false, first, rest... >
     std::size_t which_;
     storage storage_;
 
+    using initial_index = index_of_default_constructible< first, rest..., void >;
+
     constexpr
-    destructor() noexcept(__is_nothrow_constructible(destructor, index_of_default_constructible_t< first, rest..., void >))
-        : destructor(index_of_default_constructible_t< first, rest..., void >{})
+    destructor() noexcept(__is_nothrow_constructible(destructor, typename initial_index::type))
+        : destructor(typename initial_index::type{})
     { ; }
 
     template< typename index,
@@ -331,9 +338,11 @@ struct destructor< false, false, first, rest... >
         storage_.destructor(which_);
     }
 
+    using initial_index = index_of_default_constructible< first, rest..., void >;
+
     constexpr
-    destructor() noexcept(__is_nothrow_constructible(destructor, index_of_default_constructible_t< first, rest..., void >))
-        : destructor(index_of_default_constructible_t< first, rest..., void >{})
+    destructor() noexcept(__is_nothrow_constructible(destructor, typename initial_index::type))
+        : destructor(typename initial_index::type{})
     { ; }
 
     template< typename index,
@@ -374,25 +383,27 @@ class variant
 
 public :
 
+    using initial_index = index_of_default_constructible< types..., void >;
+
     constexpr
     std::size_t
     which() const noexcept
     {
-        if (storage_.which_ == 0) {
-            return sizeof...(types);
+        if (storage_.which_ == 0) { // trivially default constructed
+            return initial_index::type::value;
         }
         return storage_.which_;
     }
 
     template< typename type >
-    using index = index_at< unwrap_type_t< type >, unwrap_type_t< types >..., void >;
+    using index_t = index_at< unwrap_type_t< type >, unwrap_type_t< types >..., void >;
 
     template< typename type >
     constexpr
     bool
     active() const noexcept
     {
-        return (which() == index< type >::value);
+        return (which() == index_t< type >::value);
     }
 
     constexpr
@@ -459,252 +470,37 @@ public :
 #if 1
 #define ASSERT(...) { static_assert(__VA_ARGS__); }
 #define CONSTEXPR constexpr
+#define CONSTEXPRF constexpr
+#define CHECK(...) { if (!(__VA_ARGS__)) return false; }
 #else
 #define ASSERT(...) { assert((__VA_ARGS__)); }
 #define CONSTEXPR const
+#define CONSTEXPRF
+#define CHECK(...) { assert((__VA_ARGS__)); }
 #endif
-#define EQUIV(lhs, rhs) __extension__ ({ auto && l = (lhs); auto && r = (rhs); (!((r < l) || (l < r))); })
-#define CHECK(...) { if (!(__VA_ARGS__)) return false; }
 
 namespace versatile
 {
 namespace test
 {
 
-#define ENABLE(E, d, dc, cc, cc_, mc, ca, ca_, ma) \
-    ~E()                                 = d;      \
-    constexpr E()                        = dc;     \
-    constexpr E(E const &)               = cc;     \
-    constexpr E(E &)                     = cc_;    \
-    constexpr E(E &&)                    = mc;     \
-    constexpr E & operator = (E const &) = ca;     \
-    constexpr E & operator = (E &)       = ca_;    \
-    constexpr E & operator = (E &&)      = ma;
-
-template< bool >
-struct enable_default_construct;
-
-template<>
-struct enable_default_construct< true >
-{
-    ENABLE(enable_default_construct,
-           default,
-           default,
-           default,
-           default,
-           default,
-           default,
-           default,
-           default
-           )
-};
-
-template<>
-struct enable_default_construct< false >
-{
-    ENABLE(enable_default_construct,
-           default,
-           delete,
-           default,
-           default,
-           default,
-           default,
-           default,
-           default
-           )
-};
-
-template< bool >
-struct enable_destruct;
-
-template<>
-struct enable_destruct< true >
-{
-    ENABLE(enable_destruct,
-           default,
-           default,
-           default,
-           default,
-           default,
-           default,
-           default,
-           default
-           )
-};
-
-template<>
-struct enable_destruct< false >
-{
-    ENABLE(enable_destruct,
-           delete,
-           default,
-           default,
-           default,
-           default,
-           default,
-           default,
-           default
-           )
-};
-
-template< bool _copy, bool _move > // 2 * 2 == 2 + 2
-struct enable_construct;
-
-template<>
-struct enable_construct< true, true >
-{
-    ENABLE(enable_construct,
-           default,
-           default,
-           default,
-           default,
-           default,
-           default,
-           default,
-           default
-           )
-};
-
-template<>
-struct enable_construct< false, false >
-{
-    ENABLE(enable_construct,
-           default,
-           default,
-           delete,
-           delete,
-           delete,
-           default,
-           default,
-           default
-           )
-};
-
-template<>
-struct enable_construct< true, false >
-{
-    ENABLE(enable_construct,
-           default,
-           default,
-           default,
-           default,
-           delete,
-           default,
-           default,
-           default
-           )
-};
-
-template<>
-struct enable_construct< false, true >
-{
-    ENABLE(enable_construct,
-           default,
-           default,
-           delete,
-           delete,
-           default,
-           default,
-           default,
-           default
-           )
-};
-
-template< bool _copy, bool _move >
-struct enable_assign;
-
-template<>
-struct enable_assign< true, true >
-{
-    ENABLE(enable_assign,
-           default,
-           default,
-           default,
-           default,
-           default,
-           default,
-           default,
-           default
-           )
-};
-
-template<>
-struct enable_assign< false, false >
-{
-    ENABLE(enable_assign,
-           default,
-           default,
-           default,
-           default,
-           default,
-           delete,
-           delete,
-           delete
-           )
-};
-
-template<>
-struct enable_assign< true, false >
-{
-    ENABLE(enable_assign,
-           default,
-           default,
-           default,
-           default,
-           default,
-           default,
-           default,
-           delete
-           )
-};
-
-template<>
-struct enable_assign< false, true >
-{
-    ENABLE(enable_assign,
-           default,
-           default,
-           default,
-           default,
-           default,
-           delete,
-           delete,
-           default
-           )
-};
-
-template< bool d = true,
-          bool dc = true,
-          bool cc = true,
-          bool mc = true,
-          bool ca = cc,
-          bool ma = mc >
-struct enable_special_functions
-        : enable_destruct< d >
-        , enable_default_construct< dc >
-        , enable_construct< cc, mc >
-        , enable_assign< ca, ma >
-{
-
-};
-
 template< typename from, typename to >
 struct is_explicitly_convertible
-        : std::integral_constant< bool, (std::is_constructible< to, from >{} && !std::is_convertible< from, to >{}) >
+        : std::bool_constant< (std::is_constructible< to, from >{} && !std::is_convertible< from, to >{}) >
 {
 
 };
 
 template< typename type, typename variant >
-constexpr
+CONSTEXPRF
 bool
 check_index(variant const & _variant) noexcept
 {
-    return (typename variant::template index< type >{} == _variant.which());
+    return (typename variant::template index_t< type >{} == _variant.which());
 }
 
 template< typename type, typename variant >
-constexpr
+CONSTEXPRF
 bool
 check_active(variant const & _variant) noexcept
 {
@@ -715,52 +511,26 @@ enum class state
 {
     zero,
     default_constructed,
-    value_copy_constructed,
-    value_move_constructed,
     copy_constructed,
     move_constructed,
     move_assigned,
     copy_assigned,
-    value_copy_assigned,
-    value_move_assigned,
     moved_from,
-    value_constructed
 };
 
-struct oracle_value // akrzemi1 optional test
+struct oracle // akrzemi1 optional test
 {
 
     state s;
-    int i;
-    constexpr oracle_value(int _i = 0) : s(state::value_constructed), i(_i) { ; }
+
+    CONSTEXPRF oracle() : s(state::default_constructed) { ; }
+    CONSTEXPRF oracle(oracle const &) : s(state::copy_constructed) { ; }
+    CONSTEXPRF oracle(oracle && o) : s(state::move_constructed) { o.s = state::moved_from; }
+
+    CONSTEXPRF oracle & operator = (oracle const &) { s = state::copy_assigned; return *this; }
+    CONSTEXPRF oracle & operator = (oracle && o) { s = state::move_assigned; o.s = state::moved_from; return *this; }
 
 };
-
-static_assert(std::is_literal_type< oracle_value >{});
-
-struct oracle
-{
-
-    state s;
-    oracle_value v;
-
-    constexpr oracle() : s(state::default_constructed) { ; }
-    constexpr oracle(oracle_value const & _v) : s(state::value_copy_constructed), v(_v) { ; }
-    constexpr oracle(oracle_value && _v) : s(state::value_move_constructed), v(std::move(_v)) { _v.s = state::moved_from; }
-    constexpr oracle(oracle const & o) : s(state::copy_constructed), v(o.v) {}
-    constexpr oracle(oracle && o) : s(state::move_constructed), v(std::move(o.v)) { o.s = state::moved_from; }
-
-    constexpr oracle & operator = (oracle_value const & _v) { s = state::value_copy_assigned; v = _v; return *this; }
-    constexpr oracle & operator = (oracle_value && _v) { s = state::value_move_assigned; v = std::move(_v); v.s = state::moved_from; return *this; }
-    constexpr oracle & operator = (oracle const & o) { s = state::copy_assigned; v = o.v; return *this; }
-    constexpr oracle & operator = (oracle && o) { s = state::move_assigned; v = std::move(o.v); o.s = state::moved_from; return *this; }
-
-    constexpr bool operator == (oracle const & o) const { return (o.v.i == v.i); }
-    constexpr bool operator != (oracle const & o) const { return !operator == (o); }
-
-};
-
-static_assert(std::is_literal_type< oracle >{});
 
 template< template< typename ... > class wrapper = identity >
 class case_constexpr
@@ -769,11 +539,10 @@ class case_constexpr
     template< typename ...types >
     using V = variant< typename wrapper< types >::type... >;
 
-    using VO = oracle_value;
     using O = oracle;
 
     static
-    constexpr
+    CONSTEXPRF
     bool
     triviality() noexcept
     {
@@ -814,7 +583,7 @@ class case_constexpr
             ASSERT (std::is_copy_constructible< S >{});
             ASSERT (!__has_trivial_copy(S));
             using VASB = V< A, S, B >;
-            ASSERT (!std::is_copy_constructible< VASB >{}); // non-trivial copyable alternative type prohibit copy
+            ASSERT (!std::is_copy_constructible< VASB >{}); // non-trivially-copyable alternative type prohibit copy construction
             ASSERT (!__has_trivial_copy(VASB));
         }
         {
@@ -822,7 +591,7 @@ class case_constexpr
             ASSERT (std::is_copy_assignable< S >{});
             ASSERT (!__has_trivial_assign(S));
             using VASB = V< A, S, B >;
-            ASSERT (!std::is_copy_assignable< VASB >{}); // non-trivial copy-assignable alternative type prohibit copy
+            ASSERT (!std::is_copy_assignable< VASB >{}); // non-trivially-copy-assignable alternative type prohibit copy assignment
             ASSERT (!__has_trivial_assign(VASB));
         }
         {
@@ -837,7 +606,7 @@ class case_constexpr
     }
 
     static
-    constexpr
+    CONSTEXPRF
     bool
     default_constructor() noexcept
     {
@@ -909,11 +678,31 @@ class case_constexpr
             CHECK (check_active< O >(c));
             CHECK (static_cast< O const & >(c).s == state::default_constructed);
         }
+        {
+            struct A { A() = delete; int i; };
+            struct B { constexpr B() { ; } double d; };
+            using VAB = V< A, B >;
+            const VAB v{};
+            CHECK ((check_active< B >(v)));
+            CHECK ((check_index< B >(v)));
+            CHECK (!(check_active< A >(v)));
+            CHECK (!(check_index< A >(v)));
+        }
+        {
+            struct A { constexpr A() = delete; int i; };
+            struct B { constexpr B() { ; } double d; };
+            using VAB = V< A, B >;
+            const VAB v{};
+            CHECK ((check_active< B >(v)));
+            CHECK ((check_index< B >(v)));
+            CHECK (!(check_active< A >(v)));
+            CHECK (!(check_index< A >(v)));
+        }
         return true;
     }
 
     static
-    constexpr
+    CONSTEXPRF
     bool
     conversion_constructor_and_conversion_operator() noexcept
     {
@@ -937,11 +726,13 @@ class case_constexpr
             ASSERT (is_explicitly_convertible< VAB, A >{});
             ASSERT (is_explicitly_convertible< VAB, B >{});
             ASSERT (!is_explicitly_convertible< VAB, C >{});
-            //A a = VAB{A{10}}; // implicit conversion is not allowed
-            constexpr A a(VAB{A{10}}); // direct initialization is allowed
+            //A x = VAB{A{10}}; // implicit conversion is not allowed
+            CONSTEXPR A a(VAB{A{10}}); // direct initialization is allowed
             ASSERT (a.i == 10);
-            constexpr B b(VAB{B{20}}); // direct initialization is allowed
+            CONSTEXPR B b(VAB{B{20}}); // direct initialization is allowed
             ASSERT (b.i == 20);
+            O o(V< O >{O{}});
+            CHECK (o.s == state::copy_constructed);
         }
         {
             using VAOB = V< A, O, B >;
@@ -979,11 +770,31 @@ class case_constexpr
             CHECK (static_cast< O & >(v).s == state::moved_from);
             CHECK (o.s == state::move_constructed);
         }
+        {
+            struct A { int i = 1; };
+            struct B { int i = 2; };
+            using VAB = V< A, B >;
+            VAB v;
+            CHECK ((static_cast< A const & >(v).i == 1));
+            CHECK ((static_cast< A & >(v).i == 1));
+            static_cast< A & >(v) = A{2};
+            CHECK ((static_cast< A & >(v).i == 2));
+            VAB b{B{}};
+            CHECK ((static_cast< B const & >(b).i == 2));
+            CHECK ((static_cast< B & >(b).i == 2));
+            static_cast< B & >(b) = B{1};
+            CHECK ((static_cast< B & >(b).i == 1));
+            VAB a{A{3}};
+            CHECK ((static_cast< A const & >(a).i == 3));
+            CHECK ((static_cast< A & >(a).i == 3));
+            static_cast< A & >(a) = A{1};
+            CHECK ((static_cast< A & >(a).i == 1));
+        }
         return true;
     }
 
     static
-    constexpr
+    CONSTEXPRF
     bool
     conversion_assignment() noexcept
     { // http://stackoverflow.com/questions/33936295/
@@ -992,7 +803,7 @@ class case_constexpr
             struct B {};
             using VAB = V< A, B >;
             ASSERT (std::is_trivially_copy_assignable< VAB >{});
-            VAB v;
+            VAB v{};
             CHECK (check_active< A >(v));
             CHECK (check_index< A >(v));
             v = B{};
@@ -1000,7 +811,7 @@ class case_constexpr
             CHECK (check_index< B >(v));
         }
         {
-            using VX = variant< int, float, double >;
+            using VX = variant< int, char, double >;
             ASSERT (std::is_trivially_copy_assignable< VX >{});
             VX x = 1;
             CHECK (check_active< int >(x));
@@ -1008,15 +819,15 @@ class case_constexpr
             x = 1.0;
             CHECK (check_active< double >(x));
             CHECK (check_index< double >(x));
-            x = 1.0f;
-            CHECK (check_active< float >(x));
-            CHECK (check_index< float >(x));
+            x = '\0';
+            CHECK (check_active< char >(x));
+            CHECK (check_index< char >(x));
         }
         return true;
     }
 
     static
-    constexpr
+    CONSTEXPRF
     bool
     copy_constructor_and_move_constructor() noexcept
     {
@@ -1030,7 +841,7 @@ class case_constexpr
     }
 
     static
-    constexpr
+    CONSTEXPRF
     bool
     copy_assignment_and_move_assignment() noexcept
     {
@@ -1056,7 +867,7 @@ class case_constexpr
             VCBA x = A{};
             VCBA y = B{};
             VCBA z;
-            VCBA w = x;
+            VCBA w = A{};
             CHECK (check_active< A >(w));
             CHECK (check_index< A >(w));
             x = y;
@@ -1081,14 +892,26 @@ class case_constexpr
     }
 
     static
-    constexpr
+    CONSTEXPRF
     bool
     emplace_constructor() noexcept
     {
         {
             struct A {};
             struct B {};
-            struct S { constexpr S(A) { ; } };
+            struct S { CONSTEXPRF S(A, B) { ; } };
+            using VABS = V< S, A, B >;
+            CONSTEXPR VABS v{};
+            ASSERT (check_active< A >(v));
+            ASSERT (check_index< A >(v));
+            CONSTEXPR VABS s{A{}, B{}};
+            ASSERT (check_active< S >(s));
+            ASSERT (check_index< S >(s));
+        }
+        {
+            struct A {};
+            struct B {};
+            struct S { CONSTEXPRF S(A) { ; } };
             using VSAB = V< S, B, A >;
             CONSTEXPR VSAB b{};
             ASSERT (check_active< B >(b));
@@ -1103,12 +926,12 @@ class case_constexpr
             struct B {};
             struct C { A a; };
             struct D { B b; };
-            variant< aggregate_wrapper< C >, aggregate_wrapper< D > > c;
-            CHECK (check_active< C >(c));
-            CHECK (check_index< C >(c));
-            variant< aggregate_wrapper< C >, aggregate_wrapper< D > > d{B{}};
-            CHECK (check_active< D >(d));
-            CHECK (check_index< D >(d));
+            CONSTEXPR variant< int, aggregate_wrapper< C >, aggregate_wrapper< D > > c{A{}};
+            ASSERT (check_active< C >(c));
+            ASSERT (check_index< C >(c));
+            CONSTEXPR variant< int, aggregate_wrapper< C >, aggregate_wrapper< D > > d{B{}};
+            ASSERT (check_active< D >(d));
+            ASSERT (check_index< D >(d));
         }
         return true;
     }
@@ -1116,7 +939,7 @@ class case_constexpr
 public :
 
     static
-    constexpr
+    CONSTEXPRF
     bool
     run() noexcept
     {
@@ -1127,98 +950,6 @@ public :
         ASSERT (conversion_constructor_and_conversion_operator());
         ASSERT (conversion_assignment());
         ASSERT (emplace_constructor());
-        return true;
-    }
-
-};
-
-template< template< typename ... > class wrapper = identity >
-class case_const
-{
-
-    template< typename ...types >
-    using V = variant< typename wrapper< types >::type... >;
-
-    static
-    bool
-    triviality() noexcept
-    {
-        return true;
-    }
-
-    static
-    bool
-    default_constructor() noexcept
-    {
-        {
-            struct A { A() = delete; int i; };
-            struct B { B() { ; } double d; };
-            using VAB = V< A, B >;
-            const VAB v{};
-            assert ((check_active< B >(v)));
-            assert ((check_index< B >(v)));
-            assert (!(check_active< A >(v)));
-            assert (!(check_index< A >(v)));
-            assert (EQUIV (static_cast< B >(v).d, double{}));
-        }
-        {
-            struct A { A() = delete; int i; };
-            struct B { B() { ; } double d; };
-            using VAB = V< A, B >;
-            const VAB v{};
-            assert ((check_active< B >(v)));
-            assert ((check_index< B >(v)));
-            assert (!(check_active< A >(v)));
-            assert (!(check_index< A >(v)));
-            assert (EQUIV (static_cast< B >(v).d, double{}));
-        }
-        return true;
-    }
-
-    static
-    bool
-    conversion_constructor_and_conversion_operator() noexcept
-    {
-        {
-            struct A { int i = 1; };
-            struct B { int i = 2; };
-            using VAB = V< A, B >;
-            VAB v;
-            assert ((static_cast< A const & >(v).i == 1));
-            assert ((static_cast< A & >(v).i == 1));
-            static_cast< A & >(v) = A{2};
-            assert ((static_cast< A & >(v).i == 2));
-            VAB b{B{}};
-            assert ((static_cast< B const & >(b).i == 2));
-            assert ((static_cast< B & >(b).i == 2));
-            static_cast< B & >(b) = B{1};
-            assert ((static_cast< B & >(b).i == 1));
-            VAB a{A{3}};
-            assert ((static_cast< A const & >(a).i == 3));
-            assert ((static_cast< A & >(a).i == 3));
-            static_cast< A & >(a) = A{1};
-            assert ((static_cast< A & >(a).i == 1));
-        }
-        return true;
-    }
-
-    static
-    bool
-    copy_assignment_and_move_assignment() noexcept
-    {
-        return true;
-    }
-
-public :
-
-    static
-    bool
-    run() noexcept
-    {
-        assert ((triviality()));
-        assert ((default_constructor()));
-        assert ((conversion_constructor_and_conversion_operator()));
-        assert ((copy_assignment_and_move_assignment()));
         return true;
     }
 
@@ -1241,8 +972,6 @@ main()
 {
     ASSERT (versatile::test::case_constexpr<>::run());
     ASSERT (versatile::test::case_constexpr< ::versatile::test::aggregate_wrapper >::run());
-    assert ((versatile::test::case_const<>::run()));
-    assert ((versatile::test::case_const< ::versatile::test::aggregate_wrapper >::run()));
     return EXIT_SUCCESS;
 }
 

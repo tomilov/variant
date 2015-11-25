@@ -75,8 +75,8 @@ template< typename from > constexpr type_qualifier type_qualifier_of< volatile f
 template< typename from, typename to >
 using copy_cv_reference_t = add_qualifier_t< type_qualifier_of< from >, to >;
 
-template< std::size_t index >
-using index_t = std::integral_constant< std::size_t, index >;
+template< std::size_t i >
+using index_t = std::integral_constant< std::size_t, i >;
 
 template< typename type, typename ...types >
 struct index_at
@@ -101,7 +101,7 @@ struct index_at< type, first, rest... >
 template< typename type, typename ...types >
 using index_at_t = typename index_at< type, types... >::type;
 
-template< std::size_t index, typename ...types >
+template< std::size_t i, typename ...types >
 struct at_index
 {
 
@@ -114,15 +114,15 @@ struct at_index< sizeof...(rest), first, rest... >
 
 };
 
-template< std::size_t index, typename first, typename ...rest >
-struct at_index< index, first, rest... >
-        : at_index< index, rest... >
+template< std::size_t i, typename first, typename ...rest >
+struct at_index< i, first, rest... >
+        : at_index< i, rest... >
 {
 
 };
 
-template< std::size_t index, typename ...types >
-using at_index_t = typename at_index< index, types... >::type;
+template< std::size_t i, typename ...types >
+using at_index_t = typename at_index< i, types... >::type;
 
 template< bool ...values >
 struct get_index;
@@ -151,6 +151,6 @@ template< bool ...values >
 using get_index_t = typename get_index< values... >::type;
 
 template< typename ...types >
-using index_of_default_constructible_t = get_index_t< __is_constructible(types)... >;
+using index_of_default_constructible = get_index< __is_constructible(types)... >;
 
 }

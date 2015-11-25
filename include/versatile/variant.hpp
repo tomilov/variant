@@ -37,7 +37,7 @@ public :
     }
 
     template< typename type >
-    using index = typename versatile::template index< type >;
+    using index_t = typename versatile::template index_t< type >;
 
     template< typename type >
     bool
