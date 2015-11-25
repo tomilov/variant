@@ -91,7 +91,7 @@ private :
             : tail_(std::forward< types >(_values)...)
         { ; }
 
-        ~dispatcher() noexcept(noexcept(std::declval< head >().~head()) && noexcept(std::declval< tail >().~tail()))
+        ~dispatcher() noexcept(noexcept(head_.~head()) && noexcept(tail_.~tail()))
         {
             if (1 + sizeof...(rest) == head_.which_) {
                 head_.~head();
@@ -116,7 +116,7 @@ public :
     }
 
     template< typename type >
-    using index = index_by_type< unwrap_type_t< type >, this_type, unwrap_type_t< rest >..., versatile<> >;
+    using index = index_at< unwrap_type_t< type >, this_type, unwrap_type_t< rest >..., versatile<> >;
 
     template< typename type = this_type >
     constexpr

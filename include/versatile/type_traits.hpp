@@ -75,44 +75,82 @@ template< typename from > constexpr type_qualifier type_qualifier_of< volatile f
 template< typename from, typename to >
 using copy_cv_reference_t = add_qualifier_t< type_qualifier_of< from >, to >;
 
+template< std::size_t index >
+using index_t = std::integral_constant< std::size_t, index >;
+
 template< typename type, typename ...types >
-struct index_by_type
+struct index_at
 {
 
 };
 
 template< typename type, typename ...rest >
-struct index_by_type< type, type, rest... >
-        : std::integral_constant< std::size_t, sizeof...(rest) >
+struct index_at< type, type, rest... >
+        : index_t< sizeof...(rest) >
 {
 
 };
 
 template< typename type, typename first, typename ...rest >
-struct index_by_type< type, first, rest... >
-        : index_by_type< type, rest... >
+struct index_at< type, first, rest... >
+        : index_at< type, rest... >
 {
 
 };
 
+template< typename type, typename ...types >
+using index_at_t = typename index_at< type, types... >::type;
+
 template< std::size_t index, typename ...types >
-struct type_by_index
+struct at_index
 {
 
 };
 
 template< typename first, typename ...rest >
-struct type_by_index< sizeof...(rest), first, rest... >
+struct at_index< sizeof...(rest), first, rest... >
     : identity< first >
 {
 
 };
 
 template< std::size_t index, typename first, typename ...rest >
-struct type_by_index< index, first, rest... >
-        : type_by_index< index, rest... >
+struct at_index< index, first, rest... >
+        : at_index< index, rest... >
 {
 
 };
+
+template< std::size_t index, typename ...types >
+using at_index_t = typename at_index< index, types... >::type;
+
+template< bool ...values >
+struct get_index;
+
+template<>
+struct get_index<>
+{
+
+};
+
+template< bool ...rest >
+struct get_index< true, rest... >
+        : index_t< sizeof...(rest) >
+{
+
+};
+
+template< bool ...rest >
+struct get_index< false, rest... >
+        : get_index< rest... >
+{
+
+};
+
+template< bool ...values >
+using get_index_t = typename get_index< values... >::type;
+
+template< typename ...types >
+using index_of_default_constructible_t = get_index_t< __is_constructible(types)... >;
 
 }

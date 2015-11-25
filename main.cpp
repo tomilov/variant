@@ -1,3 +1,973 @@
+#if 0
+#include <versatile/wrappers.hpp>
+
+#include <utility>
+
+namespace versatile
+{
+
+template< bool is_trivially_destructible, typename ...types >
+struct constructor;
+
+template< bool is_trivially_destructible >
+struct constructor< is_trivially_destructible >
+{
+
+    static_assert(is_trivially_destructible);
+
+    constexpr
+    void
+    destructor(std::size_t & _which) const noexcept
+    {
+        _which = 0;
+    }
+
+};
+
+template< typename first, typename ...rest >
+struct constructor< true, first, rest... >
+{
+
+    static_assert((__has_trivial_destructor(rest) && ...));
+
+    using head = first;
+    using tail = constructor< true, rest... >;
+
+    union
+    {
+
+        head head_;
+        tail tail_;
+
+    };
+
+    constexpr
+    constructor() = default;
+
+    template< typename ...arguments >
+    constexpr
+    constructor(index_t< sizeof...(rest) + 1 >, arguments &&... _arguments) noexcept(__is_nothrow_constructible(head, arguments...))
+        : head_(std::forward< arguments >(_arguments)...)
+    { ; }
+
+    template< typename ...arguments >
+    constexpr
+    constructor(arguments &&... _arguments) noexcept(__is_nothrow_constructible(tail, arguments...))
+        : tail_(std::forward< arguments >(_arguments)...)
+    { ; }
+
+    constexpr
+    void
+    destructor(std::size_t & _which) const noexcept
+    {
+        _which = 0;
+    }
+
+    using this_type = unwrap_type_t< first >;
+
+    explicit
+    constexpr
+    operator this_type const & () const noexcept
+    {
+        return static_cast< this_type const & >(head_);
+    }
+
+    explicit
+    constexpr
+    operator this_type & () noexcept
+    {
+        return static_cast< this_type & >(head_);
+    }
+
+    template< typename type >
+    explicit
+    constexpr
+    operator type const & () const noexcept
+    {
+        return static_cast< type const & >(tail_);
+    }
+
+    template< typename type >
+    explicit
+    constexpr
+    operator type & () noexcept
+    {
+        return static_cast< type & >(tail_);
+    }
+
+};
+
+template< typename first, typename ...rest >
+struct constructor< false, first, rest... >
+{
+
+    using head = first;
+    using tail = constructor< (__has_trivial_destructor(rest) && ...), rest... >;
+
+    union
+    {
+
+        head head_;
+        tail tail_;
+
+    };
+
+    ~constructor() noexcept
+    {
+        tail_.~tail();
+    }
+
+    constexpr
+    constructor() = default;
+
+    template< typename ...arguments >
+    constexpr
+    constructor(index_t< sizeof...(rest) + 1 >, arguments &&... _arguments) noexcept(__is_nothrow_constructible(head, arguments...))
+        : head_(std::forward< arguments >(_arguments)...)
+    { ; }
+
+    template< typename ...arguments >
+    constexpr
+    constructor(arguments &&... _arguments) noexcept(__is_nothrow_constructible(tail, arguments...))
+        : tail_(std::forward< arguments >(_arguments)...)
+    { ; }
+
+    constexpr
+    void
+    destructor(std::size_t & _which) const noexcept(noexcept(head_.~head()) && noexcept(tail_.destructor(_which)))
+    {
+        if (_which == sizeof...(rest) + 1) {
+            head_.~head();
+        } else {
+            tail_.destructor(_which);
+        }
+    }
+
+    using this_type = unwrap_type_t< first >;
+
+    explicit
+    constexpr
+    operator this_type const & () const noexcept
+    {
+        return static_cast< this_type const & >(head_);
+    }
+
+    explicit
+    constexpr
+    operator this_type & () noexcept
+    {
+        return static_cast< this_type & >(head_);
+    }
+
+    template< typename type >
+    explicit
+    constexpr
+    operator type const & () const noexcept
+    {
+        return static_cast< type const & >(tail_);
+    }
+
+    template< typename type >
+    explicit
+    constexpr
+    operator type & () noexcept
+    {
+        return static_cast< type & >(tail_);
+    }
+
+};
+
+template< bool is_trivially_destructible, bool is_trivially_constructible, typename ...types >
+struct destructor;
+
+template< bool is_trivially_destructible, bool is_trivially_constructible >
+struct destructor< is_trivially_destructible, is_trivially_constructible >
+{
+
+    static_assert(is_trivially_destructible);
+    static_assert(is_trivially_constructible);
+
+};
+
+template< typename first, typename ...rest >
+struct destructor< true, true, first, rest... >
+{
+
+    using storage = constructor< true, first, rest... >;
+
+    std::size_t which_;
+    storage storage_;
+
+    constexpr
+    destructor() = default;
+
+    template< typename index, typename ...arguments >
+    constexpr
+    destructor(index, arguments &&... _arguments) noexcept(__is_nothrow_constructible(storage, index, arguments...))
+        : which_{index::value}
+        , storage_(index{}, std::forward< arguments >(_arguments)...)
+    { ; }
+
+    template< typename type >
+    explicit
+    constexpr
+    operator type const & () const noexcept
+    {
+        return static_cast< type const & >(storage_);
+    }
+
+    template< typename type >
+    explicit
+    constexpr
+    operator type & () noexcept
+    {
+        return static_cast< type & >(storage_);
+    }
+
+};
+
+template< typename first, typename ...rest >
+struct destructor< false, true, first, rest... >
+{
+
+    using storage = constructor< false, first, rest... >;
+
+    std::size_t which_;
+    storage storage_;
+
+    ~destructor() noexcept(noexcept(storage_.destructor(which_)))
+    {
+        storage_.destructor(which_);
+    }
+
+    constexpr
+    destructor() = default;
+
+    template< typename index, typename ...arguments >
+    constexpr
+    destructor(index, arguments &&... _arguments) noexcept(__is_nothrow_constructible(storage, index, arguments...))
+        : which_{index::value}
+        , storage_(index{}, std::forward< arguments >(_arguments)...)
+    { ; }
+
+    template< typename type >
+    explicit
+    constexpr
+    operator type const & () const noexcept
+    {
+        return static_cast< type const & >(storage_);
+    }
+
+    template< typename type >
+    explicit
+    constexpr
+    operator type & () noexcept
+    {
+        return static_cast< type & >(storage_);
+    }
+
+};
+
+template< typename first, typename ...rest >
+struct destructor< true, false, first, rest... >
+{
+
+    using storage = constructor< true, first, rest... >;
+
+    std::size_t which_;
+    storage storage_;
+
+    constexpr
+    destructor() noexcept(__is_nothrow_constructible(destructor, index_of_default_constructible_t< first, rest..., void >))
+        : destructor(index_of_default_constructible_t< first, rest..., void >{})
+    { ; }
+
+    template< typename index, typename ...arguments >
+    constexpr
+    destructor(index, arguments &&... _arguments) noexcept(__is_nothrow_constructible(storage, index, arguments...))
+        : which_{index::value}
+        , storage_(index{}, std::forward< arguments >(_arguments)...)
+    { ; }
+
+    template< typename type >
+    explicit
+    constexpr
+    operator type const & () const noexcept
+    {
+        return static_cast< type const & >(storage_);
+    }
+
+    template< typename type >
+    explicit
+    constexpr
+    operator type & () noexcept
+    {
+        return static_cast< type & >(storage_);
+    }
+
+};
+
+template< typename first, typename ...rest >
+struct destructor< false, false, first, rest... >
+{
+
+    using storage = constructor< false, first, rest... >;
+
+    std::size_t which_;
+    storage storage_;
+
+    ~destructor() noexcept(noexcept(storage_.destructor(which_)))
+    {
+        storage_.destructor(which_);
+    }
+
+    constexpr
+    destructor() noexcept(__is_nothrow_constructible(destructor, index_of_default_constructible_t< first, rest..., void >))
+        : destructor(index_of_default_constructible_t< first, rest..., void >{})
+    { ; }
+
+    template< typename index, typename ...arguments >
+    constexpr
+    destructor(index, arguments &&... _arguments) noexcept(__is_nothrow_constructible(storage, index, arguments...))
+        : which_{index::value}
+        , storage_(index{}, std::forward< arguments >(_arguments)...)
+    { ; }
+
+    template< typename type >
+    explicit
+    constexpr
+    operator type const & () const noexcept
+    {
+        return static_cast< type const & >(storage_);
+    }
+
+    template< typename type >
+    explicit
+    constexpr
+    operator type & () noexcept
+    {
+        return static_cast< type & >(storage_);
+    }
+
+};
+
+template< typename ...types >
+class variant
+{
+
+    using storage = destructor< (__has_trivial_destructor(types) && ...), (__has_trivial_constructor(types) && ...), types... >;
+
+    storage storage_;
+
+public :
+
+    constexpr
+    std::size_t
+    which() const noexcept
+    {
+        if (storage_.which_ == 0) {
+            return sizeof...(types);
+        }
+        return storage_.which_;
+    }
+
+    template< typename type >
+    using index = index_at< unwrap_type_t< type >, unwrap_type_t< types >..., void >;
+
+    template< typename type >
+    constexpr
+    bool
+    active() const noexcept
+    {
+        return (which() == index< type >::value);
+    }
+
+    constexpr
+    variant() = default;
+
+    template< typename type, typename index = index_at_t< std::decay_t< type >, types..., void > >
+    constexpr
+    variant(type && _value) noexcept(__is_nothrow_constructible(storage, index, type))
+        : storage_(index{}, std::forward< type >(_value))
+    { ; }
+
+    template< typename ...arguments, typename index = get_index_t< __is_constructible(types, arguments...)..., false > >
+    explicit // make non-viable on RHS of assignment operator
+    constexpr
+    variant(arguments &&... _arguments) noexcept(__is_nothrow_constructible(storage, index, arguments...))
+        : storage_(index{}, std::forward< arguments >(_arguments)...)
+    { ; }
+
+    template< typename type >
+    explicit
+    constexpr
+    operator type const & () const noexcept
+    {
+        return static_cast< type const & >(storage_);
+    }
+
+    template< typename type >
+    explicit
+    constexpr
+    operator type & () noexcept
+    {
+        return static_cast< type & >(storage_);
+    }
+
+};
+
+} // namespace variant
+
+#include <new>
+#include <tuple>
+
+#include <cassert>
+
+#if 1
+#define ASSERT(...) { static_assert(__VA_ARGS__); }
+#define CONSTEXPR constexpr
+#else
+#define ASSERT(...) { assert((__VA_ARGS__)); }
+#define CONSTEXPR const
+#endif
+#define EQUIV(lhs, rhs) __extension__ ({ auto && l = (lhs); auto && r = (rhs); (!((r < l) || (l < r))); })
+#define CHECK(...) { if (!(__VA_ARGS__)) return false; }
+
+namespace versatile
+{
+namespace test
+{
+
+template< bool >
+struct enable_default_construct;
+
+template<>
+struct enable_default_construct< true >
+{
+#define E enable_default_construct
+              ~E()                       = default;
+    constexpr E()                        = default;
+    constexpr E(E const &)               = default;
+    constexpr E(E &)                     = default;
+    constexpr E(E &&)                    = default;
+    constexpr E & operator = (E const &) = default;
+    constexpr E & operator = (E &)       = default;
+    constexpr E & operator = (E &&)      = default;
+#undef E
+};
+
+template<>
+struct enable_default_construct< false >
+{
+#define E enable_default_construct
+              ~E()                       = default;
+    constexpr E()                        = delete;
+    constexpr E(E const &)               = default;
+    constexpr E(E &)                     = default;
+    constexpr E(E &&)                    = default;
+    constexpr E & operator = (E const &) = default;
+    constexpr E & operator = (E &)       = default;
+    constexpr E & operator = (E &&)      = default;
+#undef E
+};
+
+template< bool >
+struct enable_destruct;
+
+template<>
+struct enable_destruct< true >
+{
+#define E enable_destruct
+              ~E()                       = default;
+    constexpr E()                        = default;
+    constexpr E(E const &)               = default;
+    constexpr E(E &)                     = default;
+    constexpr E(E &&)                    = default;
+    constexpr E & operator = (E const &) = default;
+    constexpr E & operator = (E &)       = default;
+    constexpr E & operator = (E &&)      = default;
+#undef E
+};
+
+template<>
+struct enable_destruct< false >
+{
+#define E enable_destruct
+              ~E()                       = delete;
+    constexpr E()                        = default;
+    constexpr E(E const &)               = default;
+    constexpr E(E &)                     = default;
+    constexpr E(E &&)                    = default;
+    constexpr E & operator = (E const &) = default;
+    constexpr E & operator = (E &)       = default;
+    constexpr E & operator = (E &&)      = default;
+#undef E
+};
+
+template< bool _copy, bool _move > // 2 * 2 == 2 + 2
+struct enable_construct;
+
+template<>
+struct enable_construct< true, true >
+{
+#define E enable_construct
+              ~E()                       = default;
+    constexpr E()                        = default;
+    constexpr E(E const &)               = default;
+    constexpr E(E &)                     = default;
+    constexpr E(E &&)                    = default;
+    constexpr E & operator = (E const &) = default;
+    constexpr E & operator = (E &)       = default;
+    constexpr E & operator = (E &&)      = default;
+#undef E
+};
+
+template<>
+struct enable_construct< false, false >
+{
+#define E enable_construct
+              ~E()                       = default;
+    constexpr E()                        = default;
+    constexpr E(E const &)               = delete;
+    constexpr E(E &)                     = delete;
+    constexpr E(E &&)                    = delete;
+    constexpr E & operator = (E const &) = default;
+    constexpr E & operator = (E &)       = default;
+    constexpr E & operator = (E &&)      = default;
+#undef E
+};
+
+template<>
+struct enable_construct< true, false >
+{
+#define E enable_construct
+              ~E()                       = default;
+    constexpr E()                        = default;
+    constexpr E(E const &)               = default;
+    constexpr E(E &)                     = default;
+    constexpr E(E &&)                    = delete;
+    constexpr E & operator = (E const &) = default;
+    constexpr E & operator = (E &)       = default;
+    constexpr E & operator = (E &&)      = default;
+#undef E
+};
+
+template<>
+struct enable_construct< false, true >
+{
+#define E enable_construct
+              ~E()                       = default;
+    constexpr E()                        = default;
+    constexpr E(E const &)               = delete;
+    constexpr E(E &)                     = delete;
+    constexpr E(E &&)                    = default;
+    constexpr E & operator = (E const &) = default;
+    constexpr E & operator = (E &)       = default;
+    constexpr E & operator = (E &&)      = default;
+#undef E
+};
+
+template< bool _copy, bool _move >
+struct enable_assign;
+
+template<>
+struct enable_assign< true, true >
+{
+#define E enable_assign
+              ~E()                       = default;
+    constexpr E()                        = default;
+    constexpr E(E const &)               = default;
+    constexpr E(E &)                     = default;
+    constexpr E(E &&)                    = default;
+    constexpr E & operator = (E const &) = default;
+    constexpr E & operator = (E &)       = default;
+    constexpr E & operator = (E &&)      = default;
+#undef E
+};
+
+template<>
+struct enable_assign< false, false >
+{
+#define E enable_assign
+              ~E()                       = default;
+    constexpr E()                        = default;
+    constexpr E(E const &)               = default;
+    constexpr E(E &)                     = default;
+    constexpr E(E &&)                    = default;
+    constexpr E & operator = (E const &) = delete;
+    constexpr E & operator = (E &)       = delete;
+    constexpr E & operator = (E &&)      = delete;
+#undef E
+};
+
+template<>
+struct enable_assign< true, false >
+{
+#define E enable_assign
+              ~E()                       = default;
+    constexpr E()                        = default;
+    constexpr E(E const &)               = default;
+    constexpr E(E &)                     = default;
+    constexpr E(E &&)                    = default;
+    constexpr E & operator = (E const &) = default;
+    constexpr E & operator = (E &)       = default;
+    constexpr E & operator = (E &&)      = delete;
+#undef E
+};
+
+template<>
+struct enable_assign< false, true >
+{
+#define E enable_assign
+              ~E()                       = default;
+    constexpr E()                        = default;
+    constexpr E(E const &)               = default;
+    constexpr E(E &)                     = default;
+    constexpr E(E &&)                    = default;
+    constexpr E & operator = (E const &) = delete;
+    constexpr E & operator = (E &)       = delete;
+    constexpr E & operator = (E &&)      = default;
+#undef E
+};
+
+template< bool d = true,
+          bool dc = true,
+          bool cc = true,
+          bool mc = true,
+          bool ca = cc,
+          bool ma = mc >
+struct enable_special_functions
+        : enable_destruct< d >
+        , enable_default_construct< dc >
+        , enable_construct< cc, mc >
+        , enable_assign< ca, ma >
+{
+
+};
+
+template< typename from, typename to >
+struct is_explicitly_convertible
+        : std::integral_constant< bool, (std::is_constructible< to, from >{} && !std::is_convertible< from, to >{}) >
+{
+
+};
+
+class case_constexpr
+{
+
+    static
+    constexpr
+    bool
+    triviality() noexcept
+    {
+        {
+            struct S {};
+            ASSERT (__has_trivial_destructor(S));
+            ASSERT (__has_trivial_constructor(S));
+            ASSERT (__has_trivial_copy(S));
+            ASSERT (__has_trivial_assign(S));
+            using V = variant< S >;
+            ASSERT (__has_trivial_destructor(V));
+            ASSERT (__has_trivial_constructor(V));
+            ASSERT (__has_trivial_copy(V));
+            ASSERT (__has_trivial_assign(V));
+        }
+        {
+            struct S { ~S() { ; } };
+            ASSERT (!__has_trivial_destructor(S));
+            ASSERT (__has_trivial_constructor(S));
+            ASSERT (__has_trivial_copy(S));
+            ASSERT (__has_trivial_assign(S));
+            using V = variant< S >;
+            ASSERT (!__has_trivial_destructor(V));
+            ASSERT (__has_trivial_constructor(V));
+            ASSERT (__has_trivial_copy(V));
+            ASSERT (__has_trivial_assign(V));
+        }
+        {
+            struct S { S() { ; } };
+            ASSERT (__has_trivial_destructor(S));
+            ASSERT (!__has_trivial_constructor(S));
+            ASSERT (__has_trivial_copy(S));
+            ASSERT (__has_trivial_assign(S));
+            using V = variant< S >;
+            ASSERT (__has_trivial_destructor(V));
+            ASSERT (!__has_trivial_constructor(V));
+            ASSERT (__has_trivial_copy(V));
+            ASSERT (__has_trivial_assign(V));
+        }
+        {
+            struct S { S() { ; } ~S() { ; } };
+            ASSERT (!__has_trivial_destructor(S));
+            ASSERT (!__has_trivial_constructor(S));
+            ASSERT (__has_trivial_copy(S));
+            ASSERT (__has_trivial_assign(S));
+            using V = variant< S >;
+            ASSERT (!__has_trivial_destructor(V));
+            ASSERT (!__has_trivial_constructor(V));
+            ASSERT (__has_trivial_copy(V));
+            ASSERT (__has_trivial_assign(V));
+        }
+        {
+            struct A {};
+            struct B { constexpr B() = default; ~B() = delete; };
+            using VAB = variant< A, B >;
+            using VBA = variant< B, A >;
+            ASSERT (!std::is_destructible< VAB >{});
+            ASSERT (!std::is_destructible< VBA >{});
+        }
+        return true;
+    }
+
+    static
+    constexpr
+    bool
+    default_constructor() noexcept
+    {
+        {
+            struct II { II() { ; }     ~II() { ; } };
+            struct OI { OI() = delete; ~OI() { ; } };
+            struct IO { IO() { ; }     ~IO() = delete; };
+            struct OO { OO() = delete; ~OO() = delete; };
+            constexpr auto c_ii = __is_constructible(II);
+            constexpr auto c_oi = __is_constructible(OI);
+            constexpr auto c_io = __is_constructible(IO);
+            constexpr auto c_oo = __is_constructible(OO);
+            {
+                using V = variant< II >;
+                ASSERT (__is_constructible(V) == c_ii);
+            }
+            {
+                using V = variant< OI >;
+                ASSERT (__is_constructible(V) == c_oi);
+            }
+            {
+                using V = variant< IO >;
+                ASSERT (__is_constructible(V) == c_io);
+            }
+            {
+                using V = variant< OO >;
+                ASSERT (__is_constructible(V) == c_oo);
+            }
+        }
+        {
+            struct A { int i; };
+            using V = variant< A >;
+            constexpr V v{};
+            constexpr auto which_A = typename V::template index< A >{};
+            ASSERT (v.which() == which_A);
+            ASSERT (v.active< A >());
+            ASSERT (static_cast< A >(v).i == int{});
+        }
+        {
+            struct A {};
+            struct B { B() = delete; };
+            using VAB = variant< A, B >;
+            using VBA = variant< B, A >;
+            ASSERT (!__is_constructible(VAB));
+            ASSERT (!__is_constructible(VBA));
+        }
+        return true;
+    }
+
+    static
+    constexpr
+    bool
+    constructor_and_conversion_operator() noexcept
+    {
+        {
+            struct A { int i = 1; };
+            struct B { int i = 2; };
+            using V = variant< A, B >;
+            ASSERT (is_explicitly_convertible< V, A >{});
+            ASSERT (is_explicitly_convertible< V, B >{});
+            CONSTEXPR V v{};
+            ASSERT (static_cast< A const & >(v).i == 1);
+            ASSERT (static_cast< A >(v).i == 1);
+            CONSTEXPR V b{B{}};
+            ASSERT (static_cast< B const & >(b).i == 2);
+            ASSERT (static_cast< B >(b).i == 2);
+            CONSTEXPR V a{A{3}};
+            ASSERT (static_cast< A const & >(a).i == 3);
+            ASSERT (static_cast< A >(a).i == 3);
+        }
+        return true;
+    }
+
+    static
+    constexpr
+    bool
+    selector() noexcept
+    {
+        struct A {};
+        struct B {};
+        struct C { constexpr C(A, B) { ; } };
+        ASSERT (__has_trivial_copy(C));
+        ASSERT (__has_trivial_assign(C));
+        using V = variant< C, B, A >;
+        constexpr auto which_A = typename V::template index< A >{};
+        constexpr auto which_B = typename V::template index< B >{};
+        constexpr auto which_C = typename V::template index< C >{};
+        {
+            ASSERT (!__is_constructible(C));
+            CONSTEXPR V b{};
+            ASSERT (b.which() == which_B);
+        }
+        {
+            CONSTEXPR V c{A{}, B{}};
+            ASSERT (c.which() == which_C);
+            ASSERT (c.active< C >());
+            CONSTEXPR V b = B{};
+            ASSERT (b.which() == which_B);
+            ASSERT (b.active< B >());
+            CONSTEXPR V a = A{};
+            ASSERT (a.which() == which_A);
+            ASSERT (a.active< A >());
+        }
+        {
+            V x = A{};
+            V y = B{};
+            V z{A{}, B{}};
+            V w = x;
+            CHECK (w.which() == which_A);
+            x = y;
+            CHECK (x.which() == which_B);
+            CHECK (y.which() == which_B);
+            y = z;
+            CHECK (y.which() == which_C);
+            CHECK (z.which() == which_C);
+            z = w;
+            CHECK (x.which() == which_B);
+            CHECK (y.which() == which_C);
+            CHECK (z.which() == which_A);
+        }
+        return true;
+    }
+
+public :
+
+    static
+    constexpr
+    bool
+    run() noexcept
+    {
+        ASSERT (triviality());
+        ASSERT (default_constructor());
+        ASSERT (constructor_and_conversion_operator());
+        ASSERT (selector());
+        return true;
+    }
+
+};
+
+class case_const
+{
+
+    static
+    bool
+    triviality() noexcept
+    {
+        return true;
+    }
+
+    static
+    bool
+    default_constructor() noexcept
+    {
+        {
+            struct A { A() = delete; int i; };
+            struct B { B() { ; } double d; };
+            using V = variant< A, B >;
+            const V v{};
+            constexpr auto which_B = typename V::template index< B >{};
+            assert ((v.which() == which_B));
+            assert ((!v.active< A >()));
+            assert ((v.active< B >()));
+            assert (EQUIV (static_cast< B >(v).d, double{}));
+        }
+        {
+            struct A { A() = delete; int i; };
+            struct B { B() { ; } double d; };
+            using V = variant< A, B >;
+            const V v{};
+            constexpr auto which_B = typename V::template index< B >{};
+            assert ((v.which() == which_B));
+            assert ((!v.active< A >()));
+            assert ((v.active< B >()));
+            assert (EQUIV (static_cast< B >(v).d, double{}));
+        }
+        return true;
+    }
+
+    static
+    bool
+    constructor_and_conversion_operator() noexcept
+    {
+        {
+            struct A { int i = 1; };
+            struct B { int i = 2; };
+            using V = variant< A, B >;
+            assert ((is_explicitly_convertible< V, A >{}));
+            assert ((is_explicitly_convertible< V, B >{}));
+            V v{};
+            assert ((static_cast< A const & >(v).i == 1));
+            assert ((static_cast< A & >(v).i == 1));
+            static_cast< A & >(v) = A{2};
+            assert ((static_cast< A & >(v).i == 2));
+            V b{B{}};
+            assert ((static_cast< B const & >(b).i == 2));
+            assert ((static_cast< B & >(b).i == 2));
+            static_cast< B & >(b) = B{1};
+            assert ((static_cast< B & >(b).i == 1));
+            V a{A{3}};
+            assert ((static_cast< A const & >(a).i == 3));
+            assert ((static_cast< A & >(a).i == 3));
+            static_cast< A & >(a) = A{1};
+            assert ((static_cast< A & >(a).i == 1));
+        }
+        return true;
+    }
+
+    static
+    bool
+    selector() noexcept
+    {
+        return true;
+    }
+
+public :
+
+    static
+    bool
+    run() noexcept
+    {
+        assert ((triviality()));
+        assert ((default_constructor()));
+        assert ((constructor_and_conversion_operator()));
+        assert ((selector()));
+        return true;
+    }
+
+};
+
+} // namespace test
+} // namespace versatile
+
+#include <cstdlib>
+
+int
+main()
+{
+    ASSERT (versatile::test::case_constexpr::run());
+    assert ((versatile::test::case_const::run()));
+    return EXIT_SUCCESS;
+}
+
+#undef CHECK
+#undef CONSTEXPR
+#undef ASSERT
+
+#else
 #include <versatile.hpp>
 
 #include <boost/variant.hpp>
@@ -212,7 +1182,7 @@ struct variadic_index;
 template< template< typename ...types > class variadic, typename ...types,
           typename type >
 struct variadic_index< variadic< types... >, type >
-        : versatile::index_by_type< type, types..., void >
+        : versatile::index_at< type, types..., void >
 {
 
 };
@@ -490,21 +1460,21 @@ struct cvariant
     constexpr std::size_t which() const { return base::which_; }
 
     template< typename type >
-    using index_by_type_t = versatile::index_by_type< versatile::unwrap_type_t< type >, versatile::unwrap_type_t< types >..., void >;
+    using index_at_t = versatile::index_at< versatile::unwrap_type_t< type >, versatile::unwrap_type_t< types >..., void >;
 
-    template< typename type, std::size_t _which = index_by_type_t< type >{} >
+    template< typename type, std::size_t _which = index_at_t< type >{} >
     constexpr cvariant(type &&) : base{id< _which >{}} { ; }
 
     template< typename ...arguments, std::size_t _which = 1 + index< (std::is_constructible< versatile::unwrap_type_t< types >, arguments... >{})... >{} >
     constexpr cvariant(arguments &&...) : base{id< _which >{}} { ; }
 
-    template< typename type, std::size_t = index_by_type_t< type >{} >
+    template< typename type, std::size_t = index_at_t< type >{} >
     constexpr operator type const & () const
     {
         return value< type >;
     }
 
-    template< typename type, std::size_t = index_by_type_t< type >{} >
+    template< typename type, std::size_t = index_at_t< type >{} >
     constexpr operator type & ()
     {
         return value< type >;
@@ -907,7 +1877,7 @@ struct boost_variant_i
     std::size_t
     index() noexcept
     {
-        return versatile::index_by_type< versatile::unwrap_type_t< type >, versatile::unwrap_type_t< types >..., void >();
+        return versatile::index_at< versatile::unwrap_type_t< type >, versatile::unwrap_type_t< types >..., void >();
     }
 
     template< typename type >
@@ -1012,7 +1982,7 @@ struct boost_variant_c
     std::size_t
     index() noexcept
     {
-        return versatile::index_by_type< versatile::unwrap_type_t< type >, versatile::unwrap_type_t< types >..., void >();
+        return versatile::index_at< versatile::unwrap_type_t< type >, versatile::unwrap_type_t< types >..., void >();
     }
 
     template< typename type >
@@ -2071,3 +3041,4 @@ main()
     }
     return EXIT_SUCCESS;
 }
+#endif
