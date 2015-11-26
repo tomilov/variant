@@ -239,7 +239,7 @@ struct composite_visitor
     using tail::operator ();
 
     constexpr
-    composite_visitor(visitor & _visitor, visitors &... _visitors) noexcept(noexcept(head(std::declval< visitor >())) && noexcept(tail(_visitors...)))
+    composite_visitor(visitor & _visitor, visitors &... _visitors) noexcept(noexcept(::new (nullptr) head(std::declval< visitor >())) && noexcept(tail(_visitors...)))
         : head(std::forward< visitor >(_visitor))
         , tail{_visitors...}
     { ; }
@@ -256,7 +256,7 @@ struct composite_visitor< visitor >
     using base::operator ();
 
     constexpr
-    composite_visitor(visitor & _visitor) noexcept(noexcept(base(std::declval< visitor >())))
+    composite_visitor(visitor & _visitor) noexcept(noexcept(::new (nullptr) base(std::declval< visitor >())))
         : base(std::forward< visitor >(_visitor))
     { ; }
 
@@ -267,7 +267,7 @@ struct composite_visitor< visitor >
 template< typename visitor, typename ...visitors >
 constexpr
 details::composite_visitor< visitor, visitors... >
-compose_visitors(visitor && _visitor, visitors &&... _visitors) noexcept(noexcept(details::composite_visitor< visitor, visitors... >{_visitor, _visitors...}))
+compose_visitors(visitor && _visitor, visitors &&... _visitors) noexcept(noexcept(::new (nullptr) details::composite_visitor< visitor, visitors... >{_visitor, _visitors...}))
 {
     return {_visitor, _visitors...};
 }

@@ -44,7 +44,7 @@ private :
             first value_;
 
             template< typename ...types,
-                      bool is_noexcept = noexcept(first(std::declval< types >()...)) >
+                      bool is_noexcept = noexcept(::new (nullptr) first(std::declval< types >()...)) >
             explicit
             constexpr
             head(in_place_t, types &&... _values) noexcept(is_noexcept)
@@ -53,7 +53,7 @@ private :
             { ; }
 
             template< typename type,
-                      bool is_noexcept = noexcept(first(std::declval< type >())) >
+                      bool is_noexcept = noexcept(::new (nullptr) first(std::declval< type >())) >
             explicit
             constexpr
             head(type && _value) noexcept(is_noexcept)
@@ -77,7 +77,7 @@ private :
         dispatcher(dispatcher &&) = default;
 
         template< typename ...types,
-                  bool is_noexcept = noexcept(head(std::declval< types >()...)) >
+                  bool is_noexcept = noexcept(::new (nullptr) head(std::declval< types >()...)) >
         explicit
         constexpr
         dispatcher(std::true_type, types &&... _values) noexcept(is_noexcept)
@@ -87,7 +87,7 @@ private :
         template< typename ...types >
         explicit
         constexpr
-        dispatcher(std::false_type, types &&... _values) noexcept(noexcept(tail(std::declval< types >()...)))
+        dispatcher(std::false_type, types &&... _values) noexcept(noexcept(::new (nullptr) tail(std::declval< types >()...)))
             : tail_(std::forward< types >(_values)...)
         { ; }
 
@@ -129,7 +129,7 @@ public :
     template< typename is_default_constructible = typename std::is_default_constructible< first >::type >
     explicit
     constexpr
-    versatile(versatile<> = {}) noexcept(noexcept(dispatcher(is_default_constructible{}, in_place)))
+    versatile(versatile<> = {}) noexcept(noexcept(::new (nullptr) dispatcher(is_default_constructible{}, in_place)))
         : dispatcher_(is_default_constructible{}, in_place)
     { ; }
 
@@ -141,7 +141,7 @@ public :
               typename is_same = typename std::is_same< unwrap_type_t< type >, this_type >::type >
     explicit
     constexpr
-    versatile(type && _value) noexcept(noexcept(dispatcher(is_same{}, std::declval< type >())))
+    versatile(type && _value) noexcept(noexcept(::new (nullptr) dispatcher(is_same{}, std::declval< type >())))
         : dispatcher_(is_same{}, std::forward< type >(_value))
     { ; }
 
@@ -149,7 +149,7 @@ public :
               typename is_constructible = typename std::is_constructible< first, types... >::type >
     explicit
     constexpr
-    versatile(in_place_t, types &&... _values) noexcept(noexcept(dispatcher(is_constructible{}, in_place, std::declval< types >()...)))
+    versatile(in_place_t, types &&... _values) noexcept(noexcept(::new (nullptr) dispatcher(is_constructible{}, in_place, std::declval< types >()...)))
         : dispatcher_(is_constructible{}, in_place, std::forward< types >(_values)...)
     { ; }
 

@@ -24,17 +24,18 @@ struct aggregate_wrapper
     : type
 {
 
+    constexpr
     aggregate_wrapper() = default;
 
     template< typename argument,
-              bool is_noexcept = noexcept(type(std::declval< argument >())) >
+              bool is_noexcept = noexcept(::new (nullptr) type(std::declval< argument >())) >
     constexpr
     aggregate_wrapper(argument && _argument) noexcept(is_noexcept)
         : type(std::forward< argument >(_argument))
     { ; }
 
     template< typename ...arguments,
-              bool is_noexcept = noexcept(type{std::declval< arguments >()...}) >
+              bool is_noexcept = noexcept(::new (nullptr) type{std::declval< arguments >()...}) >
     constexpr
     aggregate_wrapper(arguments &&... _arguments) noexcept(is_noexcept)
         : type{std::forward< arguments >(_arguments)...}
