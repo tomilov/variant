@@ -412,7 +412,7 @@ public :
     { ; }
 
     template< typename ...arguments,
-              typename index = get_index_t< __is_constructible(types, arguments...)..., false > > // prohibits versatile<>
+              typename index = get_index_t< __is_constructible(types, arguments...)..., false > > // prohibits using of versatile<>
     constexpr
     versatile(arguments &&... _arguments) noexcept(__is_nothrow_constructible(storage, index, arguments...))
         : storage_(index{},
@@ -442,7 +442,7 @@ public :
               typename = get_index_t< (__has_trivial_copy(unwrap_type_t< type >) && ... && __has_trivial_assign(types)) > > // enable_if_t >
     constexpr
     versatile &
-    operator = (type && _value) noexcept // trivial per se
+    operator = (type && _value) noexcept // trivial per se, but due to operator is user provided - is not
     {
         return (*this = versatile(std::forward< type >(_value))); // http://stackoverflow.com/questions/33936295/
     }

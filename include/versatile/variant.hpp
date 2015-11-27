@@ -87,14 +87,14 @@ public :
     swap(variant & _other) noexcept
     {
         return storage_.swap(_other.storage_);
-    }
+    }/*
 
     template< typename ...arguments >
     void
     emplace(arguments &&... _arguments)
     {
         return variant{in_place, std::forward< arguments >(_arguments)...}.swap(*this);
-    }
+    }*/
 
     template< typename type >
     void

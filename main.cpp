@@ -1,40 +1,67 @@
 #if 1
+#include <versatile.hpp>
+
+#include <type_traits>
+#include <utility>
+#include <functional>
+#include <array>
+
 #if defined(DEBUG) || defined(_DEBUG)
 #include <iostream>
 #include <iomanip>
 #endif
-
-#include <versatile/versatile.hpp>
-
-#include <type_traits>
-#include <utility>
 
 #ifdef NDEBUG
 #undef NDEBUG
 #endif
 #include <cassert>
 
-#if 1
-#define ASSERT(...) { static_assert(__VA_ARGS__); }
-#define CONSTEXPR constexpr
-#define CONSTEXPRF constexpr
-#define CHECK(...) { if (!(__VA_ARGS__)) return false; }
+#define VERSATILE_RUNTIME
+
 #define STR(S) #S
 // double expansion of next macro argument
 #define STRN(N) STR(N)
-#define CBRA { struct _ { static constexpr bool call() noexcept {
-#define CKET return true; } }; static_assert(_::call(), "file '" __FILE__ "', line: " STRN(__LINE__)); }
-#else
+#define LOCATION "file '" __FILE__ "', line: " STRN(__LINE__)
+#ifdef VERSATILE_RUNTIME
 #define ASSERT(...) { assert((__VA_ARGS__)); }
 #define CONSTEXPR const
 #define CONSTEXPRF
 #define CHECK(...) { assert((__VA_ARGS__)); }
 #define CBRA {
 #define CKET }
+#else
+#define ASSERT(...) { static_assert(__VA_ARGS__); }
+#define CONSTEXPR constexpr
+#define CONSTEXPRF constexpr
+#define CHECK(...) { if (!(__VA_ARGS__)) return false; }
+#define CBRA { struct _ { static constexpr bool call() noexcept {
+#define CKET return true; } }; static_assert(_::call(), LOCATION); }
 #endif
 
 namespace versatile
 {
+
+namespace test_traits
+{
+
+struct A {};
+struct B {};
+
+static_assert(std::is_same< copy_cv_reference_t<          A         , B >,          B          >{}, LOCATION);
+static_assert(std::is_same< copy_cv_reference_t<          A const   , B >,          B const    >{}, LOCATION);
+static_assert(std::is_same< copy_cv_reference_t< volatile A         , B >, volatile B          >{}, LOCATION);
+static_assert(std::is_same< copy_cv_reference_t< volatile A const   , B >, volatile B const    >{}, LOCATION);
+static_assert(std::is_same< copy_cv_reference_t<          A        &, B >,          B        & >{}, LOCATION);
+static_assert(std::is_same< copy_cv_reference_t<          A const  &, B >,          B const  & >{}, LOCATION);
+static_assert(std::is_same< copy_cv_reference_t< volatile A        &, B >, volatile B        & >{}, LOCATION);
+static_assert(std::is_same< copy_cv_reference_t< volatile A const  &, B >, volatile B const  & >{}, LOCATION);
+static_assert(std::is_same< copy_cv_reference_t<          A       &&, B >,          B       && >{}, LOCATION);
+static_assert(std::is_same< copy_cv_reference_t<          A const &&, B >,          B const && >{}, LOCATION);
+static_assert(std::is_same< copy_cv_reference_t< volatile A       &&, B >, volatile B       && >{}, LOCATION);
+static_assert(std::is_same< copy_cv_reference_t< volatile A const &&, B >, volatile B const && >{}, LOCATION);
+
+}
+
 namespace test
 {
 
@@ -44,14 +71,6 @@ struct is_explicitly_convertible
 {
 
 };
-
-template< typename type, typename variant >
-CONSTEXPRF
-bool
-check_index(variant const & _variant) noexcept
-{    
-    return (typename variant::template index_t< type >{} == _variant.which());
-}
 
 template< typename type, typename variant >
 CONSTEXPRF
@@ -122,6 +141,13 @@ struct oracle // akrzemi1's optional test
 private :
 
     state s;
+
+};
+
+template< typename first >
+struct aggregate_wrapper
+        : identity< ::versatile::aggregate_wrapper< first > >
+{
 
 };
 
@@ -230,7 +256,6 @@ class case_constexpr
             using VA = V< A >;
             ASSERT (__has_trivial_constructor(VA));
             CONSTEXPR VA v{};
-            ASSERT (check_index< A >(v));
             ASSERT (check_active< A >(v));
             ASSERT (static_cast< A >(v).i == int{});
         }
@@ -253,12 +278,10 @@ class case_constexpr
             ASSERT (!__has_trivial_constructor(VAOB));
             CBRA
                     VAOB v;
-            CHECK (check_index< O >(v));
             CHECK (check_active< O >(v));
             CHECK (static_cast< O & >(v) == state::default_constructed);
             CKET
                     CONSTEXPR VAOB c{};
-            ASSERT (check_index< O >(c));
             ASSERT (check_active< O >(c));
             ASSERT (static_cast< O const & >(c) == state::default_constructed);
         }
@@ -270,9 +293,7 @@ class case_constexpr
             ASSERT (!__has_trivial_constructor(VAB));
             CONSTEXPR VAB v{};
             ASSERT ((check_active< B >(v)));
-            ASSERT ((check_index< B >(v)));
             ASSERT (!(check_active< A >(v)));
-            ASSERT (!(check_index< A >(v)));
         }
         {
             struct A { CONSTEXPRF A(int) { ; } };
@@ -282,7 +303,6 @@ class case_constexpr
             CBRA
             VABC v;
             CHECK ((check_active< C >(v)));
-            CHECK ((check_index< C >(v)));
             CKET
         }
         {
@@ -292,7 +312,6 @@ class case_constexpr
             ASSERT (!__has_trivial_constructor(VA));
             CBRA
                     VA v{'1'};
-            CHECK (check_index< A >(v));
             CHECK (check_active< A >(v));
             CKET
         }
@@ -342,14 +361,12 @@ class case_constexpr
             CHECK (o == state::default_constructed);
             VAOB v = o;
             CHECK (check_active< O >(v));
-            CHECK (check_index< O >(v));
             CHECK (o == state::default_constructed);
             CHECK (static_cast< O & >(v) == state::copy_constructed);
             CHECK (o == state::default_constructed);
             VAOB m = std::move(o);
             CHECK (o == state::moved_from);
             CHECK (check_active< O >(m));
-            CHECK (check_index< O >(m));
             CHECK (static_cast< O & >(m) == state::move_constructed);
             CKET
         }
@@ -358,7 +375,6 @@ class case_constexpr
             CBRA
                     VAOB v{O{}};
             CHECK (check_active< O >(v));
-            CHECK (check_index< O >(v));
             CHECK (static_cast< O & >(v) == state::move_constructed);
             O o = static_cast< O & >(v);
             CHECK (static_cast< O & >(v) == state::move_constructed);
@@ -370,7 +386,6 @@ class case_constexpr
             CBRA
                     VAOB v{O{}};
             CHECK (check_active< O >(v));
-            CHECK (check_index< O >(v));
             CHECK (static_cast< O & >(v) == state::move_constructed);
             O o = static_cast< O && >(static_cast< O & >(v));
             CHECK (static_cast< O & >(v) == state::moved_from);
@@ -411,14 +426,14 @@ class case_constexpr
             struct A {};
             struct B {};
             using VAB = V< A, B >;
-            ASSERT (std::is_trivially_copy_assignable< VAB >{});
+            ASSERT (__is_trivially_assignable(VAB, VAB));
+            ASSERT (!__is_trivially_constructible(VAB, A)); // really operation is trivial in some sense
+            ASSERT (!__is_trivially_assignable(VAB, A)); // really operation is trivial in some sense
             CBRA
                     VAB v{};
             CHECK (check_active< A >(v));
-            CHECK (check_index< A >(v));
             v = B{};
             CHECK (check_active< B >(v));
-            CHECK (check_index< B >(v));
             CKET
         }
         {
@@ -427,13 +442,10 @@ class case_constexpr
             CBRA
                     VX x = 1;
             CHECK (check_active< int >(x));
-            CHECK (check_index< int >(x));
             x = 1.0;
             CHECK (check_active< double >(x));
-            CHECK (check_index< double >(x));
             x = '\0';
             CHECK (check_active< char >(x));
-            CHECK (check_index< char >(x));
             CKET
         }
         return true;
@@ -450,26 +462,22 @@ class case_constexpr
             using VAB = V< A, B >;
             CONSTEXPR VAB v{B{}};
             ASSERT (check_active< B >(v));
-            ASSERT (check_index< B >(v));
             CONSTEXPR VAB w = v;
             ASSERT (check_active< B >(w));
-            ASSERT (check_index< B >(w));
         }
         {
             struct A { int i = 1; };
             struct B { char c = 2; };
             using VAOB = V< A, O, B >;
-            static_assert(!__is_trivially_constructible(O, O));
-            static_assert(!__is_trivially_constructible(VAOB, VAOB));
-            static_assert(__is_constructible(VAOB, VAOB)); // wrong
+            ASSERT (!__is_trivially_constructible(O, O));
+            ASSERT (!__is_trivially_constructible(VAOB, VAOB));
+            ASSERT (__is_constructible(VAOB, VAOB)); // wrong
             // clang allow me to write `VAOB v{O{}}; VAOB w = std::move(v);`, but it is invalid code
             CBRA
                     VAOB v{A{}};
             CHECK (check_active< A >(v));
-            CHECK (check_index< A >(v));
             VAOB w = std::move(v);
             CHECK (check_active< A >(w));
-            CHECK (check_index< A >(w));
             CKET
         }
         return true;
@@ -490,13 +498,10 @@ class case_constexpr
         {
             CONSTEXPR VCBA c{};
             ASSERT (check_active< C >(c));
-            ASSERT (check_index< C >(c));
             CONSTEXPR VCBA b = B{};
             ASSERT (check_active< B >(b));
-            ASSERT (check_index< B >(b));
             CONSTEXPR VCBA a = A{};
             ASSERT (check_active< A >(a));
-            ASSERT (check_index< A >(a));
         }
         {
             CBRA
@@ -505,24 +510,16 @@ class case_constexpr
             VCBA z;
             VCBA w = A{};
             CHECK (check_active< A >(w));
-            CHECK (check_index< A >(w));
             x = y;
             CHECK (check_active< B >(x));
-            CHECK (check_index< B >(x));
             CHECK (check_active< B >(y));
-            CHECK (check_index< B >(y));
             y = z;
             CHECK (check_active< C >(y));
-            CHECK (check_index< C >(y));
             CHECK (check_active< C >(z));
-            CHECK (check_index< C >(z));
             z = w;
             CHECK (check_active< B >(x));
-            CHECK (check_index< B >(x));
             CHECK (check_active< C >(y));
-            CHECK (check_index< C >(y));
             CHECK (check_active< A >(z));
-            CHECK (check_index< A >(z));
             CKET
         }
         return true;
@@ -540,10 +537,8 @@ class case_constexpr
             using VABS = V< S, A, B >;
             CONSTEXPR VABS v{};
             ASSERT (check_active< A >(v));
-            ASSERT (check_index< A >(v));
             CONSTEXPR VABS s{A{}, B{}};
             ASSERT (check_active< S >(s));
-            ASSERT (check_index< S >(s));
         }
         {
             struct A {};
@@ -552,23 +547,19 @@ class case_constexpr
             using VSAB = V< S, B, A >;
             CONSTEXPR VSAB b{};
             ASSERT (check_active< B >(b));
-            ASSERT (check_index< B >(b));
             CONSTEXPR VSAB a{A{}};
             ASSERT (!check_active< S >(a));
             ASSERT (check_active< A >(a));
-            ASSERT (check_index< A >(a));
         }
         {
             struct A {};
             struct B {};
             struct C { A a; };
             struct D { B b; };
-            CONSTEXPR versatile< int, aggregate_wrapper< C >, aggregate_wrapper< D > > c{A{}};
+            CONSTEXPR versatile< int, ::versatile::aggregate_wrapper< C >, ::versatile::aggregate_wrapper< D > > c{A{}};
             ASSERT (check_active< C >(c));
-            ASSERT (check_index< C >(c));
-            CONSTEXPR versatile< int, aggregate_wrapper< C >, aggregate_wrapper< D > > d{B{}};
+            CONSTEXPR versatile< int, ::versatile::aggregate_wrapper< C >, ::versatile::aggregate_wrapper< D > > d{B{}};
             ASSERT (check_active< D >(d));
-            ASSERT (check_index< D >(d));
         }
         return true;
     }
@@ -592,211 +583,10 @@ public :
 
 };
 
-template< typename first >
-struct aggregate_wrapper
-        : identity< ::versatile::aggregate_wrapper< first > >
-{
-
-};
-
-} // namespace test
-} // namespace versatile
-
-#include <cstdlib>
-
-int
-main()
-{
-    ASSERT (versatile::test::case_constexpr<>::crun());
-    ASSERT (versatile::test::case_constexpr< ::versatile::test::aggregate_wrapper >::crun());
-    return EXIT_SUCCESS;
-}
-
-#else
-#include <versatile.hpp>
-
-#include <boost/variant.hpp>
-
-#include <string>
-#include <array>
-#include <utility>
-#include <tuple>
-#include <functional>
-#include <sstream>
-#if defined(DEBUG) || defined(_DEBUG)
-#include <iostream>
-#include <iomanip>
-#endif
-
-#include <cstdlib>
-
-#ifdef NDEBUG
-#undef NDEBUG
-#endif
-#include <cassert>
-
-#ifndef COLS
-#define COLS 5
-#endif
-
-#ifndef ROWS
-#define ROWS COLS
-#endif
-
-namespace test
-{
-
-namespace test_traits
-{
-
-using namespace versatile;
-
-struct A {};
-struct B {};
-static_assert(std::is_same< copy_cv_reference_t<          A         , B >,          B          >{});
-static_assert(std::is_same< copy_cv_reference_t<          A const   , B >,          B const    >{});
-static_assert(std::is_same< copy_cv_reference_t< volatile A         , B >, volatile B          >{});
-static_assert(std::is_same< copy_cv_reference_t< volatile A const   , B >, volatile B const    >{});
-static_assert(std::is_same< copy_cv_reference_t<          A        &, B >,          B        & >{});
-static_assert(std::is_same< copy_cv_reference_t<          A const  &, B >,          B const  & >{});
-static_assert(std::is_same< copy_cv_reference_t< volatile A        &, B >, volatile B        & >{});
-static_assert(std::is_same< copy_cv_reference_t< volatile A const  &, B >, volatile B const  & >{});
-static_assert(std::is_same< copy_cv_reference_t<          A       &&, B >,          B       && >{});
-static_assert(std::is_same< copy_cv_reference_t<          A const &&, B >,          B const && >{});
-static_assert(std::is_same< copy_cv_reference_t< volatile A       &&, B >, volatile B       && >{});
-static_assert(std::is_same< copy_cv_reference_t< volatile A const &&, B >, volatile B const && >{});
-
-}
-
-struct introspector
-{
-
-    template< typename ...types >
-    std::string
-    operator () (types...) const
-    {
-        return __PRETTY_FUNCTION__;
-    }
-
-};
-
-struct visitor0
-{
-
-    using R = std::array< bool, 3 >;
-
-    template< typename type >
-    constexpr
-    R
-    operator () (type &&) const
-    {
-        return {{true, std::is_const< std::remove_reference_t< type > >::value, std::is_lvalue_reference< type >::value}};
-    }
-
-    template< typename type >
-    constexpr
-    R
-    operator () (type &&)
-    {
-        return {{false, std::is_const< std::remove_reference_t< type > >::value, std::is_lvalue_reference< type >::value}};
-    }
-
-};
-
-struct visitor1
-{
-
-    using R = std::array< bool, 4 >;
-
-    template< typename type >
-    constexpr
-    R
-    operator () (type &&) const &
-    {
-        return {{true, true, std::is_const< std::remove_reference_t< type > >::value, std::is_lvalue_reference< type >::value}};
-    }
-
-    template< typename type >
-    constexpr
-    R
-    operator () (type &&) &
-    {
-        return {{false, true, std::is_const< std::remove_reference_t< type > >::value, std::is_lvalue_reference< type >::value}};
-    }
-
-    template< typename type >
-    constexpr
-    R
-    operator () (type &&) &&
-    {
-        return {{false, false, std::is_const< std::remove_reference_t< type > >::value, std::is_lvalue_reference< type >::value}};
-    }
-
-};
-
-struct visitor2
-{
-
-    template< typename ...types >
-    constexpr
-    auto
-    operator () (types &&... _values) const
-    {
-        return std::tuple_cat(std::make_tuple(true), std::make_tuple(std::tie(typeid(std::forward< types >(_values))), std::is_const< std::remove_reference_t< types > >::value, std::is_lvalue_reference< types >::value)...);
-    }
-
-    template< typename ...types >
-    constexpr
-    auto
-    operator () (types &&... _values)
-    {
-        return std::tuple_cat(std::make_tuple(false), std::make_tuple(std::tie(typeid(std::forward< types >(_values))), std::is_const< std::remove_reference_t< types > >::value, std::is_lvalue_reference< types >::value)...);
-    }
-
-};
-
-struct visitor3
-{
-
-    using R = std::tuple< bool, bool, bool, bool >;
-
-    template< typename type >
-    constexpr
-    R
-    operator () (type &&) const &
-    {
-        return std::make_tuple(true, true, std::is_const< std::remove_reference_t< type > >::value, std::is_lvalue_reference< type >::value);
-    }
-
-    template< typename type >
-    constexpr
-    R
-    operator () (type &&) &
-    {
-        return std::make_tuple(false, true, std::is_const< std::remove_reference_t< type > >::value, std::is_lvalue_reference< type >::value);
-    }
-
-    template< typename type >
-    constexpr
-    R
-    operator () (type &&) const &&
-    {
-        return std::make_tuple(true, false, std::is_const< std::remove_reference_t< type > >::value, std::is_lvalue_reference< type >::value);
-    }
-
-    template< typename type >
-    constexpr
-    R
-    operator () (type &&) &&
-    {
-        return std::make_tuple(false, false, std::is_const< std::remove_reference_t< type > >::value, std::is_lvalue_reference< type >::value);
-    }
-
-};
-
 // value_or
 template< typename lhs, typename rhs >
-std::enable_if_t< (versatile::is_visitable< std::remove_reference_t< lhs > >{} && !versatile::is_visitable< std::remove_reference_t< rhs > >{}), std::remove_reference_t< rhs > >
+constexpr
+std::enable_if_t< (is_visitable< std::remove_reference_t< lhs > >{} && !is_visitable< std::remove_reference_t< rhs > >{}), std::remove_reference_t< rhs > >
 operator || (lhs && _lhs, rhs && _rhs) noexcept
 {
     using result_type = std::remove_reference_t< rhs >;
@@ -808,18 +598,16 @@ operator || (lhs && _lhs, rhs && _rhs) noexcept
 }
 
 template< typename lhs, typename rhs >
-std::enable_if_t< (!versatile::is_visitable< std::remove_reference_t< lhs > >{} && versatile::is_visitable< std::remove_reference_t< rhs > >{}), lhs >
+constexpr
+std::enable_if_t< (!is_visitable< std::remove_reference_t< lhs > >{} && is_visitable< std::remove_reference_t< rhs > >{}), lhs >
 operator || (lhs && _lhs, rhs && _rhs) noexcept
 {
     return (std::forward< rhs >(_rhs) || std::forward< lhs >(_lhs));
 }
 
 template< typename lhs, typename rhs >
-std::enable_if_t< (versatile::is_visitable< std::remove_reference_t< lhs > >{} && versatile::is_visitable< std::remove_reference_t< rhs > >{}) >
+std::enable_if_t< (is_visitable< std::remove_reference_t< lhs > >{} && is_visitable< std::remove_reference_t< rhs > >{}) >
 operator || (lhs && _lhs, rhs && _rhs) = delete;
-
-template< typename type >
-using same_t = type;
 
 template< typename variadic, typename type >
 struct variadic_index;
@@ -827,331 +615,20 @@ struct variadic_index;
 template< template< typename ...types > class variadic, typename ...types,
           typename type >
 struct variadic_index< variadic< types... >, type >
-        : versatile::index_at< type, types..., void >
+        : index_at< type, types..., void >
 {
 
 };
 
-template< bool ...values >
-struct index
+template< typename variadic >
+struct variadic_size;
+
+template< template< typename ...types > class variadic, typename ...types >
+struct variadic_size< variadic< types... > >
+        : index_t< sizeof...(types) >
 {
 
 };
-
-template< bool ...rest >
-struct index< true, rest... >
-        : std::integral_constant< std::size_t, sizeof...(rest) >
-{
-
-};
-
-template< bool ...rest >
-struct index< false, rest... >
-        : index< rest... >
-{
-
-};
-
-template< std::size_t _id >
-struct id
-{
-
-};
-
-template< bool, typename ...types >
-struct enable_default_construct;
-
-template< typename ...types >
-struct enable_default_construct< true, types... >
-{
-
-    enable_default_construct() = default;
-    enable_default_construct(enable_default_construct const &) = default;
-    enable_default_construct(enable_default_construct &) = default;
-    enable_default_construct(enable_default_construct &&) = default;
-    enable_default_construct & operator = (enable_default_construct const &) = default;
-    enable_default_construct & operator = (enable_default_construct &) = default;
-    enable_default_construct & operator = (enable_default_construct &&) = default;
-
-    std::size_t which_ = 1 + index< (std::is_default_constructible< types >{})... >{};
-
-};
-
-template< typename ...types >
-struct enable_default_construct< false, types... >
-{
-
-    enable_default_construct() = delete;
-    enable_default_construct(enable_default_construct const &) = default;
-    enable_default_construct(enable_default_construct &) = default;
-    enable_default_construct(enable_default_construct &&) = default;
-    enable_default_construct & operator = (enable_default_construct const &) = default;
-    enable_default_construct & operator = (enable_default_construct &) = default;
-    enable_default_construct & operator = (enable_default_construct &&) = default;
-
-    std::size_t which_;
-
-};
-
-template< bool >
-struct enable_destruct;
-
-template<>
-struct enable_destruct< true >
-{
-
-    ~enable_destruct() = default;
-    enable_destruct() = default;
-    enable_destruct(enable_destruct const &) = default;
-    enable_destruct(enable_destruct &) = default;
-    enable_destruct(enable_destruct &&) = default;
-    enable_destruct & operator = (enable_destruct const &) = default;
-    enable_destruct & operator = (enable_destruct &) = default;
-    enable_destruct & operator = (enable_destruct &&) = default;
-
-};
-
-template<>
-struct enable_destruct< false >
-{
-
-    ~enable_destruct() = delete;
-    enable_destruct() = default;
-    enable_destruct(enable_destruct const &) = default;
-    enable_destruct(enable_destruct &) = default;
-    enable_destruct(enable_destruct &&) = default;
-    enable_destruct & operator = (enable_destruct const &) = default;
-    enable_destruct & operator = (enable_destruct &) = default;
-    enable_destruct & operator = (enable_destruct &&) = default;
-
-};
-
-template< bool _copy, bool _move > // 2 * 2 == 2 + 2
-struct enable_construct;
-
-template<>
-struct enable_construct< true, true >
-{
-
-    ~enable_construct() = default;
-    enable_construct() = default;
-    enable_construct(enable_construct const &) = default;
-    enable_construct(enable_construct &) = default;
-    enable_construct(enable_construct &&) = default;
-    enable_construct & operator = (enable_construct const &) = default;
-    enable_construct & operator = (enable_construct &) = default;
-    enable_construct & operator = (enable_construct &&) = default;
-
-};
-
-template<>
-struct enable_construct< false, false >
-{
-
-    ~enable_construct() = default;
-    enable_construct() = default;
-    enable_construct(enable_construct const &) = delete;
-    enable_construct(enable_construct &) = delete;
-    enable_construct(enable_construct &&) = delete;
-    enable_construct & operator = (enable_construct const &) = default;
-    enable_construct & operator = (enable_construct &) = default;
-    enable_construct & operator = (enable_construct &&) = default;
-
-};
-
-template<>
-struct enable_construct< true, false >
-{
-
-    ~enable_construct() = default;
-    enable_construct() = default;
-    enable_construct(enable_construct const &) = default;
-    enable_construct(enable_construct &) = default;
-    enable_construct(enable_construct &&) = delete;
-    enable_construct & operator = (enable_construct const &) = default;
-    enable_construct & operator = (enable_construct &) = default;
-    enable_construct & operator = (enable_construct &&) = default;
-
-};
-
-template<>
-struct enable_construct< false, true >
-{
-
-    ~enable_construct() = default;
-    enable_construct() = default;
-    enable_construct(enable_construct const &) = delete;
-    enable_construct(enable_construct &) = delete;
-    enable_construct(enable_construct &&) = default;
-    enable_construct & operator = (enable_construct const &) = default;
-    enable_construct & operator = (enable_construct &) = default;
-    enable_construct & operator = (enable_construct &&) = default;
-
-};
-
-template< bool _copy, bool _move >
-struct enable_assign;
-
-template<>
-struct enable_assign< true, true >
-{
-
-    ~enable_assign() = default;
-    enable_assign() = default;
-    enable_assign(enable_assign const &) = default;
-    enable_assign(enable_assign &) = default;
-    enable_assign(enable_assign &&) = default;
-    enable_assign & operator = (enable_assign const &) = default;
-    enable_assign & operator = (enable_assign &) = default;
-    enable_assign & operator = (enable_assign &&) = default;
-
-};
-
-template<>
-struct enable_assign< false, false >
-{
-
-    ~enable_assign() = default;
-    enable_assign() = default;
-    enable_assign(enable_assign const &) = default;
-    enable_assign(enable_assign &) = default;
-    enable_assign(enable_assign &&) = default;
-    enable_assign & operator = (enable_assign const &) = delete;
-    enable_assign & operator = (enable_assign &) = delete;
-    enable_assign & operator = (enable_assign &&) = delete;
-
-};
-
-template<>
-struct enable_assign< true, false >
-{
-
-    ~enable_assign() = default;
-    enable_assign() = default;
-    enable_assign(enable_assign const &) = default;
-    enable_assign(enable_assign &) = default;
-    enable_assign(enable_assign &&) = default;
-    enable_assign & operator = (enable_assign const &) = default;
-    enable_assign & operator = (enable_assign &) = default;
-    enable_assign & operator = (enable_assign &&) = delete;
-
-};
-
-template<>
-struct enable_assign< false, true >
-{
-
-    ~enable_assign() = default;
-    enable_assign() = default;
-    enable_assign(enable_assign const &) = default;
-    enable_assign(enable_assign &) = default;
-    enable_assign(enable_assign &&) = default;
-    enable_assign & operator = (enable_assign const &) = delete;
-    enable_assign & operator = (enable_assign &) = delete;
-    enable_assign & operator = (enable_assign &&) = default;
-
-};
-
-template< typename ...types >
-using enable_default_construct_t = enable_default_construct< (std::is_default_constructible< types >{} || ...), types... >;
-
-template< typename ...types >
-using enable_destruct_t = enable_destruct< (std::is_destructible< types >{} && ...) >;
-
-template< typename ...types >
-using enable_construct_t = enable_construct< (std::is_copy_constructible< types >{} && ...), (std::is_move_constructible< types >{} && ...) >;
-
-template< typename ...types >
-using enable_assign_t = enable_assign< (std::is_copy_assignable< types >{} && ...), (std::is_move_assignable< types >{} && ...) >;
-
-template< typename ...types >
-struct enable_special_functions
-        : enable_default_construct_t< types... >
-        , enable_destruct_t< types... >
-        , enable_construct_t< types... >
-        , enable_assign_t< types... >
-{
-
-    using base = enable_default_construct_t< types... >;
-    using base::which_;
-
-    template< std::size_t _id >
-    constexpr
-    enable_special_functions(id< _id >)
-        : base{_id}
-    { ; }
-
-};
-
-
-template< typename ...types >
-struct cvariant
-        : enable_special_functions< versatile::unwrap_type_t< types >... >
-{
-
-    static constexpr std::size_t width = sizeof...(types);
-
-    using base = enable_special_functions< versatile::unwrap_type_t< types >... >;
-
-    ~cvariant() = default;
-    cvariant() = default;
-    cvariant(cvariant const &) = default;
-    cvariant(cvariant &) = default;
-    cvariant(cvariant &&) = default;
-    cvariant & operator = (cvariant const &) = default;
-    cvariant & operator = (cvariant &) = default;
-    cvariant & operator = (cvariant &&) = default;
-
-    constexpr std::size_t which() const { return base::which_; }
-
-    template< typename type >
-    using index_at_t = versatile::index_at< versatile::unwrap_type_t< type >, versatile::unwrap_type_t< types >..., void >;
-
-    template< typename type, std::size_t _which = index_at_t< type >{} >
-    constexpr cvariant(type &&) : base{id< _which >{}} { ; }
-
-    template< typename ...arguments, std::size_t _which = 1 + index< (std::is_constructible< versatile::unwrap_type_t< types >, arguments... >{})... >{} >
-    constexpr cvariant(arguments &&...) : base{id< _which >{}} { ; }
-
-    template< typename type, std::size_t = index_at_t< type >{} >
-    constexpr operator type const & () const
-    {
-        return value< type >;
-    }
-
-    template< typename type, std::size_t = index_at_t< type >{} >
-    constexpr operator type & ()
-    {
-        return value< type >;
-    }
-
-private :
-
-    template< typename type >
-    static type value;
-
-};
-
-template< typename ...types >
-template< typename type >
-type cvariant< types... >::value = {};
-
-} // namespace test
-
-namespace versatile
-{
-
-template< typename first, typename ...rest >
-struct is_visitable< test::cvariant< first, rest... > >
-        : std::true_type
-{
-
-};
-
-}
-
-namespace test
-{
 
 template< typename F, std::size_t ...indices >
 struct enumerator;
@@ -1160,15 +637,15 @@ template< typename F >
 struct enumerator< F >
 {
 
-    constexpr
-    enumerator(F && _f)
+    CONSTEXPRF
+    enumerator(F & _f) noexcept
         : f(std::forward< F >(_f))
     { ; }
 
     template< std::size_t ...I >
-    constexpr
+    CONSTEXPRF
     bool
-    operator () () const
+    operator () () const noexcept
     {
         return f(std::index_sequence< I... >{});
     }
@@ -1186,23 +663,25 @@ struct enumerator< F, first, rest... >
 
     using base = enumerator< F, rest... >;
 
-    constexpr
-    enumerator(F && _f)
-        : base(std::forward< F >(_f))
+    CONSTEXPRF
+    enumerator(F & f) noexcept
+        : base(f)
     { ; }
 
     template< std::size_t ...I >
-    constexpr
+    CONSTEXPRF
     bool
-    operator () () const
+    operator () () const noexcept
     {
         return enumerator::template operator () < I... >(std::make_index_sequence< first >{}); // ltr
     }
 
+private :
+
     template< std::size_t ...I, std::size_t ...J >
-    constexpr
+    CONSTEXPRF
     bool
-    operator () (std::index_sequence< J... >) const
+    operator () (std::index_sequence< J... >) const noexcept
     {
         return (base::template operator () < I..., J >() && ...); // rtl, `< J, I... >` - ltr
     }
@@ -1210,52 +689,40 @@ struct enumerator< F, first, rest... >
 };
 
 template< std::size_t ...indices, typename F >
-constexpr
+CONSTEXPRF
 enumerator< F, indices... >
-make_enumerator(F && _f)
+make_enumerator(F && f)
 {
-    static_assert(0 < sizeof...(indices));
-    static_assert(((0 < indices) && ...));
-    return std::forward< F >(_f);
+    ASSERT (0 < sizeof...(indices));
+    ASSERT (((0 < indices) && ...));
+    return f;
 }
-
-template< std::size_t I >
-struct T
-{
-
-    constexpr
-    operator std::size_t () const noexcept
-    {
-        return I;
-    }
-
-};
 
 template< std::size_t M >
 struct pair
 {
 
-    std::array< versatile::type_qualifier, (1 + M) > qual_ids;
+    std::array< type_qualifier, (1 + M) > qual_ids;
     std::array< std::size_t, (1 + M) > type_ids;
 
     template< std::size_t ...I >
-    constexpr
+    CONSTEXPRF
     bool
-    ids_equal(pair const & _rhs, std::index_sequence< I... >) const
+    ids_equal(pair const & _rhs, std::index_sequence< I... >) const noexcept
     {
         return ((qual_ids[I] == _rhs.qual_ids[I]) && ...) && ((type_ids[I] == _rhs.type_ids[I]) && ...);
     }
 
-    constexpr
+    CONSTEXPRF
     bool
-    operator == (pair const & _rhs) const
+    operator == (pair const & _rhs) const noexcept
     {
         return ids_equal(_rhs, std::make_index_sequence< 1 + M >{});
     }
 
-    constexpr
+    CONSTEXPRF
     std::size_t
-    size() const
+    size() const noexcept
     {
         return (1 + M);
     }
@@ -1268,89 +735,58 @@ struct multivisitor
 
     using result_type = pair< M >;
 
-    constexpr
+    CONSTEXPRF
     std::size_t
-    which() const
+    which() const noexcept
     {
         return 0;
     }
 
-    static constexpr std::size_t width = M;
-
     template< typename ...types >
-    constexpr
+    CONSTEXPRF
     result_type
     operator () (types &&... _values) & noexcept
     {
-        //static_assert(M == sizeof...(types));
-        //static_assert(!(is_visitable< types >{} || ...));
-        return {{{versatile::type_qualifier_of< multivisitor & >, versatile::type_qualifier_of< types && >...}}, {{M, _values...}}};
+        //ASSERT (M == sizeof...(types));
+        //ASSERT (!(is_visitable< types >{} || ...));
+        return {{{type_qualifier_of< multivisitor & >, type_qualifier_of< types && >...}}, {{M, _values...}}};
     }
 
     template< typename ...types >
-    constexpr
+    CONSTEXPRF
     result_type
     operator () (types &&... _values) const & noexcept
     {
-        return {{{versatile::type_qualifier_of< multivisitor const & >, versatile::type_qualifier_of< types && >...}}, {{M, _values...}}};
+        return {{{type_qualifier_of< multivisitor const & >, type_qualifier_of< types && >...}}, {{M, _values...}}};
     }
 
     template< typename ...types >
-    constexpr
+    CONSTEXPRF
     result_type
     operator () (types &&... _values) && noexcept
     {
-        return {{{versatile::type_qualifier_of< multivisitor && >, versatile::type_qualifier_of< types && >...}}, {{M, _values...}}};
+        return {{{type_qualifier_of< multivisitor && >, type_qualifier_of< types && >...}}, {{M, _values...}}};
     }
 
     template< typename ...types >
-    constexpr
+    CONSTEXPRF
     result_type
     operator () (types &&... _values) const && noexcept
     {
-        return {{{versatile::type_qualifier_of< multivisitor const && >, versatile::type_qualifier_of< types && >...}}, {{M, _values...}}};
+        return {{{type_qualifier_of< multivisitor const && >, type_qualifier_of< types && >...}}, {{M, _values...}}};
     }
-
-#if 0
-    //volatile qualifier not properly supported in STL
-
-    template< typename ...types >
-    constexpr
-    result_type
-    operator () (types &&... _values) volatile & noexcept
-    {
-        return {{{versatile::type_qualifier_of< volatile multivisitor & >, versatile::type_qualifier_of< types && >...}}, {{M, _values...}}};
-    }
-
-    template< typename ...types >
-    constexpr
-    result_type
-    operator () (types &&... _values) volatile const & noexcept
-    {
-        return {{{versatile::type_qualifier_of< volatile multivisitor const & >, versatile::type_qualifier_of< types && >...}}, {{M, _values...}}};
-    }
-
-    template< typename ...types >
-    constexpr
-    result_type
-    operator () (types &&... _values) volatile && noexcept
-    {
-        return {{{versatile::type_qualifier_of< volatile multivisitor && >, versatile::type_qualifier_of< types && >...}}, {{M, _values...}}};
-    }
-
-    template< typename ...types >
-    constexpr
-    result_type
-    operator () (types &&... _values) volatile const && noexcept
-    {
-        return {{{versatile::type_qualifier_of< volatile multivisitor const && >, versatile::type_qualifier_of< types && >...}}, {{M, _values...}}};
-    }
-#endif
 
 };
 
-static constexpr std::size_t qualifier_id_begin = static_cast< std::size_t >(versatile::type_qualifier_of< void * & >);
-static constexpr std::size_t qualifier_id_end = static_cast< std::size_t >(versatile::type_qualifier_of< void * volatile & >);
+template< std::size_t M >
+struct variadic_size< multivisitor< M > >
+        : index_t< M >
+{
+
+};
+
+static CONSTEXPR std::size_t qualifier_id_begin = static_cast< std::size_t >(type_qualifier_of< void * & >);
+static CONSTEXPR std::size_t qualifier_id_end = static_cast< std::size_t >(type_qualifier_of< void * volatile & >);
 
 template< typename ...types >
 struct fusor
@@ -1359,9 +795,9 @@ struct fusor
     std::tuple< types *... > const & stuff_;
 
     template< std::size_t ...Q >
-    constexpr
+    CONSTEXPRF
     bool
-    operator () (std::index_sequence< Q... >) const
+    operator () (std::index_sequence< Q... >) const noexcept
     {
         return call< Q... >(std::index_sequence_for< types... >{});
     }
@@ -1369,13 +805,13 @@ struct fusor
 private :
 
     template< std::size_t ...Q, std::size_t ...K >
-    constexpr
+    CONSTEXPRF
     bool
-    call(std::index_sequence< K... >) const
+    call(std::index_sequence< K... >) const noexcept
     {
-        auto const lhs = versatile::multivisit(static_cast< versatile::add_qualifier_t< static_cast< versatile::type_qualifier >(qualifier_id_begin + Q), types > >(*std::get< K >(stuff_))...);
-        static_assert(sizeof...(types) == lhs.size());
-        pair< (sizeof...(types) - 1) > const rhs = {{{static_cast< versatile::type_qualifier >(qualifier_id_begin + Q)...}}, {{(std::get< K >(stuff_)->width - 1 - std::get< K >(stuff_)->which())...}}};
+        auto const lhs = multivisit(static_cast< add_qualifier_t< static_cast< type_qualifier >(qualifier_id_begin + Q), types > >(*std::get< K >(stuff_))...);
+        ASSERT (sizeof...(types) == lhs.size());
+        pair< (sizeof...(types) - 1) > const rhs = {{{static_cast< type_qualifier >(qualifier_id_begin + Q)...}}, {{(variadic_size< at_index_t< K, types... > >{} - 1 - std::get< K >(stuff_)->which())...}}};
         if (lhs == rhs) {
             return false;
         }
@@ -1385,16 +821,20 @@ private :
 };
 
 template< typename ...types >
-constexpr
+CONSTEXPRF
 fusor< types... >
-make_fusor(std::tuple< types *... > const & _stuff)
+make_fusor(std::tuple< types *... > const & _stuff) noexcept
 {
-    static_assert(((versatile::type_qualifier_of< types > == versatile::type_qualifier::value) && ...));
+    static_assert(((type_qualifier_of< types > == type_qualifier::value) && ...));
     return {_stuff};
 }
 
+// variant - variant
+// T - type generator
+// M - multivisitor arity, N - number of alternative (bounded) types
 template< template< typename ...types > class variant,
-          std::size_t M, std::size_t N = M > // M - multivisitor arity, N - number of alternative (bounded) types
+          template< std::size_t I > class T,
+          std::size_t M, std::size_t N = M >
 class test_perferct_forwarding
 {
 
@@ -1406,27 +846,28 @@ class test_perferct_forwarding
     {
 
         using variant_type = variant< T< J >... >;
-        static_assert(N == variant_type::width);
+        static_assert(N == sizeof...(J));
 
         variant_type variants_[N] = {T< J >{}...};
 
     };
 
     template< std::size_t ...I >
-    constexpr
+    CONSTEXPRF
+    static
     bool
-    operator () (std::index_sequence< I... >) const
+    crun(std::index_sequence< I... >) noexcept
     {
         static_assert(sizeof...(I) == M);
         std::size_t indices[M] = {};
-        for (std::size_t & m : indices) {
-            m = 0;
+        for (std::size_t & n : indices) {
+            n = 0;
         }
         multivisitor< M > mv;
-        variants< std::make_index_sequence< N > > variants_;
+        variants< std::make_index_sequence< N > > variants_; // non-const
         auto permutation_ = std::make_tuple(&mv, &variants_.variants_[indices[I]]...);
         auto const fusor_ = make_fusor(permutation_);
-        constexpr std::size_t ref_count = (qualifier_id_end - qualifier_id_begin); // test only reference types
+        CONSTEXPR std::size_t ref_count = (qualifier_id_end - qualifier_id_begin); // test only reference types
         auto const enumerator_ = make_enumerator< ref_count, (I, ref_count)... >(fusor_);
         for (;;) {
             { // constexpr version of `permutation_ = std::make_tuple(&mv, &variants_.variants_[indices[I]]...);`
@@ -1454,14 +895,279 @@ class test_perferct_forwarding
 
 public :
 
-    constexpr
+    CONSTEXPRF
+    static
     bool
-    operator () () const
+    crun() noexcept
     {
-        return operator () (std::make_index_sequence< M >{});
+        return crun(std::make_index_sequence< M >{});
     }
 
 };
+
+template< std::size_t I = 0 >
+struct T
+{
+
+    std::size_t i = I;
+
+    CONSTEXPRF
+    operator std::size_t () const noexcept
+    {
+        return i;
+    }
+
+};
+
+static_assert(std::is_standard_layout< T<> >{}, LOCATION);
+
+} // namespace test
+} // namespace versatile
+
+#include <boost/variant.hpp>
+
+template< typename ...types >
+struct boost_variant_i
+        : boost::variant< types... >
+{
+
+    using base = boost::variant< types... >;
+
+    using base::base;
+    using base::operator =;
+
+    std::size_t
+    which() const
+    {
+        return (sizeof...(types) - static_cast< std::size_t >(base::which()));
+    }
+
+    template< typename type >
+    using index_t = ::versatile::index_at_t< ::versatile::unwrap_type_t< type >, ::versatile::unwrap_type_t< types >..., void >;
+
+    template< typename type >
+    bool
+    active() const noexcept
+    {
+        return (index_t< type >::value == which());
+    }
+
+    template< typename type >
+    explicit
+    operator type const & () const &
+    {
+        if (!active< type >()) {
+            throw std::bad_cast{};
+        }
+        return boost::get< type const & >(static_cast< boost_variant_i::base const & >(*this));
+    }
+
+    template< typename type >
+    explicit
+    operator type & () &
+    {
+        if (!active< type >()) {
+            throw std::bad_cast{};
+        }
+        return boost::get< type & >(static_cast< boost_variant_i::base & >(*this));
+    }
+
+    template< typename type >
+    explicit
+    operator type const && () const &&
+    {
+        if (!active< type >()) {
+            throw std::bad_cast{};
+        }
+        return boost::get< type const && >(static_cast< boost_variant_i::base const && >(*this));
+    }
+
+    template< typename type >
+    explicit
+    operator type && () &&
+    {
+        if (!active< type >()) {
+            throw std::bad_cast{};
+        }
+        return boost::get< type && >(static_cast< boost_variant_i::base && >(*this));
+    }
+
+};
+
+template< typename ...types >
+struct boost_variant_c
+{
+
+    using variant = boost::variant< types... >;
+
+    boost_variant_c(boost_variant_c &) = default;
+    boost_variant_c(boost_variant_c const &) = default;
+    boost_variant_c(boost_variant_c &&) = default;
+
+    boost_variant_c(boost_variant_c const && _rhs)
+        : member_(std::move(_rhs.member_))
+    { ; }
+
+    template< typename ...arguments >
+    boost_variant_c(arguments &&... _arguments)
+        : member_(std::forward< arguments >(_arguments)...)
+    { ; }
+
+    boost_variant_c &
+    operator = (boost_variant_c const &) = default;
+    boost_variant_c &
+    operator = (boost_variant_c &) = default;
+    boost_variant_c &
+    operator = (boost_variant_c &&) = default;
+
+    boost_variant_c &
+    operator = (boost_variant_c const && _rhs)
+    {
+        member_ = std::move(_rhs.member_);
+        return *this;
+    }
+
+    template< typename argument >
+    boost_variant_c &
+    operator = (argument && _argument)
+    {
+        member_ = std::forward< argument >(_argument);
+        return *this;
+    }
+
+    std::size_t
+    which() const
+    {
+        return (sizeof...(types) - static_cast< std::size_t >(member_.which()));
+    }
+
+    template< typename type >
+    using index_t = ::versatile::index_at_t< ::versatile::unwrap_type_t< type >, ::versatile::unwrap_type_t< types >..., void >;
+
+    template< typename type >
+    bool
+    active() const noexcept
+    {
+        return (index_t< type >::value == which());
+    }
+
+    template< typename type >
+    explicit
+    operator type const & () const &
+    {
+        if (!active< type >()) {
+            throw std::bad_cast{};
+        }
+        return boost::get< type const & >(member_);
+    }
+
+    template< typename type >
+    explicit
+    operator type & () &
+    {
+        if (!active< type >()) {
+            throw std::bad_cast{};
+        }
+        return boost::get< type & >(member_);
+    }
+
+    template< typename type >
+    explicit
+    operator type const && () const &&
+    {
+        if (!active< type >()) {
+            throw std::bad_cast{};
+        }
+        return boost::get< type const && >(member_);
+    }
+
+    template< typename type >
+    explicit
+    operator type && () &&
+    {
+        if (!active< type >()) {
+            throw std::bad_cast{};
+        }
+        return boost::get< type && >(member_);
+    }
+
+private :
+
+    boost::variant< types... > member_;
+
+};
+
+namespace versatile
+{
+
+template< typename type >
+struct unwrap_type< boost::recursive_wrapper< type > >
+        : unwrap_type< type >
+{
+
+};
+
+template< typename first, typename ...rest >
+struct is_visitable< ::boost_variant_i< first, rest... > >
+        : std::true_type
+{
+
+};
+
+template< typename first, typename ...rest >
+struct is_visitable< ::boost_variant_c< first, rest... > >
+        : std::true_type
+{
+
+};
+
+template< typename type >
+struct unwrap_type< std::reference_wrapper< type > >
+        : unwrap_type< type >
+{
+
+    static_assert(!std::is_const< type >{});
+
+};
+
+} // namespace versatile
+
+#include <cstdlib>
+
+#ifndef COLS
+#define COLS 5
+#endif
+
+#ifndef ROWS
+#define ROWS COLS
+#endif
+
+int
+main()
+{
+    using namespace versatile::test;
+    ASSERT (case_constexpr<>::crun());
+    ASSERT (case_constexpr< aggregate_wrapper >::crun());
+    ASSERT (test_perferct_forwarding< versatile::versatile, T, 1, 1 >::crun());
+    ASSERT (test_perferct_forwarding< versatile::versatile, T, 2, 3 >::crun());
+    ASSERT (test_perferct_forwarding< versatile::versatile, T, 3, 2 >::crun());
+#ifdef VERSATILE_RUNTIME
+    //assert ((test_perferct_forwarding< ::boost_variant_i, T, 2, 2 >::crun())); // can't correctly inherit constructors by using bast::base;
+    assert ((test_perferct_forwarding< ::boost_variant_c, T, 2, 2 >::crun()));
+#endif
+    return EXIT_SUCCESS;
+}
+
+#else
+
+#include <boost/variant.hpp>
+
+
+namespace versatile
+{
+
+namespace test_visitation
+{
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wmissing-braces"
@@ -1500,189 +1206,6 @@ hard() noexcept
 inline int f() { return 1; }
 inline int g() { return 2; }
 
-template< typename ...types >
-struct boost_variant_i
-        : boost::variant< types... >
-{
-
-    using base = boost::variant< types... >;
-
-    using base::base;
-    using base::operator =;
-
-    std::size_t
-    which() const
-    {
-        return (sizeof...(types) - static_cast< std::size_t >(base::which()));
-    }
-
-    template< typename type >
-    static
-    constexpr
-    std::size_t
-    index() noexcept
-    {
-        return versatile::index_at< versatile::unwrap_type_t< type >, versatile::unwrap_type_t< types >..., void >();
-    }
-
-    template< typename type >
-    bool
-    active() const noexcept
-    {
-        return (index< type >() == which());
-    }
-
-    template< typename type >
-    explicit
-    operator type & () &
-    {
-        if (!active< type >()) {
-            throw std::bad_cast{};
-        }
-        return boost::get< type & >(static_cast< boost_variant_i::base & >(*this));
-    }
-
-    template< typename type >
-    explicit
-    operator type const & () const &
-    {
-        if (!active< type >()) {
-            throw std::bad_cast{};
-        }
-        return boost::get< type const & >(static_cast< boost_variant_i::base const & >(*this));
-    }
-
-    template< typename type >
-    explicit
-    operator type && () &&
-    {
-        if (!active< type >()) {
-            throw std::bad_cast{};
-        }
-        return boost::get< type && >(static_cast< boost_variant_i::base && >(*this));
-    }
-
-    template< typename type >
-    explicit
-    operator type const && () const &&
-    {
-        if (!active< type >()) {
-            throw std::bad_cast{};
-        }
-        return boost::get< type const && >(static_cast< boost_variant_i::base const & >(*this));
-    }
-
-};
-
-template< typename ...types >
-struct boost_variant_c
-{
-
-    using variant = boost::variant< types... >;
-
-    boost_variant_c(boost_variant_c &) = default;
-    boost_variant_c(boost_variant_c const &) = default;
-    boost_variant_c(boost_variant_c &&) = default;
-
-    boost_variant_c(boost_variant_c const && _rhs)
-        : v(std::move(_rhs.v))
-    { ; }
-
-    template< typename ...arguments >
-    boost_variant_c(arguments &&... _arguments)
-        : v(std::forward< arguments >(_arguments)...)
-    { ; }
-
-    boost_variant_c &
-    operator = (boost_variant_c const &) = default;
-    boost_variant_c &
-    operator = (boost_variant_c &) = default;
-    boost_variant_c &
-    operator = (boost_variant_c &&) = default;
-
-    boost_variant_c &
-    operator = (boost_variant_c const && _rhs)
-    {
-        v = std::move(_rhs.v);
-        return *this;
-    }
-
-    template< typename argument >
-    boost_variant_c &
-    operator = (argument && _argument)
-    {
-        v = std::forward< argument >(_argument);
-        return *this;
-    }
-
-    std::size_t
-    which() const
-    {
-        return (sizeof...(types) - static_cast< std::size_t >(v.which()));
-    }
-
-    template< typename type >
-    static
-    constexpr
-    std::size_t
-    index() noexcept
-    {
-        return versatile::index_at< versatile::unwrap_type_t< type >, versatile::unwrap_type_t< types >..., void >();
-    }
-
-    template< typename type >
-    bool
-    active() const noexcept
-    {
-        return (index< type >() == which());
-    }
-
-    template< typename type >
-    explicit
-    operator type & () &
-    {
-        if (!active< type >()) {
-            throw std::bad_cast{};
-        }
-        return boost::get< type & >(v);
-    }
-
-    template< typename type >
-    explicit
-    operator type const & () const &
-    {
-        if (!active< type >()) {
-            throw std::bad_cast{};
-        }
-        return boost::get< type const & >(v);
-    }
-
-    template< typename type >
-    explicit
-    operator type && () &&
-    {
-        if (!active< type >()) {
-            throw std::bad_cast{};
-        }
-        return boost::get< type && >(v);
-    }
-
-    template< typename type >
-    explicit
-    operator type const && () const &&
-    {
-        if (!active< type >()) {
-            throw std::bad_cast{};
-        }
-        return boost::get< type const && >(v);
-    }
-
-private :
-
-    boost::variant< types... > v;
-
-};
-
 template< typename T >
 using AW = versatile::aggregate_wrapper< T >;
 
@@ -1700,41 +1223,6 @@ struct R
 };
 
 } // namespace test
-
-namespace versatile
-{
-
-template< typename type >
-struct unwrap_type< boost::recursive_wrapper< type > >
-        : unwrap_type< type >
-{
-
-};
-
-template< typename first, typename ...rest >
-struct is_visitable< test::boost_variant_i< first, rest... > >
-        : std::true_type
-{
-
-};
-
-template< typename first, typename ...rest >
-struct is_visitable< test::boost_variant_c< first, rest... > >
-        : std::true_type
-{
-
-};
-
-template< typename type >
-struct unwrap_type< std::reference_wrapper< type > >
-        : unwrap_type< type >
-{
-
-    static_assert(!std::is_const< type >{});
-
-};
-
-} // namespace versatile
 
 int
 main()
@@ -2670,13 +2158,6 @@ main()
         v = a;
         v = ra;
         v = w;
-    }
-    { // compile time wasteful test
-        // -ftemplate-depth=32:
-        static_assert((test_perferct_forwarding< cvariant, 2, 3 >{}())); // up to 2, 10 can be compiled too
-        // -ftemplate-depth=41:
-        static_assert((test_perferct_forwarding< cvariant, 3, 2 >{}())); // 3 is maximum multivisitor arity for test which can be compiled
-        // 3, 3 and 4, 2 is too hard for clang++ (hard "error: constexpr evaluation hit maximum step limit")
     }
     {
         assert((test_perferct_forwarding< variant, 2, 6 >{}()));
