@@ -19,8 +19,6 @@ template< bool is_trivially_destructible >
 struct constructor< is_trivially_destructible >
 {
 
-    static_assert(is_trivially_destructible);
-
     constexpr
     void
     destructor(std::size_t & _which) const noexcept
@@ -33,8 +31,6 @@ struct constructor< is_trivially_destructible >
 template< typename first, typename ...rest >
 struct constructor< true, first, rest... >
 {
-
-    static_assert((__has_trivial_destructor(rest) && ...));
 
     using head = first;
     using tail = constructor< true, rest... >;
@@ -108,7 +104,8 @@ struct constructor< false, first, rest... >
 {
 
     using head = first;
-    using tail = constructor< (__has_trivial_destructor(rest) && ...), rest... >;
+    //using tail = constructor< (__has_trivial_destructor(rest) && ...), rest... >; // redundant overengeneering
+    using tail = constructor< false, rest... >;
 
     union
     {
@@ -120,7 +117,7 @@ struct constructor< false, first, rest... >
 
     ~constructor() noexcept
     {
-        tail_.~tail();
+        tail_.~tail(); // trivial tail is not specially processed, because whole versatile type can't get an advantage from it
     }
 
     constructor() = default;
