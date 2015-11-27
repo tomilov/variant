@@ -12,169 +12,77 @@
 namespace versatile
 {
 
-using std::experimental::in_place_t;
-using std::experimental::in_place;
+template< bool is_trivially_destructible, typename ...types >
+struct constructor;
 
-template< typename ...types >
-struct versatile;
-
-template<>
-struct versatile<>
+template< bool is_trivially_destructible >
+struct constructor< is_trivially_destructible >
 {
+
+    static_assert(is_trivially_destructible);
+
+    constexpr
+    void
+    destructor(std::size_t & _which) const noexcept
+    {
+        _which = 0;
+    }
 
 };
 
 template< typename first, typename ...rest >
-struct versatile< first, rest... >
+struct constructor< true, first, rest... >
 {
 
-    static_assert(std::is_standard_layout< first >{});
+    static_assert((__has_trivial_destructor(rest) && ...));
 
-    using size_type = std::size_t;
+    using head = first;
+    using tail = constructor< true, rest... >;
 
-private :
-
-    struct dispatcher
+    union
     {
 
-        struct head
-        {
-
-            size_type which_;
-            first value_;
-
-            template< typename ...types,
-                      bool is_noexcept = noexcept(::new (nullptr) first(std::declval< types >()...)) >
-            explicit
-            constexpr
-            head(in_place_t, types &&... _values) noexcept(is_noexcept)
-                : which_{1 + sizeof...(rest)}
-                , value_(std::forward< types >(_values)...)
-            { ; }
-
-            template< typename type,
-                      bool is_noexcept = noexcept(::new (nullptr) first(std::declval< type >())) >
-            explicit
-            constexpr
-            head(type && _value) noexcept(is_noexcept)
-                : head(in_place, std::forward< type >(_value))
-            { ; }
-
-        };
-
-        using tail = versatile< rest... >;
-
-        union
-        {
-
-            head head_;
-            tail tail_;
-
-        };
-
-        dispatcher(dispatcher const &) = default;
-        dispatcher(dispatcher &) = default;
-        dispatcher(dispatcher &&) = default;
-
-        template< typename ...types,
-                  bool is_noexcept = noexcept(::new (nullptr) head(std::declval< types >()...)) >
-        explicit
-        constexpr
-        dispatcher(std::true_type, types &&... _values) noexcept(is_noexcept)
-            : head_(std::forward< types >(_values)...)
-        { ; }
-
-        template< typename ...types >
-        explicit
-        constexpr
-        dispatcher(std::false_type, types &&... _values) noexcept(noexcept(::new (nullptr) tail(std::declval< types >()...)))
-            : tail_(std::forward< types >(_values)...)
-        { ; }
-
-        ~dispatcher() noexcept(noexcept(head_.~head()) && noexcept(tail_.~tail()))
-        {
-            if (1 + sizeof...(rest) == head_.which_) {
-                head_.~head();
-            } else {
-                tail_.~tail();
-            }
-        }
+        head head_;
+        tail tail_;
 
     };
 
-    dispatcher dispatcher_;
+    constructor() = default;
 
-public :
+    template< typename ...arguments >
+    constexpr
+    constructor(index_t< (sizeof...(rest) + 1) >,
+                arguments &&... _arguments) noexcept(__is_nothrow_constructible(head, arguments...))
+        : head_(std::forward< arguments >(_arguments)...)
+    { ; }
+
+    template< typename ...arguments >
+    constexpr
+    constructor(arguments &&... _arguments) noexcept(__is_nothrow_constructible(tail, arguments...))
+        : tail_(std::forward< arguments >(_arguments)...)
+    { ; }
+
+    constexpr
+    void
+    destructor(std::size_t & _which) const noexcept
+    {
+        _which = 0;
+    }
 
     using this_type = unwrap_type_t< first >;
-
-    constexpr
-    size_type
-    which() const noexcept
-    {
-        return dispatcher_.head_.which_;
-    }
-
-    template< typename type >
-    using index_t = index_at< unwrap_type_t< type >, this_type, unwrap_type_t< rest >..., versatile<> >;
-
-    template< typename type = this_type >
-    constexpr
-    bool
-    active() const noexcept
-    {
-        return (index_t< unwrap_type_t< type > >{} == which());
-    }
-
-    template< typename is_default_constructible = typename std::is_default_constructible< first >::type >
-    explicit
-    constexpr
-    versatile(versatile<> = {}) noexcept(noexcept(::new (nullptr) dispatcher(is_default_constructible{}, in_place)))
-        : dispatcher_(is_default_constructible{}, in_place)
-    { ; }
-
-    versatile(versatile const &) = default;
-    versatile(versatile &) = default;
-    versatile(versatile &&) = default;
-
-    template< typename type,
-              typename is_same = typename std::is_same< unwrap_type_t< type >, this_type >::type >
-    explicit
-    constexpr
-    versatile(type && _value) noexcept(noexcept(::new (nullptr) dispatcher(is_same{}, std::declval< type >())))
-        : dispatcher_(is_same{}, std::forward< type >(_value))
-    { ; }
-
-    template< typename ...types,
-              typename is_constructible = typename std::is_constructible< first, types... >::type >
-    explicit
-    constexpr
-    versatile(in_place_t, types &&... _values) noexcept(noexcept(::new (nullptr) dispatcher(is_constructible{}, in_place, std::declval< types >()...)))
-        : dispatcher_(is_constructible{}, in_place, std::forward< types >(_values)...)
-    { ; }
-
-    explicit
-    constexpr
-    operator this_type & () noexcept
-    {
-        assert(active());
-        return static_cast< this_type & >(dispatcher_.head_.value_);
-    }
-
-    template< typename type >
-    explicit
-    constexpr
-    operator type & () noexcept
-    {
-        return static_cast< type & >(dispatcher_.tail_);
-    }
 
     explicit
     constexpr
     operator this_type const & () const noexcept
     {
-        assert(active());
-        return static_cast< this_type const & >(dispatcher_.head_.value_);
+        return static_cast< this_type const & >(head_);
+    }
+
+    explicit
+    constexpr
+    operator this_type & () noexcept
+    {
+        return static_cast< this_type & >(head_);
     }
 
     template< typename type >
@@ -182,8 +90,366 @@ public :
     constexpr
     operator type const & () const noexcept
     {
-        return static_cast< type const & >(dispatcher_.tail_);
+        return static_cast< type const & >(tail_);
     }
+
+    template< typename type >
+    explicit
+    constexpr
+    operator type & () noexcept
+    {
+        return static_cast< type & >(tail_);
+    }
+
+};
+
+template< typename first, typename ...rest >
+struct constructor< false, first, rest... >
+{
+
+    using head = first;
+    using tail = constructor< (__has_trivial_destructor(rest) && ...), rest... >;
+
+    union
+    {
+
+        head head_;
+        tail tail_;
+
+    };
+
+    ~constructor() noexcept
+    {
+        tail_.~tail();
+    }
+
+    constructor() = default;
+
+    template< typename ...arguments >
+    constexpr
+    constructor(index_t< (sizeof...(rest) + 1) >,
+                arguments &&... _arguments) noexcept(__is_nothrow_constructible(head, arguments...))
+        : head_(std::forward< arguments >(_arguments)...)
+    { ; }
+
+    template< typename ...arguments >
+    constexpr
+    constructor(arguments &&... _arguments) noexcept(__is_nothrow_constructible(tail, arguments...))
+        : tail_(std::forward< arguments >(_arguments)...)
+    { ; }
+
+    constexpr
+    void
+    destructor(std::size_t & _which) const noexcept(noexcept(head_.~head()) && noexcept(tail_.destructor(_which)))
+    {
+        if (_which == sizeof...(rest) + 1) {
+            head_.~head();
+        } else {
+            tail_.destructor(_which);
+        }
+    }
+
+    using this_type = unwrap_type_t< first >;
+
+    explicit
+    constexpr
+    operator this_type const & () const noexcept
+    {
+        return static_cast< this_type const & >(head_);
+    }
+
+    explicit
+    constexpr
+    operator this_type & () noexcept
+    {
+        return static_cast< this_type & >(head_);
+    }
+
+    template< typename type >
+    explicit
+    constexpr
+    operator type const & () const noexcept
+    {
+        return static_cast< type const & >(tail_);
+    }
+
+    template< typename type >
+    explicit
+    constexpr
+    operator type & () noexcept
+    {
+        return static_cast< type & >(tail_);
+    }
+
+};
+
+template< bool is_trivially_destructible, bool is_trivially_constructible, typename ...types >
+struct destructor;
+
+template< bool is_trivially_destructible, bool is_trivially_constructible >
+struct destructor< is_trivially_destructible, is_trivially_constructible >
+{
+
+    static_assert(is_trivially_destructible);
+    static_assert(is_trivially_constructible);
+
+};
+
+template< typename first, typename ...rest >
+struct destructor< true, true, first, rest... >
+{
+
+    using storage = constructor< true, first, rest... >;
+
+    std::size_t which_;
+    storage storage_;
+
+    destructor() = default;
+
+    template< typename index,
+              typename ...arguments >
+    constexpr
+    destructor(index,
+               arguments &&... _arguments) noexcept(__is_nothrow_constructible(storage, index, arguments...))
+        : which_{index::value}
+        , storage_(index{}, std::forward< arguments >(_arguments)...)
+    { ; }
+
+    template< typename type >
+    explicit
+    constexpr
+    operator type const & () const noexcept
+    {
+        return static_cast< type const & >(storage_);
+    }
+
+    template< typename type >
+    explicit
+    constexpr
+    operator type & () noexcept
+    {
+        return static_cast< type & >(storage_);
+    }
+
+};
+
+template< typename first, typename ...rest >
+struct destructor< false, true, first, rest... >
+{
+
+    using storage = constructor< false, first, rest... >;
+
+    std::size_t which_;
+    storage storage_;
+
+    ~destructor() noexcept(noexcept(storage_.destructor(which_)))
+    {
+        storage_.destructor(which_);
+    }
+
+    destructor() = default;
+
+    template< typename index,
+              typename ...arguments >
+    constexpr
+    destructor(index,
+               arguments &&... _arguments) noexcept(__is_nothrow_constructible(storage, index, arguments...))
+        : which_{index::value}
+        , storage_(index{},
+                   std::forward< arguments >(_arguments)...)
+    { ; }
+
+    template< typename type >
+    explicit
+    constexpr
+    operator type const & () const noexcept
+    {
+        return static_cast< type const & >(storage_);
+    }
+
+    template< typename type >
+    explicit
+    constexpr
+    operator type & () noexcept
+    {
+        return static_cast< type & >(storage_);
+    }
+
+};
+
+template< typename first, typename ...rest >
+struct destructor< true, false, first, rest... >
+{
+
+    using storage = constructor< true, first, rest... >;
+
+    std::size_t which_;
+    storage storage_;
+
+    using default_index = index_of_default_constructible< first, rest..., void >;
+
+    constexpr
+    destructor() noexcept(__is_nothrow_constructible(destructor, typename default_index::type))
+        : destructor(typename default_index::type{})
+    { ; }
+
+    template< typename index,
+              typename ...arguments >
+    constexpr
+    destructor(index,
+               arguments &&... _arguments) noexcept(__is_nothrow_constructible(storage, index, arguments...))
+        : which_{index::value}
+        , storage_(index{},
+                   std::forward< arguments >(_arguments)...)
+    { ; }
+
+    template< typename type >
+    explicit
+    constexpr
+    operator type const & () const noexcept
+    {
+        return static_cast< type const & >(storage_);
+    }
+
+    template< typename type >
+    explicit
+    constexpr
+    operator type & () noexcept
+    {
+        return static_cast< type & >(storage_);
+    }
+
+};
+
+template< typename first, typename ...rest >
+struct destructor< false, false, first, rest... >
+{
+
+    using storage = constructor< false, first, rest... >;
+
+    std::size_t which_;
+    storage storage_;
+
+    ~destructor() noexcept(noexcept(storage_.destructor(which_)))
+    {
+        storage_.destructor(which_);
+    }
+
+    using default_index = index_of_default_constructible< first, rest..., void >;
+
+    constexpr
+    destructor() noexcept(__is_nothrow_constructible(destructor, typename default_index::type))
+        : destructor(typename default_index::type{})
+    { ; }
+
+    template< typename index,
+              typename ...arguments >
+    constexpr
+    destructor(index,
+               arguments &&... _arguments) noexcept(__is_nothrow_constructible(storage, index, arguments...))
+        : which_{index::value}
+        , storage_(index{},
+                   std::forward< arguments >(_arguments)...)
+    { ; }
+
+    template< typename type >
+    explicit
+    constexpr
+    operator type const & () const noexcept
+    {
+        return static_cast< type const & >(storage_);
+    }
+
+    template< typename type >
+    explicit
+    constexpr
+    operator type & () noexcept
+    {
+        return static_cast< type & >(storage_);
+    }
+
+};
+
+template< typename ...types >
+class versatile
+{
+
+    using storage = destructor< (__has_trivial_destructor(types) && ...), (__has_trivial_constructor(types) && ...), types... >;
+
+    storage storage_;
+
+public :
+
+    using default_index = index_of_default_constructible< types..., void >;
+
+    constexpr
+    std::size_t
+    which() const noexcept
+    {
+        if (storage_.which_ == std::size_t{}) { // is trivially default constructed?
+            return sizeof...(types); // if so, then it always point to the first (leftmost) alternative type
+        }
+        return storage_.which_;
+    }
+
+    template< typename type >
+    using index_t = index_at_t< unwrap_type_t< type >, unwrap_type_t< types >..., void >;
+
+    template< typename type,
+              typename index = index_t< type > >
+    constexpr
+    bool
+    active() const noexcept
+    {
+        return (which() == index::value);
+    }
+
+    versatile() = default;
+
+    template< typename type,
+              typename index = index_t< type > >
+    constexpr
+    versatile(type && _value) noexcept(__is_nothrow_constructible(storage, index, type))
+        : storage_(index{},
+                   std::forward< type >(_value))
+    { ; }
+
+    template< typename ...arguments,
+              typename index = get_index_t< __is_constructible(types, arguments...)..., false > > // prohibits versatile<>
+    constexpr
+    versatile(arguments &&... _arguments) noexcept(__is_nothrow_constructible(storage, index, arguments...))
+        : storage_(index{},
+                   std::forward< arguments >(_arguments)...)
+    { ; }
+
+    template< typename type,
+              typename index = index_t< type > >
+    explicit
+    constexpr
+    operator type const & () const noexcept
+    {
+        return static_cast< type const & >(storage_);
+    }
+
+    template< typename type,
+              typename index = index_t< type > >
+    explicit
+    constexpr
+    operator type & () noexcept
+    {
+        return static_cast< type & >(storage_);
+    }
+
+    template< typename type,
+              typename index = index_t< type >,
+              typename = get_index_t< (__has_trivial_copy(unwrap_type_t< type >) && ... && __has_trivial_assign(types)) > > // enable_if_t >
+    constexpr
+    versatile &
+    operator = (type && _value) noexcept // trivial per se
+    {
+        return (*this = versatile(std::forward< type >(_value))); // http://stackoverflow.com/questions/33936295/
+    }
+
 
 };
 

@@ -4,463 +4,10 @@
 #include <iomanip>
 #endif
 
-#include <versatile/wrappers.hpp>
+#include <versatile/versatile.hpp>
 
+#include <type_traits>
 #include <utility>
-
-namespace versatile
-{
-
-template< bool is_trivially_destructible, typename ...types >
-struct constructor;
-
-template< bool is_trivially_destructible >
-struct constructor< is_trivially_destructible >
-{
-
-    static_assert(is_trivially_destructible);
-
-    constexpr
-    void
-    destructor(std::size_t & _which) const noexcept
-    {
-        _which = 0;
-    }
-
-};
-
-template< typename first, typename ...rest >
-struct constructor< true, first, rest... >
-{
-
-    static_assert((__has_trivial_destructor(rest) && ...));
-
-    using head = first;
-    using tail = constructor< true, rest... >;
-
-    union
-    {
-
-        head head_;
-        tail tail_;
-
-    };
-
-    constexpr
-    constructor() = default;
-
-    template< typename ...arguments >
-    constexpr
-    constructor(index_t< sizeof...(rest) + 1 >,
-                arguments &&... _arguments) noexcept(__is_nothrow_constructible(head, arguments...))
-        : head_(std::forward< arguments >(_arguments)...)
-    { ; }
-
-    template< typename ...arguments >
-    constexpr
-    constructor(arguments &&... _arguments) noexcept(__is_nothrow_constructible(tail, arguments...))
-        : tail_(std::forward< arguments >(_arguments)...)
-    { ; }
-
-    constexpr
-    void
-    destructor(std::size_t & _which) const noexcept
-    {
-        _which = 0;
-    }
-
-    using this_type = unwrap_type_t< first >;
-
-    explicit
-    constexpr
-    operator this_type const & () const noexcept
-    {
-        return static_cast< this_type const & >(head_);
-    }
-
-    explicit
-    constexpr
-    operator this_type & () noexcept
-    {
-        return static_cast< this_type & >(head_);
-    }
-
-    template< typename type >
-    explicit
-    constexpr
-    operator type const & () const noexcept
-    {
-        return static_cast< type const & >(tail_);
-    }
-
-    template< typename type >
-    explicit
-    constexpr
-    operator type & () noexcept
-    {
-        return static_cast< type & >(tail_);
-    }
-
-};
-
-template< typename first, typename ...rest >
-struct constructor< false, first, rest... >
-{
-
-    using head = first;
-    using tail = constructor< (__has_trivial_destructor(rest) && ...), rest... >;
-
-    union
-    {
-
-        head head_;
-        tail tail_;
-
-    };
-
-    ~constructor() noexcept
-    {
-        tail_.~tail();
-    }
-
-    constexpr
-    constructor() = default;
-
-    template< typename ...arguments >
-    constexpr
-    constructor(index_t< sizeof...(rest) + 1 >,
-                arguments &&... _arguments) noexcept(__is_nothrow_constructible(head, arguments...))
-        : head_(std::forward< arguments >(_arguments)...)
-    { ; }
-
-    template< typename ...arguments >
-    constexpr
-    constructor(arguments &&... _arguments) noexcept(__is_nothrow_constructible(tail, arguments...))
-        : tail_(std::forward< arguments >(_arguments)...)
-    { ; }
-
-    constexpr
-    void
-    destructor(std::size_t & _which) const noexcept(noexcept(head_.~head()) && noexcept(tail_.destructor(_which)))
-    {
-        if (_which == sizeof...(rest) + 1) {
-            head_.~head();
-        } else {
-            tail_.destructor(_which);
-        }
-    }
-
-    using this_type = unwrap_type_t< first >;
-
-    explicit
-    constexpr
-    operator this_type const & () const noexcept
-    {
-        return static_cast< this_type const & >(head_);
-    }
-
-    explicit
-    constexpr
-    operator this_type & () noexcept
-    {
-        return static_cast< this_type & >(head_);
-    }
-
-    template< typename type >
-    explicit
-    constexpr
-    operator type const & () const noexcept
-    {
-        return static_cast< type const & >(tail_);
-    }
-
-    template< typename type >
-    explicit
-    constexpr
-    operator type & () noexcept
-    {
-        return static_cast< type & >(tail_);
-    }
-
-};
-
-template< bool is_trivially_destructible, bool is_trivially_constructible, typename ...types >
-struct destructor;
-
-template< bool is_trivially_destructible, bool is_trivially_constructible >
-struct destructor< is_trivially_destructible, is_trivially_constructible >
-{
-
-    static_assert(is_trivially_destructible);
-    static_assert(is_trivially_constructible);
-
-};
-
-template< typename first, typename ...rest >
-struct destructor< true, true, first, rest... >
-{
-
-    using storage = constructor< true, first, rest... >;
-
-    std::size_t which_;
-    storage storage_;
-
-    constexpr
-    destructor() = default;
-
-    template< typename index,
-              typename ...arguments >
-    constexpr
-    destructor(index,
-               arguments &&... _arguments) noexcept(__is_nothrow_constructible(storage, index, arguments...))
-        : which_{index::value}
-        , storage_(index{}, std::forward< arguments >(_arguments)...)
-    { ; }
-
-    template< typename type >
-    explicit
-    constexpr
-    operator type const & () const noexcept
-    {
-        return static_cast< type const & >(storage_);
-    }
-
-    template< typename type >
-    explicit
-    constexpr
-    operator type & () noexcept
-    {
-        return static_cast< type & >(storage_);
-    }
-
-};
-
-template< typename first, typename ...rest >
-struct destructor< false, true, first, rest... >
-{
-
-    using storage = constructor< false, first, rest... >;
-
-    std::size_t which_;
-    storage storage_;
-
-    ~destructor() noexcept(noexcept(storage_.destructor(which_)))
-    {
-        storage_.destructor(which_);
-    }
-
-    constexpr
-    destructor() = default;
-
-    template< typename index,
-              typename ...arguments >
-    constexpr
-    destructor(index,
-               arguments &&... _arguments) noexcept(__is_nothrow_constructible(storage, index, arguments...))
-        : which_{index::value}
-        , storage_(index{},
-                   std::forward< arguments >(_arguments)...)
-    { ; }
-
-    template< typename type >
-    explicit
-    constexpr
-    operator type const & () const noexcept
-    {
-        return static_cast< type const & >(storage_);
-    }
-
-    template< typename type >
-    explicit
-    constexpr
-    operator type & () noexcept
-    {
-        return static_cast< type & >(storage_);
-    }
-
-};
-
-template< typename first, typename ...rest >
-struct destructor< true, false, first, rest... >
-{
-
-    using storage = constructor< true, first, rest... >;
-
-    std::size_t which_;
-    storage storage_;
-
-    using initial_index = index_of_default_constructible< first, rest..., void >;
-
-    constexpr
-    destructor() noexcept(__is_nothrow_constructible(destructor, typename initial_index::type))
-        : destructor(typename initial_index::type{})
-    { ; }
-
-    template< typename index,
-              typename ...arguments >
-    constexpr
-    destructor(index,
-               arguments &&... _arguments) noexcept(__is_nothrow_constructible(storage, index, arguments...))
-        : which_{index::value}
-        , storage_(index{},
-                   std::forward< arguments >(_arguments)...)
-    { ; }
-
-    template< typename type >
-    explicit
-    constexpr
-    operator type const & () const noexcept
-    {
-        return static_cast< type const & >(storage_);
-    }
-
-    template< typename type >
-    explicit
-    constexpr
-    operator type & () noexcept
-    {
-        return static_cast< type & >(storage_);
-    }
-
-};
-
-template< typename first, typename ...rest >
-struct destructor< false, false, first, rest... >
-{
-
-    using storage = constructor< false, first, rest... >;
-
-    std::size_t which_;
-    storage storage_;
-
-    ~destructor() noexcept(noexcept(storage_.destructor(which_)))
-    {
-        storage_.destructor(which_);
-    }
-
-    using initial_index = index_of_default_constructible< first, rest..., void >;
-
-    constexpr
-    destructor() noexcept(__is_nothrow_constructible(destructor, typename initial_index::type))
-        : destructor(typename initial_index::type{})
-    { ; }
-
-    template< typename index,
-              typename ...arguments >
-    constexpr
-    destructor(index,
-               arguments &&... _arguments) noexcept(__is_nothrow_constructible(storage, index, arguments...))
-        : which_{index::value}
-        , storage_(index{},
-                   std::forward< arguments >(_arguments)...)
-    { ; }
-
-    template< typename type >
-    explicit
-    constexpr
-    operator type const & () const noexcept
-    {
-        return static_cast< type const & >(storage_);
-    }
-
-    template< typename type >
-    explicit
-    constexpr
-    operator type & () noexcept
-    {
-        return static_cast< type & >(storage_);
-    }
-
-};
-
-template< typename ...types >
-class variant
-{
-
-    using storage = destructor< (__has_trivial_destructor(types) && ...), (__has_trivial_constructor(types) && ...), types... >;
-
-    storage storage_;
-
-public :
-
-    using initial_index = index_of_default_constructible< types..., void >;
-
-    constexpr
-    std::size_t
-    which() const noexcept
-    {
-        if (storage_.which_ == 0) { // trivially default constructed
-            return initial_index::type::value;
-        }
-        return storage_.which_;
-    }
-
-    template< typename type >
-    using index_t = index_at< unwrap_type_t< type >, unwrap_type_t< types >..., void >;
-
-    template< typename type >
-    constexpr
-    bool
-    active() const noexcept
-    {
-        return (which() == index_t< type >::value);
-    }
-
-    constexpr
-    variant() = default;
-
-    template< typename type,
-              typename index = index_at_t< unwrap_type_t< type >, unwrap_type_t< types >..., void > >
-    constexpr
-    variant(type && _value) noexcept(__is_nothrow_constructible(storage, index, type))
-        : storage_(index{},
-                   std::forward< type >(_value))
-    { ; }
-
-    template< typename ...arguments,
-              typename index = get_index_t< __is_constructible(types, arguments...)..., false > >
-    explicit // crucial thing: make the c-tor non-viable for conversion during this-assignment
-    constexpr
-    variant(arguments &&... _arguments) noexcept(__is_nothrow_constructible(storage, index, arguments...))
-        : storage_(index{},
-                   std::forward< arguments >(_arguments)...)
-    { ; }
-
-    template< typename type,
-              typename index = index_at_t< unwrap_type_t< type >, unwrap_type_t< types >..., void > >
-    explicit
-    constexpr
-    operator type const & () const noexcept
-    {
-        return static_cast< type const & >(storage_);
-    }
-
-    template< typename type,
-              typename index = index_at_t< unwrap_type_t< type >, unwrap_type_t< types >..., void > >
-    explicit
-    constexpr
-    operator type & () noexcept
-    {
-        return static_cast< type & >(storage_);
-    }
-
-    template< typename type,
-              typename = get_index_t< (__has_trivial_copy(unwrap_type_t< type >) && ... && __has_trivial_assign(types)) >, // enable_if_t
-              typename index = index_at_t< unwrap_type_t< type >, unwrap_type_t< types >..., void > >
-    constexpr
-    variant &
-    operator = (type && _value) noexcept // trivial per se
-    {
-        return *this = variant(std::forward< type >(_value)); // http://stackoverflow.com/questions/33936295/
-    }
-
-
-};
-
-} // namespace variant
-
-#include <new>
-#include <tuple>
 
 #ifdef NDEBUG
 #undef NDEBUG
@@ -472,11 +19,18 @@ public :
 #define CONSTEXPR constexpr
 #define CONSTEXPRF constexpr
 #define CHECK(...) { if (!(__VA_ARGS__)) return false; }
+#define STR(S) #S
+// double expansion of next macro argument
+#define STRN(N) STR(N)
+#define CBRA { struct _ { static constexpr bool call() noexcept {
+#define CKET return true; } }; static_assert(_::call(), "file '" __FILE__ "', line: " STRN(__LINE__)); }
 #else
 #define ASSERT(...) { assert((__VA_ARGS__)); }
 #define CONSTEXPR const
 #define CONSTEXPRF
 #define CHECK(...) { assert((__VA_ARGS__)); }
+#define CBRA {
+#define CKET }
 #endif
 
 namespace versatile
@@ -495,7 +49,7 @@ template< typename type, typename variant >
 CONSTEXPRF
 bool
 check_index(variant const & _variant) noexcept
-{
+{    
     return (typename variant::template index_t< type >{} == _variant.which());
 }
 
@@ -518,17 +72,56 @@ enum class state
     moved_from,
 };
 
-struct oracle // akrzemi1 optional test
+struct oracle // akrzemi1's optional test
 {
 
+    CONSTEXPRF oracle() noexcept : s(state::default_constructed) { ; }
+
+    CONSTEXPRF oracle(oracle const &) noexcept : s(state::copy_constructed) { ; }
+    CONSTEXPRF oracle(oracle && o) noexcept : s(state::move_constructed) { o.s = state::moved_from; }
+
+    CONSTEXPRF oracle & operator = (oracle const &) noexcept { s = state::copy_assigned; return *this; }
+    CONSTEXPRF oracle & operator = (oracle && o) noexcept { s = state::move_assigned; o.s = state::moved_from; return *this; }
+
+    friend
+    CONSTEXPRF
+    inline
+    bool
+    operator == (oracle const & o, state const _s) noexcept
+    {
+        return (o.s == _s);
+    }
+
+    friend
+    CONSTEXPRF
+    inline
+    bool
+    operator == (state const _s, oracle const & o) noexcept
+    {
+        return operator == (o, _s);
+    }
+
+    friend
+    CONSTEXPRF
+    inline
+    bool
+    operator != (oracle const & o, state const _s) noexcept
+    {
+        return !operator == (o, _s);
+    }
+
+    friend
+    CONSTEXPRF
+    inline
+    bool
+    operator != (state const _s, oracle const & o) noexcept
+    {
+        return !operator == (o, _s);
+    }
+
+private :
+
     state s;
-
-    CONSTEXPRF oracle() : s(state::default_constructed) { ; }
-    CONSTEXPRF oracle(oracle const &) : s(state::copy_constructed) { ; }
-    CONSTEXPRF oracle(oracle && o) : s(state::move_constructed) { o.s = state::moved_from; }
-
-    CONSTEXPRF oracle & operator = (oracle const &) { s = state::copy_assigned; return *this; }
-    CONSTEXPRF oracle & operator = (oracle && o) { s = state::move_assigned; o.s = state::moved_from; return *this; }
 
 };
 
@@ -537,31 +130,23 @@ class case_constexpr
 {
 
     template< typename ...types >
-    using V = variant< typename wrapper< types >::type... >;
+    using V = versatile< typename wrapper< types >::type... >;
 
     using O = oracle;
 
-    static
     CONSTEXPRF
+    static
     bool
     triviality() noexcept
     {
+        {
+            struct S { S() = default; int i; char c; double d; ~S() = default; };
+            ASSERT (__is_trivial(S));
+            using VS = V< S >;
+            ASSERT (__is_trivial(VS));
+        }
         struct A {};
         struct B {};
-        {
-            struct S {};
-            ASSERT (__is_trivial(S));
-            ASSERT (__has_trivial_destructor(S));
-            ASSERT (__has_trivial_constructor(S));
-            ASSERT (__has_trivial_copy(S));
-            ASSERT (__has_trivial_assign(S));
-            using VASB = V< A, S, B >;
-            ASSERT (std::is_trivial< VASB >{});
-            ASSERT (__has_trivial_destructor(VASB));
-            ASSERT (__has_trivial_constructor(VASB));
-            ASSERT (__has_trivial_copy(VASB));
-            ASSERT (__has_trivial_assign(VASB));
-        }
         {
             struct S { ~S() { ; } };
             ASSERT (std::is_destructible< S >{});
@@ -602,11 +187,15 @@ class case_constexpr
             ASSERT (!std::is_destructible< VAB >{});
             ASSERT (!std::is_destructible< VBA >{});
         }
+        {
+            using VX = versatile< int, char, double >;
+            ASSERT (std::is_trivial< VX >{});
+        }
         return true;
     }
 
-    static
     CONSTEXPRF
+    static
     bool
     default_constructor() noexcept
     {
@@ -615,10 +204,10 @@ class case_constexpr
             struct OI { OI() = delete; ~OI() { ; } };
             struct IO { IO() { ; }     ~IO() = delete; };
             struct OO { OO() = delete; ~OO() = delete; };
-            constexpr auto c_ii = __is_constructible(II);
-            constexpr auto c_oi = __is_constructible(OI);
-            constexpr auto c_io = __is_constructible(IO);
-            constexpr auto c_oo = __is_constructible(OO);
+            CONSTEXPR auto c_ii = __is_constructible(II);
+            CONSTEXPR auto c_oi = __is_constructible(OI);
+            CONSTEXPR auto c_io = __is_constructible(IO);
+            CONSTEXPR auto c_oo = __is_constructible(OO);
             {
                 using VII = V< II >;
                 ASSERT (__is_constructible(VII) == c_ii);
@@ -639,7 +228,8 @@ class case_constexpr
         {
             struct A { int i; };
             using VA = V< A >;
-            constexpr VA v{};
+            ASSERT (__has_trivial_constructor(VA));
+            CONSTEXPR VA v{};
             ASSERT (check_index< A >(v));
             ASSERT (check_active< A >(v));
             ASSERT (static_cast< A >(v).i == int{});
@@ -650,59 +240,67 @@ class case_constexpr
             using VAB = V< A, B >;
             using VBA = V< B, A >;
             ASSERT (!__is_constructible(VAB));
+            ASSERT (__has_trivial_constructor(VAB)); // ??
             ASSERT (!__is_constructible(VBA));
+            ASSERT (__has_trivial_constructor(VBA)); // ??
         }
         {
             struct A {};
             struct B {};
-            using VAOB = variant< O, A, B >;
-            VAOB v;
+            using VAOB = versatile< O, A, B >;
+            ASSERT (__is_constructible(VAOB));
+            ASSERT (!__has_trivial_constructor(O));
+            ASSERT (!__has_trivial_constructor(VAOB));
+            CBRA
+                    VAOB v;
             CHECK (check_index< O >(v));
             CHECK (check_active< O >(v));
-            CHECK (static_cast< O & >(v).s == state::default_constructed);
-            VAOB const c{};
-            CHECK (check_index< O >(c));
-            CHECK (check_active< O >(c));
-            CHECK (static_cast< O const & >(c).s == state::default_constructed);
-        }
-        {
-            struct A { A() = delete; };
-            struct B {};
-            using VAOB = variant< A, O, B >;
-            VAOB v;
-            CHECK (check_index< O >(v));
-            CHECK (check_active< O >(v));
-            CHECK (static_cast< O & >(v).s == state::default_constructed);
-            VAOB const c{};
-            CHECK (check_index< O >(c));
-            CHECK (check_active< O >(c));
-            CHECK (static_cast< O const & >(c).s == state::default_constructed);
+            CHECK (static_cast< O & >(v) == state::default_constructed);
+            CKET
+                    CONSTEXPR VAOB c{};
+            ASSERT (check_index< O >(c));
+            ASSERT (check_active< O >(c));
+            ASSERT (static_cast< O const & >(c) == state::default_constructed);
         }
         {
             struct A { A() = delete; int i; };
-            struct B { constexpr B() { ; } double d; };
+            struct B { CONSTEXPRF B() : d{} { ; } double d; };
             using VAB = V< A, B >;
-            const VAB v{};
-            CHECK ((check_active< B >(v)));
-            CHECK ((check_index< B >(v)));
-            CHECK (!(check_active< A >(v)));
-            CHECK (!(check_index< A >(v)));
+            ASSERT (__is_constructible(VAB));
+            ASSERT (!__has_trivial_constructor(VAB));
+            CONSTEXPR VAB v{};
+            ASSERT ((check_active< B >(v)));
+            ASSERT ((check_index< B >(v)));
+            ASSERT (!(check_active< A >(v)));
+            ASSERT (!(check_index< A >(v)));
         }
         {
-            struct A { constexpr A() = delete; int i; };
-            struct B { constexpr B() { ; } double d; };
-            using VAB = V< A, B >;
-            const VAB v{};
-            CHECK ((check_active< B >(v)));
-            CHECK ((check_index< B >(v)));
-            CHECK (!(check_active< A >(v)));
-            CHECK (!(check_index< A >(v)));
+            struct A { CONSTEXPRF A(int) { ; } };
+            struct B { CONSTEXPRF B(char) { ; } };
+            struct C {};
+            using VABC = V< A, B, C >;
+            CBRA
+            VABC v;
+            CHECK ((check_active< C >(v)));
+            CHECK ((check_index< C >(v)));
+            CKET
+        }
+        {
+            struct A { CONSTEXPRF A(char) { ; } char c; };
+            using VA = versatile< A >;
+            //ASSERT (!__is_constructible(VA)); // causes hard error during instantiation somewhere in deep of built-in macro
+            ASSERT (!__has_trivial_constructor(VA));
+            CBRA
+                    VA v{'1'};
+            CHECK (check_index< A >(v));
+            CHECK (check_active< A >(v));
+            CKET
         }
         return true;
     }
 
-    static
     CONSTEXPRF
+    static
     bool
     conversion_constructor_and_conversion_operator() noexcept
     {
@@ -731,50 +329,60 @@ class case_constexpr
             ASSERT (a.i == 10);
             CONSTEXPR B b(VAB{B{20}}); // direct initialization is allowed
             ASSERT (b.i == 20);
-            O o(V< O >{O{}});
-            CHECK (o.s == state::copy_constructed);
+            CBRA
+                    O o(V< O >{O{}});
+            CHECK (o != state::move_constructed); // ! currently clang++ has bug #19917 for static_cast to rvalue reference and cv-ref-qualified overloaded conversion operators causes "ambiguity" error
+            CHECK (o == state::copy_constructed);
+            CKET
         }
         {
             using VAOB = V< A, O, B >;
-            O o;
-            CHECK (o.s == state::default_constructed);
+            CBRA
+                    O o;
+            CHECK (o == state::default_constructed);
             VAOB v = o;
             CHECK (check_active< O >(v));
             CHECK (check_index< O >(v));
-            CHECK (o.s == state::default_constructed);
-            CHECK (static_cast< O & >(v).s == state::copy_constructed);
-            CHECK (o.s == state::default_constructed);
+            CHECK (o == state::default_constructed);
+            CHECK (static_cast< O & >(v) == state::copy_constructed);
+            CHECK (o == state::default_constructed);
             VAOB m = std::move(o);
-            CHECK (o.s == state::moved_from);
+            CHECK (o == state::moved_from);
             CHECK (check_active< O >(m));
             CHECK (check_index< O >(m));
-            CHECK (static_cast< O & >(m).s == state::move_constructed);
+            CHECK (static_cast< O & >(m) == state::move_constructed);
+            CKET
         }
         {
             using VAOB = V< A, O, B >;
-            VAOB v{O{}};
+            CBRA
+                    VAOB v{O{}};
             CHECK (check_active< O >(v));
             CHECK (check_index< O >(v));
-            CHECK (static_cast< O & >(v).s == state::move_constructed);
+            CHECK (static_cast< O & >(v) == state::move_constructed);
             O o = static_cast< O & >(v);
-            CHECK (static_cast< O & >(v).s == state::move_constructed);
-            CHECK (o.s == state::copy_constructed);
+            CHECK (static_cast< O & >(v) == state::move_constructed);
+            CHECK (o == state::copy_constructed);
+            CKET
         }
         {
             using VAOB = V< A, O, B >;
-            VAOB v{O{}};
+            CBRA
+                    VAOB v{O{}};
             CHECK (check_active< O >(v));
             CHECK (check_index< O >(v));
-            CHECK (static_cast< O & >(v).s == state::move_constructed);
+            CHECK (static_cast< O & >(v) == state::move_constructed);
             O o = static_cast< O && >(static_cast< O & >(v));
-            CHECK (static_cast< O & >(v).s == state::moved_from);
-            CHECK (o.s == state::move_constructed);
+            CHECK (static_cast< O & >(v) == state::moved_from);
+            CHECK (o == state::move_constructed);
+            CKET
         }
         {
             struct A { int i = 1; };
             struct B { int i = 2; };
             using VAB = V< A, B >;
-            VAB v;
+            CBRA
+                    VAB v;
             CHECK ((static_cast< A const & >(v).i == 1));
             CHECK ((static_cast< A & >(v).i == 1));
             static_cast< A & >(v) = A{2};
@@ -789,12 +397,13 @@ class case_constexpr
             CHECK ((static_cast< A & >(a).i == 3));
             static_cast< A & >(a) = A{1};
             CHECK ((static_cast< A & >(a).i == 1));
+            CKET
         }
         return true;
     }
 
-    static
     CONSTEXPRF
+    static
     bool
     conversion_assignment() noexcept
     { // http://stackoverflow.com/questions/33936295/
@@ -803,17 +412,20 @@ class case_constexpr
             struct B {};
             using VAB = V< A, B >;
             ASSERT (std::is_trivially_copy_assignable< VAB >{});
-            VAB v{};
+            CBRA
+                    VAB v{};
             CHECK (check_active< A >(v));
             CHECK (check_index< A >(v));
             v = B{};
             CHECK (check_active< B >(v));
             CHECK (check_index< B >(v));
+            CKET
         }
         {
-            using VX = variant< int, char, double >;
-            ASSERT (std::is_trivially_copy_assignable< VX >{});
-            VX x = 1;
+            using VX = versatile< int, char, double >;
+            ASSERT (std::is_trivial< VX >{});
+            CBRA
+                    VX x = 1;
             CHECK (check_active< int >(x));
             CHECK (check_index< int >(x));
             x = 1.0;
@@ -822,26 +434,49 @@ class case_constexpr
             x = '\0';
             CHECK (check_active< char >(x));
             CHECK (check_index< char >(x));
+            CKET
         }
         return true;
     }
 
-    static
     CONSTEXPRF
+    static
     bool
     copy_constructor_and_move_constructor() noexcept
     {
-        struct A {};
-        struct B {};
-        struct C {};
         {
-            struct NC {};
+            struct A { int i = 1; };
+            struct B { char c = 2; };
+            using VAB = V< A, B >;
+            CONSTEXPR VAB v{B{}};
+            ASSERT (check_active< B >(v));
+            ASSERT (check_index< B >(v));
+            CONSTEXPR VAB w = v;
+            ASSERT (check_active< B >(w));
+            ASSERT (check_index< B >(w));
+        }
+        {
+            struct A { int i = 1; };
+            struct B { char c = 2; };
+            using VAOB = V< A, O, B >;
+            static_assert(!__is_trivially_constructible(O, O));
+            static_assert(!__is_trivially_constructible(VAOB, VAOB));
+            static_assert(__is_constructible(VAOB, VAOB)); // wrong
+            // clang allow me to write `VAOB v{O{}}; VAOB w = std::move(v);`, but it is invalid code
+            CBRA
+                    VAOB v{A{}};
+            CHECK (check_active< A >(v));
+            CHECK (check_index< A >(v));
+            VAOB w = std::move(v);
+            CHECK (check_active< A >(w));
+            CHECK (check_index< A >(w));
+            CKET
         }
         return true;
     }
 
-    static
     CONSTEXPRF
+    static
     bool
     copy_assignment_and_move_assignment() noexcept
     {
@@ -864,7 +499,8 @@ class case_constexpr
             ASSERT (check_index< A >(a));
         }
         {
-            VCBA x = A{};
+            CBRA
+                    VCBA x = A{};
             VCBA y = B{};
             VCBA z;
             VCBA w = A{};
@@ -887,12 +523,13 @@ class case_constexpr
             CHECK (check_index< C >(y));
             CHECK (check_active< A >(z));
             CHECK (check_index< A >(z));
+            CKET
         }
         return true;
     }
 
-    static
     CONSTEXPRF
+    static
     bool
     emplace_constructor() noexcept
     {
@@ -926,10 +563,10 @@ class case_constexpr
             struct B {};
             struct C { A a; };
             struct D { B b; };
-            CONSTEXPR variant< int, aggregate_wrapper< C >, aggregate_wrapper< D > > c{A{}};
+            CONSTEXPR versatile< int, aggregate_wrapper< C >, aggregate_wrapper< D > > c{A{}};
             ASSERT (check_active< C >(c));
             ASSERT (check_index< C >(c));
-            CONSTEXPR variant< int, aggregate_wrapper< C >, aggregate_wrapper< D > > d{B{}};
+            CONSTEXPR versatile< int, aggregate_wrapper< C >, aggregate_wrapper< D > > d{B{}};
             ASSERT (check_active< D >(d));
             ASSERT (check_index< D >(d));
         }
@@ -938,10 +575,10 @@ class case_constexpr
 
 public :
 
-    static
     CONSTEXPRF
+    static
     bool
-    run() noexcept
+    crun() noexcept
     {
         ASSERT (triviality());
         ASSERT (default_constructor());
@@ -955,9 +592,9 @@ public :
 
 };
 
-template< typename ...types >
+template< typename first >
 struct aggregate_wrapper
-        : identity< ::versatile::aggregate_wrapper< types >... >
+        : identity< ::versatile::aggregate_wrapper< first > >
 {
 
 };
@@ -970,14 +607,10 @@ struct aggregate_wrapper
 int
 main()
 {
-    ASSERT (versatile::test::case_constexpr<>::run());
-    ASSERT (versatile::test::case_constexpr< ::versatile::test::aggregate_wrapper >::run());
+    ASSERT (versatile::test::case_constexpr<>::crun());
+    ASSERT (versatile::test::case_constexpr< ::versatile::test::aggregate_wrapper >::crun());
     return EXIT_SUCCESS;
 }
-
-#undef CHECK
-#undef CONSTEXPR
-#undef ASSERT
 
 #else
 #include <versatile.hpp>
