@@ -367,11 +367,40 @@ struct destructor< false, false, first, rest... >
 
 };
 
-template< typename ...types >
-class versatile
+template< bool is_default_constructible >
+struct enable_default_constructor;
+
+template<>
+struct enable_default_constructor< true >
 {
 
-    using storage = destructor< (__has_trivial_destructor(types) && ...), (__has_trivial_constructor(types) && ...), types... >;
+    enable_default_constructor() = default;
+
+    constexpr
+    enable_default_constructor(void *) noexcept
+    { ; }
+
+};
+
+template<>
+struct enable_default_constructor< false >
+{
+
+    enable_default_constructor() = delete;
+
+    constexpr
+    enable_default_constructor(void *) noexcept
+    { ; }
+
+};
+
+template< typename ...types >
+class versatile
+        : enable_default_constructor< (__is_constructible(types) || ...) > // EBO-optimized out
+{
+
+    using enabler = enable_default_constructor< (__is_constructible(types) || ...) >;
+    using storage = destructor< (__has_trivial_destructor(types) && ...), (__is_trivially_constructible(types) && ...), types... >; // __has_trivial_constructor not match __is_trivially_constructible results
 
     storage storage_;
 
@@ -407,7 +436,8 @@ public :
               typename index = index_t< type > >
     constexpr
     versatile(type && _value) noexcept(__is_nothrow_constructible(storage, index, type))
-        : storage_(index{},
+        : enabler(nullptr)
+        , storage_(index{},
                    std::forward< type >(_value))
     { ; }
 
@@ -415,7 +445,8 @@ public :
               typename index = get_index_t< __is_constructible(types, arguments...)..., false > > // prohibits using of versatile<>
     constexpr
     versatile(arguments &&... _arguments) noexcept(__is_nothrow_constructible(storage, index, arguments...))
-        : storage_(index{},
+        : enabler(nullptr)
+        , storage_(index{},
                    std::forward< arguments >(_arguments)...)
     { ; }
 

@@ -211,8 +211,8 @@ class case_constexpr
             ASSERT (std::is_trivially_copy_assignable_v< S >);
             ASSERT (std::is_trivially_move_assignable_v< S >);
             using U = V< S >;
-            //ASSERT (!std::is_default_constructible_v< U >); // hard error in non-trivial default constructor of class "destructor"
-            //ASSERT (!std::is_trivially_default_constructible_v< U >); // the same error
+            ASSERT (!std::is_default_constructible_v< U >); // hard error in non-trivial default constructor of class "destructor"
+            ASSERT (!std::is_trivially_default_constructible_v< U >); // the same error
             ASSERT (std::is_destructible_v< U >);
             ASSERT (std::is_trivially_destructible_v< U >);
             ASSERT (!std::is_copy_constructible_v< U >); // U is a union and has a variant member with non-trivial copy constructor
@@ -239,8 +239,8 @@ class case_constexpr
             ASSERT (!std::is_trivially_copy_assignable_v< S >); // not copy-assignable
             ASSERT (!std::is_trivially_move_assignable_v< S >); // not move-assignable
             using U = V< S >;
-            //ASSERT (!std::is_default_constructible_v< U >); // hard error in non-trivial default constructor of class "destructor"
-            //ASSERT (!std::is_trivially_default_constructible_v< U >); // the same error
+            ASSERT (!std::is_default_constructible_v< U >); // hard error in non-trivial default constructor of class "destructor"
+            ASSERT (!std::is_trivially_default_constructible_v< U >); // the same error
             ASSERT (std::is_destructible_v< U >);
             ASSERT (std::is_trivially_destructible_v< U >);
             ASSERT (!std::is_copy_constructible_v< U >); // U has non-static data members that cannot be copied
@@ -295,8 +295,8 @@ class case_constexpr
             ASSERT (!std::is_trivially_copy_assignable_v< S >); // not copy-assignable
             ASSERT (!std::is_trivially_move_assignable_v< S >); // not move-assignable
             using U = V< S >;
-            //ASSERT (!std::is_default_constructible_v< U >); // hard error in non-trivial default constructor of class "destructor"
-            //ASSERT (!std::is_trivially_default_constructible_v< U >); // the same error
+            ASSERT (std::is_default_constructible_v< U >); // hard error in non-trivial default constructor of class "destructor"
+            ASSERT (std::is_trivially_default_constructible_v< U >); // the same error
             ASSERT (std::is_destructible_v< U >);
             ASSERT (std::is_trivially_destructible_v< U >);
             ASSERT (!std::is_copy_constructible_v< U >); // U has non-static data members that cannot be copied
@@ -355,10 +355,8 @@ class case_constexpr
             struct B { B() = delete; };
             using VAB = V< A, B >;
             using VBA = V< B, A >;
-            ASSERT (!__is_constructible(VAB));
-            ASSERT (__has_trivial_constructor(VAB)); // ??
-            ASSERT (!__is_constructible(VBA));
-            ASSERT (__has_trivial_constructor(VBA)); // ??
+            ASSERT (!std::is_trivially_default_constructible_v< VAB >);
+            ASSERT (!std::is_trivially_default_constructible_v< VBA >);
         }
         {
             struct A {};
@@ -378,7 +376,7 @@ class case_constexpr
         }
         {
             struct A { A() = delete; int i; };
-            struct B { CONSTEXPRF B() : d{} { ; } double d; };
+            struct B { CONSTEXPRF B() : d{} { ; } double d; }; // if there is not constructor-list initializer for d, then "is not integral constant expression"
             using VAB = V< A, B >;
             ASSERT (__is_constructible(VAB));
             ASSERT (!__has_trivial_constructor(VAB));
@@ -399,7 +397,7 @@ class case_constexpr
         {
             struct A { CONSTEXPRF A(char) { ; } char c; };
             using VA = variant< A >;
-            //ASSERT (!__is_constructible(VA)); // causes hard error during instantiation somewhere in deep of built-in macro
+            ASSERT (!__is_constructible(VA));
             ASSERT (!__has_trivial_constructor(VA));
             CBRA
                     VA v{'1'};
