@@ -42,6 +42,8 @@ set( HEADERS
     "include/versatile/visit.hpp"
     "include/versatile/compare.hpp"
     "include/versatile/io.hpp"
+
+    "boost_variant.hpp"
 )
 
 add_executable( ${PROJECT_NAME} "main.cpp" ${HEADERS} )

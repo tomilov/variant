@@ -76,14 +76,14 @@ decltype(auto)
 visit(visitor && _visitor, visitable && _visitable, arguments &&... _arguments)
 {
     using decay_type = unwrap_type_t< visitable >;
-    static_assert(is_visitable< decay_type >{});
+    static_assert(is_visitable< decay_type >::value);
     return details::dispatcher< type_qualifier_of< visitable && >, visitor, decay_type >::template caller< arguments... >(_visitor, _visitable, _arguments...);
 }
 
 namespace details
 {
 
-template< typename supervisitor, typename type, bool = (is_visitable< unwrap_type_t< type > >{}) >
+template< typename supervisitor, typename type, bool = (is_visitable< unwrap_type_t< type > >::value) >
 struct subvisitor;
 
 template< typename supervisitor, typename visitable >
@@ -171,7 +171,7 @@ struct delayed_visitor
 {
 
     constexpr
-    delayed_visitor(visitor & _visitor) noexcept(std::is_lvalue_reference< visitor >{} || std::is_nothrow_move_constructible< visitor >{})
+    delayed_visitor(visitor & _visitor) noexcept(std::is_lvalue_reference_v< visitor > || std::is_nothrow_move_constructible_v< visitor >)
         : visitor_(std::forward< visitor >(_visitor))
     { ; }
 
@@ -218,7 +218,7 @@ private :
 template< typename visitor >
 constexpr
 details::delayed_visitor< visitor >
-visit(visitor && _visitor) noexcept(std::is_lvalue_reference< visitor >{} || std::is_nothrow_move_constructible< visitor >{})
+visit(visitor && _visitor) noexcept(std::is_lvalue_reference_v< visitor > || std::is_nothrow_move_constructible_v< visitor >)
 {
     return _visitor;
 }

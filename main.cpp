@@ -30,7 +30,7 @@
 #define CBRA {
 #define CKET }
 #else
-#define ASSERT(...) { static_assert(__VA_ARGS__); }
+#define ASSERT(...) { static_assert(__VA_ARGS__, LOCATION); }
 #define CONSTEXPR constexpr
 #define CONSTEXPRF constexpr
 #define CHECK(...) { if (!(__VA_ARGS__)) return false; }
@@ -47,18 +47,18 @@ namespace test_traits
 struct A {};
 struct B {};
 
-static_assert(std::is_same< copy_cv_reference_t<          A         , B >,          B          >{}, LOCATION);
-static_assert(std::is_same< copy_cv_reference_t<          A const   , B >,          B const    >{}, LOCATION);
-static_assert(std::is_same< copy_cv_reference_t< volatile A         , B >, volatile B          >{}, LOCATION);
-static_assert(std::is_same< copy_cv_reference_t< volatile A const   , B >, volatile B const    >{}, LOCATION);
-static_assert(std::is_same< copy_cv_reference_t<          A        &, B >,          B        & >{}, LOCATION);
-static_assert(std::is_same< copy_cv_reference_t<          A const  &, B >,          B const  & >{}, LOCATION);
-static_assert(std::is_same< copy_cv_reference_t< volatile A        &, B >, volatile B        & >{}, LOCATION);
-static_assert(std::is_same< copy_cv_reference_t< volatile A const  &, B >, volatile B const  & >{}, LOCATION);
-static_assert(std::is_same< copy_cv_reference_t<          A       &&, B >,          B       && >{}, LOCATION);
-static_assert(std::is_same< copy_cv_reference_t<          A const &&, B >,          B const && >{}, LOCATION);
-static_assert(std::is_same< copy_cv_reference_t< volatile A       &&, B >, volatile B       && >{}, LOCATION);
-static_assert(std::is_same< copy_cv_reference_t< volatile A const &&, B >, volatile B const && >{}, LOCATION);
+static_assert(std::is_same_v< copy_cv_reference_t<          A         , B >,          B          >, LOCATION);
+static_assert(std::is_same_v< copy_cv_reference_t<          A const   , B >,          B const    >, LOCATION);
+static_assert(std::is_same_v< copy_cv_reference_t< volatile A         , B >, volatile B          >, LOCATION);
+static_assert(std::is_same_v< copy_cv_reference_t< volatile A const   , B >, volatile B const    >, LOCATION);
+static_assert(std::is_same_v< copy_cv_reference_t<          A        &, B >,          B        & >, LOCATION);
+static_assert(std::is_same_v< copy_cv_reference_t<          A const  &, B >,          B const  & >, LOCATION);
+static_assert(std::is_same_v< copy_cv_reference_t< volatile A        &, B >, volatile B        & >, LOCATION);
+static_assert(std::is_same_v< copy_cv_reference_t< volatile A const  &, B >, volatile B const  & >, LOCATION);
+static_assert(std::is_same_v< copy_cv_reference_t<          A       &&, B >,          B       && >, LOCATION);
+static_assert(std::is_same_v< copy_cv_reference_t<          A const &&, B >,          B const && >, LOCATION);
+static_assert(std::is_same_v< copy_cv_reference_t< volatile A       &&, B >, volatile B       && >, LOCATION);
+static_assert(std::is_same_v< copy_cv_reference_t< volatile A const &&, B >, volatile B const && >, LOCATION);
 
 }
 
@@ -67,7 +67,7 @@ namespace test
 
 template< typename from, typename to >
 struct is_explicitly_convertible
-        : std::bool_constant< (std::is_constructible< to, from >{} && !std::is_convertible< from, to >{}) >
+        : std::bool_constant< (std::is_constructible< to, from >::value && !std::is_convertible< from, to >::value) >
 {
 
 };
@@ -166,56 +166,147 @@ class case_constexpr
     triviality() noexcept
     {
         {
-            struct S { S() = default; int i; char c; double d; ~S() = default; };
-            ASSERT (__is_trivial(S));
-            using VS = V< S >;
-            ASSERT (__is_trivial(VS));
-        }
-        struct A {};
-        struct B {};
-        {
-            struct S { ~S() { ; } };
-            ASSERT (std::is_destructible< S >{});
-            ASSERT (!__has_trivial_destructor(S));
-            using VASB = V< A, S, B >;
-            ASSERT (std::is_destructible< VASB >{});
-            ASSERT (!__has_trivial_destructor(VASB));
+            struct S {};
+            ASSERT (std::is_trivial_v< S >);
+            ASSERT (std::is_literal_type_v< S >);
+            ASSERT (std::is_standard_layout_v< S >);
+            ASSERT (std::is_pod_v< S >);
+            using U = V< S >;
+            ASSERT (std::is_trivial_v< U >);
+            ASSERT (std::is_literal_type_v< U >);
+            ASSERT (std::is_standard_layout_v< U >);
+            ASSERT (std::is_pod_v< U >);
+            ASSERT (!std::is_union_v< U >);
         }
         {
             struct S { S() { ; } };
-            ASSERT (std::is_default_constructible< S >{});
-            ASSERT (!__has_trivial_constructor(S));
-            using VASB = V< A, S, B >;
-            ASSERT (std::is_default_constructible< VASB >{});
-            ASSERT (!__has_trivial_constructor(VASB));
+            ASSERT (std::is_default_constructible_v< S >);
+            ASSERT (!std::is_trivially_default_constructible_v< S >); // user-provided
+            ASSERT (std::is_trivially_copyable_v< S >);
+            using U = V< S >;
+            ASSERT (std::is_default_constructible_v< U >);
+            ASSERT (!std::is_trivially_default_constructible_v< U >); // U is a union with at least one variant member with non-trivial default constructor
+            ASSERT (std::is_trivially_copyable_v< U >);
+        }
+        {
+            struct S { ~S() { ; } };
+            ASSERT (std::is_destructible_v< S >);
+            ASSERT (!std::is_trivially_destructible_v< S >); // user-provided
+            using U = V< S >;
+            ASSERT (std::is_destructible_v< U >);
+            ASSERT (!std::is_trivially_destructible_v< U >); // U is a union and has a variant member with non-trivial destructor
         }
         {
             struct S { S(S const &) { ; } };
-            ASSERT (std::is_copy_constructible< S >{});
-            ASSERT (!__has_trivial_copy(S));
-            using VASB = V< A, S, B >;
-            ASSERT (!std::is_copy_constructible< VASB >{}); // non-trivially-copyable alternative type prohibit copy construction
-            ASSERT (!__has_trivial_copy(VASB));
+            ASSERT (!std::is_default_constructible_v< S >); // If no user-defined constructors of any kind are provided for a class type (struct, class, or union), the compiler will always declare a default constructor as an inline public member of its class.
+            ASSERT (!std::is_trivially_default_constructible_v< S >); // not default constructible
+            ASSERT (std::is_destructible_v< S >);
+            ASSERT (std::is_trivially_destructible_v< S >);
+            ASSERT (std::is_copy_constructible_v< S >);
+            ASSERT (std::is_move_constructible_v< S >); // S const & can bind S && => move constructible
+            ASSERT (!std::is_trivially_copy_constructible_v< S >); // user-provided
+            ASSERT (!std::is_trivially_move_constructible_v< S >); // match prev?
+            ASSERT (std::is_copy_assignable_v< S >);
+            ASSERT (std::is_move_assignable_v< S >);
+            ASSERT (std::is_trivially_copy_assignable_v< S >);
+            ASSERT (std::is_trivially_move_assignable_v< S >);
+            using U = V< S >;
+            //ASSERT (!std::is_default_constructible_v< U >); // hard error in non-trivial default constructor of class "destructor"
+            //ASSERT (!std::is_trivially_default_constructible_v< U >); // the same error
+            ASSERT (std::is_destructible_v< U >);
+            ASSERT (std::is_trivially_destructible_v< U >);
+            ASSERT (!std::is_copy_constructible_v< U >); // U is a union and has a variant member with non-trivial copy constructor
+            ASSERT (std::is_move_constructible_v< U >); // U const & can bind U && => move constructible
+            ASSERT (!std::is_trivially_copy_constructible_v< U >); // inherits
+            ASSERT (!std::is_trivially_move_constructible_v< U >); // inherits
+            ASSERT (std::is_copy_assignable_v< U >);
+            ASSERT (std::is_move_assignable_v< U >);
+            ASSERT (std::is_trivially_copy_assignable_v< U >);
+            ASSERT (std::is_trivially_move_assignable_v< U >);
+        }
+        {
+            struct S { S(S &&) { ; } };
+            ASSERT (!std::is_default_constructible_v< S >); // If no user-defined constructors of any kind are provided for a class type (struct, class, or union), the compiler will always declare a default constructor as an inline public member of its class.
+            ASSERT (!std::is_trivially_default_constructible_v< S >); // not default constructible
+            ASSERT (std::is_destructible_v< S >);
+            ASSERT (std::is_trivially_destructible_v< S >);
+            ASSERT (!std::is_copy_constructible_v< S >); // S has a user-defined move constructor or move assignment operator
+            ASSERT (std::is_move_constructible_v< S >);
+            ASSERT (!std::is_trivially_copy_constructible_v< S >); // match next?
+            ASSERT (!std::is_trivially_move_constructible_v< S >); // user-provided
+            ASSERT (!std::is_copy_assignable_v< S >); // S  has a user-defined move constructor or move assignment operator
+            ASSERT (!std::is_move_assignable_v< S >); // If there are no user-declared move constructors then the compiler will declare a move assignment operator as an inline public member of its class with the signature T& T::operator=(T&&).
+            ASSERT (!std::is_trivially_copy_assignable_v< S >); // not copy-assignable
+            ASSERT (!std::is_trivially_move_assignable_v< S >); // not move-assignable
+            using U = V< S >;
+            //ASSERT (!std::is_default_constructible_v< U >); // hard error in non-trivial default constructor of class "destructor"
+            //ASSERT (!std::is_trivially_default_constructible_v< U >); // the same error
+            ASSERT (std::is_destructible_v< U >);
+            ASSERT (std::is_trivially_destructible_v< U >);
+            ASSERT (!std::is_copy_constructible_v< U >); // U has non-static data members that cannot be copied
+            ASSERT (std::is_move_constructible_v< U >);
+            ASSERT (!std::is_trivially_copy_constructible_v< U >); // inherits
+            ASSERT (!std::is_trivially_move_constructible_v< U >); // inherits
+            ASSERT (!std::is_copy_assignable_v< U >); // inherits
+            ASSERT (!std::is_move_assignable_v< U >); // inherits
+            ASSERT (!std::is_trivially_copy_assignable_v< U >); // not copy-assignable
+            ASSERT (!std::is_trivially_move_assignable_v< U >); // not move-assignable
         }
         {
             struct S { S & operator = (S const &) { return *this; } };
-            ASSERT (std::is_copy_assignable< S >{});
-            ASSERT (!__has_trivial_assign(S));
-            using VASB = V< A, S, B >;
-            ASSERT (!std::is_copy_assignable< VASB >{}); // non-trivially-copy-assignable alternative type prohibit copy assignment
-            ASSERT (!__has_trivial_assign(VASB));
+            ASSERT (std::is_default_constructible_v< S >);
+            ASSERT (std::is_trivially_default_constructible_v< S >);
+            ASSERT (std::is_destructible_v< S >);
+            ASSERT (std::is_trivially_destructible_v< S >);
+            ASSERT (std::is_copy_constructible_v< S >);
+            ASSERT (std::is_move_constructible_v< S >);
+            ASSERT (std::is_trivially_copy_constructible_v< S >);
+            ASSERT (std::is_trivially_move_constructible_v< S >);
+            ASSERT (std::is_copy_assignable_v< S >);
+            ASSERT (std::is_move_assignable_v< S >);
+            ASSERT (!std::is_trivially_copy_assignable_v< S >); // user-provided
+            ASSERT (!std::is_trivially_move_assignable_v< S >); // match prev?
+            using U = V< S >;
+            ASSERT (std::is_default_constructible_v< U >);
+            ASSERT (std::is_trivially_default_constructible_v< U >);
+            ASSERT (std::is_destructible_v< U >);
+            ASSERT (std::is_trivially_destructible_v< U >);
+            ASSERT (std::is_copy_constructible_v< U >);
+            ASSERT (std::is_move_constructible_v< U >);
+            ASSERT (std::is_trivially_copy_constructible_v< U >);
+            ASSERT (std::is_trivially_move_constructible_v< U >);
+            ASSERT (!std::is_copy_assignable_v< U >); // U is a union-like class, and has a variant member whose corresponding assignment operator is non-trivial
+            ASSERT (!std::is_move_assignable_v< U >); // match prev?
+            ASSERT (!std::is_trivially_copy_assignable_v< U >); // inherits
+            ASSERT (!std::is_trivially_move_assignable_v< U >); // inherits
         }
         {
-            struct A {};
-            struct B { ~B() = delete; };
-            using VAB = V< A, B >;
-            using VBA = V< B, A >;
-            ASSERT (!std::is_destructible< VAB >{});
-            ASSERT (!std::is_destructible< VBA >{});
-        }
-        {
-            using VX = variant< int, char, double >;
-            ASSERT (std::is_trivial< VX >{});
+            struct S { S & operator = (S &&) { return *this; } };
+            ASSERT (std::is_default_constructible_v< S >);
+            ASSERT (std::is_trivially_default_constructible_v< S >);
+            ASSERT (std::is_destructible_v< S >);
+            ASSERT (std::is_trivially_destructible_v< S >);
+            ASSERT (!std::is_copy_constructible_v< S >); // S has a user-defined move constructor or move assignment operator
+            ASSERT (!std::is_move_constructible_v< S >); // If there are no user-declared move assignment operators then the compiler will declare a move constructor as a non-explicit inline public member of its class with the signature T::T(T&&).
+            ASSERT (!std::is_trivially_copy_constructible_v< S >); // match next?
+            ASSERT (!std::is_trivially_move_constructible_v< S >); // user-provided
+            ASSERT (!std::is_copy_assignable_v< S >); // S  has a user-defined move constructor or move assignment operator
+            ASSERT (std::is_move_assignable_v< S >);
+            ASSERT (!std::is_trivially_copy_assignable_v< S >); // not copy-assignable
+            ASSERT (!std::is_trivially_move_assignable_v< S >); // not move-assignable
+            using U = V< S >;
+            //ASSERT (!std::is_default_constructible_v< U >); // hard error in non-trivial default constructor of class "destructor"
+            //ASSERT (!std::is_trivially_default_constructible_v< U >); // the same error
+            ASSERT (std::is_destructible_v< U >);
+            ASSERT (std::is_trivially_destructible_v< U >);
+            ASSERT (!std::is_copy_constructible_v< U >); // U has non-static data members that cannot be copied
+            ASSERT (std::is_move_constructible_v< U >);
+            ASSERT (!std::is_trivially_copy_constructible_v< U >); // inherits
+            ASSERT (std::is_trivially_move_constructible_v< U >); // ????????! BUG: clang
+            ASSERT (!std::is_copy_assignable_v< U >); // inherits
+            ASSERT (!std::is_move_assignable_v< U >); // ! still valid? (until C++14) T has a non-static data member or a direct or virtual base without a move assignment operator that is not trivially copyable.
+            ASSERT (!std::is_trivially_copy_assignable_v< U >); // not copy-assignable
+            ASSERT (!std::is_trivially_move_assignable_v< U >); // not move-assignable
         }
         return true;
     }
@@ -340,9 +431,9 @@ class case_constexpr
         }
         {
             using VAB = V< A, B >;
-            ASSERT (is_explicitly_convertible< VAB, A >{});
-            ASSERT (is_explicitly_convertible< VAB, B >{});
-            ASSERT (!is_explicitly_convertible< VAB, C >{});
+            ASSERT (is_explicitly_convertible< VAB, A >::value);
+            ASSERT (is_explicitly_convertible< VAB, B >::value);
+            ASSERT (!is_explicitly_convertible< VAB, C >::value);
             //A x = VAB{A{10}}; // implicit conversion is not allowed
             CONSTEXPR A a(VAB{A{10}}); // direct initialization is allowed
             ASSERT (a.i == 10);
@@ -438,7 +529,7 @@ class case_constexpr
         }
         {
             using VX = variant< int, char, double >;
-            ASSERT (std::is_trivial< VX >{});
+            ASSERT (std::is_trivial_v< VX >);
             CBRA
                     VX x = 1;
             CHECK (check_active< int >(x));
@@ -580,43 +671,6 @@ public :
         ASSERT (emplace_constructor());
         return true;
     }
-
-};
-
-// value_or
-template< typename lhs, typename rhs >
-constexpr
-std::enable_if_t< (is_visitable< std::remove_reference_t< lhs > >{} && !is_visitable< std::remove_reference_t< rhs > >{}), std::remove_reference_t< rhs > >
-operator || (lhs && _lhs, rhs && _rhs) noexcept
-{
-    using result_type = std::remove_reference_t< rhs >;
-    if (_lhs.template active< result_type >()) {
-        return static_cast< result_type >(std::forward< lhs >(_lhs));
-    } else {
-        return std::forward< rhs >(_rhs);
-    }
-}
-
-template< typename lhs, typename rhs >
-constexpr
-std::enable_if_t< (!is_visitable< std::remove_reference_t< lhs > >{} && is_visitable< std::remove_reference_t< rhs > >{}), lhs >
-operator || (lhs && _lhs, rhs && _rhs) noexcept
-{
-    return (std::forward< rhs >(_rhs) || std::forward< lhs >(_lhs));
-}
-
-template< typename lhs, typename rhs >
-std::enable_if_t< (is_visitable< std::remove_reference_t< lhs > >{} && is_visitable< std::remove_reference_t< rhs > >{}) >
-operator || (lhs && _lhs, rhs && _rhs) = delete;
-
-template< typename variadic, typename type >
-struct variadic_index;
-
-template< template< typename ...types > class variadic, typename ...types,
-          typename type >
-struct variadic_index< variadic< types... >, type >
-        : index_at< type, types..., void >
-{
 
 };
 
@@ -921,6 +975,33 @@ struct T
 
 static_assert(std::is_standard_layout< T<> >{}, LOCATION);
 
+// value_or
+template< typename lhs, typename rhs,
+          typename result_type = unwrap_type_t< rhs > >
+constexpr
+std::enable_if_t< (is_visitable< unwrap_type_t< lhs > >{} && !is_visitable< result_type >{}), result_type >
+operator || (lhs && _lhs, rhs && _rhs) noexcept
+{
+    if (_lhs.template active< result_type >()) {
+        return static_cast< result_type >(std::forward< lhs >(_lhs));
+    } else {
+        return std::forward< rhs >(_rhs);
+    }
+}
+
+template< typename lhs, typename rhs,
+          typename result_type = unwrap_type_t< lhs > >
+constexpr
+std::enable_if_t< (!is_visitable< result_type >{} && is_visitable< unwrap_type_t< rhs > >{}), result_type >
+operator || (lhs && _lhs, rhs && _rhs) noexcept
+{
+    return (std::forward< rhs >(_rhs) || std::forward< lhs >(_lhs));
+}
+
+template< typename lhs, typename rhs >
+std::enable_if_t< (is_visitable< unwrap_type_t< lhs > >{} && is_visitable< unwrap_type_t< rhs > >{}) >
+operator || (lhs && _lhs, rhs && _rhs) = delete;
+
 } // namespace test
 } // namespace versatile
 
@@ -1204,15 +1285,15 @@ main()
         // either compile time or runtime:
         ASSERT (case_constexpr<>::crun());
         ASSERT (case_constexpr< aggregate_wrapper >::crun());
-        ASSERT (test_perferct_forwarding< T, 1, 1 >::crun());
-        ASSERT (test_perferct_forwarding< T, 2, 3 >::crun());
-        ASSERT (test_perferct_forwarding< T, 3, 2 >::crun());
+        //ASSERT (test_perferct_forwarding< T, 1, 1 >::crun());
+        //ASSERT (test_perferct_forwarding< T, 2, 3 >::crun());
+        //ASSERT (test_perferct_forwarding< T, 3, 2 >::crun());
     }
     {
         // boost::variant is olny runtime...
         static_assert(!std::is_literal_type< boost_variant_i< int, char, double > >{}, LOCATION); // ...while this is true:
-        assert ((test_perferct_forwarding< T, 2, 2, ::boost_variant_i >::crun()));
-        assert ((test_perferct_forwarding< T, 2, 2, ::boost_variant_c >::crun()));
+        //assert ((test_perferct_forwarding< T, 2, 2, ::boost_variant_i >::crun()));
+        //assert ((test_perferct_forwarding< T, 2, 2, ::boost_variant_c >::crun()));
     }
     return EXIT_SUCCESS;
 }
