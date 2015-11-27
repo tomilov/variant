@@ -16,7 +16,7 @@
 #endif
 #include <cassert>
 
-#define VERSATILE_RUNTIME
+//#define VERSATILE_RUNTIME
 
 #define STR(S) #S
 // double expansion of next macro argument
@@ -151,12 +151,12 @@ struct aggregate_wrapper
 
 };
 
-template< template< typename ... > class wrapper = identity >
+template< template< typename ... > class wrapper = identity, template< typename ... > class variant = versatile >
 class case_constexpr
 {
 
     template< typename ...types >
-    using V = versatile< typename wrapper< types >::type... >;
+    using V = variant< typename wrapper< types >::type... >;
 
     using O = oracle;
 
@@ -214,7 +214,7 @@ class case_constexpr
             ASSERT (!std::is_destructible< VBA >{});
         }
         {
-            using VX = versatile< int, char, double >;
+            using VX = variant< int, char, double >;
             ASSERT (std::is_trivial< VX >{});
         }
         return true;
@@ -272,7 +272,7 @@ class case_constexpr
         {
             struct A {};
             struct B {};
-            using VAOB = versatile< O, A, B >;
+            using VAOB = variant< O, A, B >;
             ASSERT (__is_constructible(VAOB));
             ASSERT (!__has_trivial_constructor(O));
             ASSERT (!__has_trivial_constructor(VAOB));
@@ -301,13 +301,13 @@ class case_constexpr
             struct C {};
             using VABC = V< A, B, C >;
             CBRA
-            VABC v;
+                    VABC v;
             CHECK ((check_active< C >(v)));
             CKET
         }
         {
             struct A { CONSTEXPRF A(char) { ; } char c; };
-            using VA = versatile< A >;
+            using VA = variant< A >;
             //ASSERT (!__is_constructible(VA)); // causes hard error during instantiation somewhere in deep of built-in macro
             ASSERT (!__has_trivial_constructor(VA));
             CBRA
@@ -437,7 +437,7 @@ class case_constexpr
             CKET
         }
         {
-            using VX = versatile< int, char, double >;
+            using VX = variant< int, char, double >;
             ASSERT (std::is_trivial< VX >{});
             CBRA
                     VX x = 1;
@@ -556,9 +556,9 @@ class case_constexpr
             struct B {};
             struct C { A a; };
             struct D { B b; };
-            CONSTEXPR versatile< int, ::versatile::aggregate_wrapper< C >, ::versatile::aggregate_wrapper< D > > c{A{}};
+            CONSTEXPR variant< int, ::versatile::aggregate_wrapper< C >, ::versatile::aggregate_wrapper< D > > c{A{}};
             ASSERT (check_active< C >(c));
-            CONSTEXPR versatile< int, ::versatile::aggregate_wrapper< C >, ::versatile::aggregate_wrapper< D > > d{B{}};
+            CONSTEXPR variant< int, ::versatile::aggregate_wrapper< C >, ::versatile::aggregate_wrapper< D > > d{B{}};
             ASSERT (check_active< D >(d));
         }
         return true;
@@ -832,9 +832,9 @@ make_fusor(std::tuple< types *... > const & _stuff) noexcept
 // variant - variant
 // T - type generator
 // M - multivisitor arity, N - number of alternative (bounded) types
-template< template< typename ...types > class variant,
-          template< std::size_t I > class T,
-          std::size_t M, std::size_t N = M >
+template< template< std::size_t I > class T,
+          std::size_t M, std::size_t N = M,
+          template< typename ...types > class variant = versatile >
 class test_perferct_forwarding
 {
 
@@ -933,9 +933,48 @@ struct boost_variant_i
 
     using base = boost::variant< types... >;
 
-    using base::base;
-    using base::operator =;
+    // can't correctly inherit constructors and assignment operators by `using base::base;` and `using base::operator =;`
 
+    boost_variant_i(boost_variant_i &) = default;
+    boost_variant_i(boost_variant_i const &) = default;
+    boost_variant_i(boost_variant_i &&) = default;
+
+    constexpr
+    boost_variant_i(boost_variant_i const && _rhs)
+        : base(std::move(_rhs.member_))
+    { ; }
+
+    template< typename ...arguments >
+    constexpr
+    boost_variant_i(arguments &&... _arguments)
+        : base(std::forward< arguments >(_arguments)...)
+    { ; }
+
+    boost_variant_i &
+    operator = (boost_variant_i const &) = default;
+    boost_variant_i &
+    operator = (boost_variant_i &) = default;
+    boost_variant_i &
+    operator = (boost_variant_i &&) = default;
+
+    constexpr
+    boost_variant_i &
+    operator = (boost_variant_i const && _rhs)
+    {
+        base::operator = (std::move(_rhs.member_));
+        return *this;
+    }
+
+    template< typename argument >
+    constexpr
+    boost_variant_i &
+    operator = (argument && _argument)
+    {
+        base::operator = (std::forward< argument >(_argument));
+        return *this;
+    }
+
+    constexpr
     std::size_t
     which() const
     {
@@ -946,6 +985,7 @@ struct boost_variant_i
     using index_t = ::versatile::index_at_t< ::versatile::unwrap_type_t< type >, ::versatile::unwrap_type_t< types >..., void >;
 
     template< typename type >
+    constexpr
     bool
     active() const noexcept
     {
@@ -954,6 +994,7 @@ struct boost_variant_i
 
     template< typename type >
     explicit
+    constexpr
     operator type const & () const &
     {
         if (!active< type >()) {
@@ -964,6 +1005,7 @@ struct boost_variant_i
 
     template< typename type >
     explicit
+    constexpr
     operator type & () &
     {
         if (!active< type >()) {
@@ -974,6 +1016,7 @@ struct boost_variant_i
 
     template< typename type >
     explicit
+    constexpr
     operator type const && () const &&
     {
         if (!active< type >()) {
@@ -984,6 +1027,7 @@ struct boost_variant_i
 
     template< typename type >
     explicit
+    constexpr
     operator type && () &&
     {
         if (!active< type >()) {
@@ -1004,11 +1048,13 @@ struct boost_variant_c
     boost_variant_c(boost_variant_c const &) = default;
     boost_variant_c(boost_variant_c &&) = default;
 
+    constexpr
     boost_variant_c(boost_variant_c const && _rhs)
         : member_(std::move(_rhs.member_))
     { ; }
 
     template< typename ...arguments >
+    constexpr
     boost_variant_c(arguments &&... _arguments)
         : member_(std::forward< arguments >(_arguments)...)
     { ; }
@@ -1020,6 +1066,7 @@ struct boost_variant_c
     boost_variant_c &
     operator = (boost_variant_c &&) = default;
 
+    constexpr
     boost_variant_c &
     operator = (boost_variant_c const && _rhs)
     {
@@ -1028,6 +1075,7 @@ struct boost_variant_c
     }
 
     template< typename argument >
+    constexpr
     boost_variant_c &
     operator = (argument && _argument)
     {
@@ -1035,6 +1083,7 @@ struct boost_variant_c
         return *this;
     }
 
+    constexpr
     std::size_t
     which() const
     {
@@ -1045,6 +1094,7 @@ struct boost_variant_c
     using index_t = ::versatile::index_at_t< ::versatile::unwrap_type_t< type >, ::versatile::unwrap_type_t< types >..., void >;
 
     template< typename type >
+    constexpr
     bool
     active() const noexcept
     {
@@ -1053,6 +1103,7 @@ struct boost_variant_c
 
     template< typename type >
     explicit
+    constexpr
     operator type const & () const &
     {
         if (!active< type >()) {
@@ -1063,6 +1114,7 @@ struct boost_variant_c
 
     template< typename type >
     explicit
+    constexpr
     operator type & () &
     {
         if (!active< type >()) {
@@ -1073,6 +1125,7 @@ struct boost_variant_c
 
     template< typename type >
     explicit
+    constexpr
     operator type const && () const &&
     {
         if (!active< type >()) {
@@ -1083,6 +1136,7 @@ struct boost_variant_c
 
     template< typename type >
     explicit
+    constexpr
     operator type && () &&
     {
         if (!active< type >()) {
@@ -1146,15 +1200,20 @@ int
 main()
 {
     using namespace versatile::test;
-    ASSERT (case_constexpr<>::crun());
-    ASSERT (case_constexpr< aggregate_wrapper >::crun());
-    ASSERT (test_perferct_forwarding< versatile::versatile, T, 1, 1 >::crun());
-    ASSERT (test_perferct_forwarding< versatile::versatile, T, 2, 3 >::crun());
-    ASSERT (test_perferct_forwarding< versatile::versatile, T, 3, 2 >::crun());
-#ifdef VERSATILE_RUNTIME
-    //assert ((test_perferct_forwarding< ::boost_variant_i, T, 2, 2 >::crun())); // can't correctly inherit constructors by using bast::base;
-    assert ((test_perferct_forwarding< ::boost_variant_c, T, 2, 2 >::crun()));
-#endif
+    {
+        // either compile time or runtime:
+        ASSERT (case_constexpr<>::crun());
+        ASSERT (case_constexpr< aggregate_wrapper >::crun());
+        ASSERT (test_perferct_forwarding< T, 1, 1 >::crun());
+        ASSERT (test_perferct_forwarding< T, 2, 3 >::crun());
+        ASSERT (test_perferct_forwarding< T, 3, 2 >::crun());
+    }
+    {
+        // boost::variant is olny runtime...
+        static_assert(!std::is_literal_type< boost_variant_i< int, char, double > >{}, LOCATION); // ...while this is true:
+        assert ((test_perferct_forwarding< T, 2, 2, ::boost_variant_i >::crun()));
+        assert ((test_perferct_forwarding< T, 2, 2, ::boost_variant_c >::crun()));
+    }
     return EXIT_SUCCESS;
 }
 
