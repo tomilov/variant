@@ -83,7 +83,7 @@ struct index
 };
 
 template< std::size_t i >
-using index_t = index< i >;
+using index_t = typename index< i >::type;
 
 template< typename type, typename ...types >
 struct index_at
@@ -93,7 +93,7 @@ struct index_at
 
 template< typename type, typename ...rest >
 struct index_at< type, type, rest... >
-        : identity< index_t< sizeof...(rest) > >
+        : index< sizeof...(rest) >
 {
 
 };
@@ -142,7 +142,7 @@ struct get_index<>
 
 template< bool ...rest >
 struct get_index< true, rest... >
-        : identity< index_t< sizeof...(rest) > >
+        : index< sizeof...(rest) >
 {
 
 };

@@ -343,12 +343,11 @@ class case_constexpr
             }
         }
         {
-            struct A { int i; };
+            struct A { int i = 111; };
             using VA = V< A >;
-            ASSERT (__has_trivial_constructor(VA));
             CONSTEXPR VA v{};
             ASSERT (check_active< A >(v));
-            ASSERT (static_cast< A >(v).i == int{});
+            ASSERT (static_cast< A >(v).i == 111);
         }
         {
             struct A {};
@@ -400,7 +399,7 @@ class case_constexpr
             ASSERT (!__is_constructible(VA));
             ASSERT (!__has_trivial_constructor(VA));
             CBRA
-                    VA v{'1'};
+                    VA v{index< 1 >{}, '1'};
             CHECK (check_active< A >(v));
             CKET
         }
@@ -619,37 +618,6 @@ class case_constexpr
     bool
     emplace_constructor() noexcept
     {
-        {
-            struct A {};
-            struct B {};
-            struct S { CONSTEXPRF S(A, B) { ; } };
-            using VABS = V< S, A, B >;
-            CONSTEXPR VABS v{};
-            ASSERT (check_active< A >(v));
-            CONSTEXPR VABS s{A{}, B{}};
-            ASSERT (check_active< S >(s));
-        }
-        {
-            struct A {};
-            struct B {};
-            struct S { CONSTEXPRF S(A) { ; } };
-            using VSAB = V< S, B, A >;
-            CONSTEXPR VSAB b{};
-            ASSERT (check_active< B >(b));
-            CONSTEXPR VSAB a{A{}};
-            ASSERT (!check_active< S >(a));
-            ASSERT (check_active< A >(a));
-        }
-        {
-            struct A {};
-            struct B {};
-            struct C { A a; };
-            struct D { B b; };
-            CONSTEXPR variant< int, ::versatile::aggregate_wrapper< C >, ::versatile::aggregate_wrapper< D > > c{A{}};
-            ASSERT (check_active< C >(c));
-            CONSTEXPR variant< int, ::versatile::aggregate_wrapper< C >, ::versatile::aggregate_wrapper< D > > d{B{}};
-            ASSERT (check_active< D >(d));
-        }
         return true;
     }
 
@@ -677,7 +645,7 @@ struct variadic_size;
 
 template< template< typename ...types > class variadic, typename ...types >
 struct variadic_size< variadic< types... > >
-        : index_t< sizeof...(types) >
+        : index< sizeof...(types) >
 {
 
 };
@@ -832,7 +800,7 @@ struct multivisitor
 
 template< std::size_t M >
 struct variadic_size< multivisitor< M > >
-        : index_t< M >
+        : index< M >
 {
 
 };
@@ -1061,14 +1029,14 @@ struct boost_variant_i
     }
 
     template< typename type >
-    using index_t = ::versatile::index_at_t< ::versatile::unwrap_type_t< type >, ::versatile::unwrap_type_t< types >..., void >;
+    using index_at_t = ::versatile::index_at_t< ::versatile::unwrap_type_t< type >, ::versatile::unwrap_type_t< types >..., void >;
 
     template< typename type >
     constexpr
     bool
     active() const noexcept
     {
-        return (index_t< type >::value == which());
+        return (index_at_t< type >::value == which());
     }
 
     template< typename type >
@@ -1170,14 +1138,14 @@ struct boost_variant_c
     }
 
     template< typename type >
-    using index_t = ::versatile::index_at_t< ::versatile::unwrap_type_t< type >, ::versatile::unwrap_type_t< types >..., void >;
+    using index_at_t = ::versatile::index_at_t< ::versatile::unwrap_type_t< type >, ::versatile::unwrap_type_t< types >..., void >;
 
     template< typename type >
     constexpr
     bool
     active() const noexcept
     {
-        return (index_t< type >::value == which());
+        return (index_at_t< type >::value == which());
     }
 
     template< typename type >

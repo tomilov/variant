@@ -419,10 +419,10 @@ public :
     }
 
     template< typename type >
-    using index_t = index_at_t< unwrap_type_t< type >, unwrap_type_t< types >..., void >;
+    using index_at_t = index_at_t< unwrap_type_t< type >, unwrap_type_t< types >..., void >;
 
     template< typename type,
-              typename index = index_t< type > >
+              typename index = index_at_t< type > >
     constexpr
     bool
     active() const noexcept
@@ -433,7 +433,7 @@ public :
     versatile() = default;
 
     template< typename type,
-              typename index = index_t< type > >
+              typename index = index_at_t< type > >
     constexpr
     versatile(type && _value) noexcept(__is_nothrow_constructible(storage, index, type))
         : enabler(nullptr)
@@ -441,17 +441,18 @@ public :
                    std::forward< type >(_value))
     { ; }
 
-    template< typename ...arguments,
-              typename index = get_index_t< __is_constructible(types, arguments...)..., false > > // prohibits using of versatile<>
+    template< std::size_t i,
+              typename ...arguments > // prohibits using of versatile<>
     constexpr
-    versatile(arguments &&... _arguments) noexcept(__is_nothrow_constructible(storage, index, arguments...))
+    versatile(index< i >,
+              arguments &&... _arguments) noexcept(__is_nothrow_constructible(storage, index_t< i >, arguments...))
         : enabler(nullptr)
-        , storage_(index{},
+        , storage_(index_t< i >{},
                    std::forward< arguments >(_arguments)...)
     { ; }
 
     template< typename type,
-              typename index = index_t< type > >
+              typename index = index_at_t< type > >
     explicit
     constexpr
     operator type const & () const noexcept
@@ -460,7 +461,7 @@ public :
     }
 
     template< typename type,
-              typename index = index_t< type > >
+              typename index = index_at_t< type > >
     explicit
     constexpr
     operator type & () noexcept
@@ -469,7 +470,7 @@ public :
     }
 
     template< typename type,
-              typename index = index_t< type >,
+              typename index = index_at_t< type >,
               typename = get_index_t< (__has_trivial_copy(unwrap_type_t< type >) && ... && __has_trivial_assign(types)) > > // enable_if_t >
     constexpr
     versatile &
