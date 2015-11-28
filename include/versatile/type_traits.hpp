@@ -76,14 +76,14 @@ template< typename from, typename to >
 using copy_cv_reference_t = add_qualifier_t< type_qualifier_of< from >, to >;
 
 template< std::size_t i >
+using index_t = std::integral_constant< std::size_t, i >;
+
+template< std::size_t i >
 struct index
-        : std::integral_constant< std::size_t, i >
+        : index_t< i >
 {
 
 };
-
-template< std::size_t i >
-using index_t = typename index< i >::type;
 
 template< typename type, typename ...types >
 struct index_at

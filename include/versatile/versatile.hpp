@@ -13,27 +13,25 @@ namespace versatile
 {
 
 template< bool is_trivially_destructible, typename ...types >
-struct constructor;
+struct destructor_dispatcher;
 
 template< bool is_trivially_destructible >
-struct constructor< is_trivially_destructible >
+struct destructor_dispatcher< is_trivially_destructible >
 {
 
     constexpr
     void
-    destructor(std::size_t & _which) const noexcept
-    {
-        _which = 0;
-    }
+    destructor(std::size_t const) const noexcept
+    { ; }
 
 };
 
 template< typename first, typename ...rest >
-struct constructor< true, first, rest... >
+struct destructor_dispatcher< true, first, rest... >
 {
 
     using head = first;
-    using tail = constructor< true, rest... >;
+    using tail = destructor_dispatcher< true, rest... >;
 
     union
     {
@@ -43,27 +41,20 @@ struct constructor< true, first, rest... >
 
     };
 
-    constructor() = default;
+    constexpr
+    destructor_dispatcher() = default;
 
     template< typename ...arguments >
     constexpr
-    constructor(index_t< (sizeof...(rest) + 1) >,
-                arguments &&... _arguments) noexcept(__is_nothrow_constructible(head, arguments...))
+    destructor_dispatcher(index_t< (sizeof...(rest) + 1) >, arguments &&... _arguments) noexcept(noexcept(::new (nullptr) head(std::declval< arguments >()...)))
         : head_(std::forward< arguments >(_arguments)...)
     { ; }
 
     template< typename ...arguments >
     constexpr
-    constructor(arguments &&... _arguments) noexcept(__is_nothrow_constructible(tail, arguments...))
+    destructor_dispatcher(arguments &&... _arguments) noexcept(noexcept(::new (nullptr) tail(std::declval< arguments >()...)))
         : tail_(std::forward< arguments >(_arguments)...)
     { ; }
-
-    constexpr
-    void
-    destructor(std::size_t & _which) const noexcept
-    {
-        _which = 0;
-    }
 
     using this_type = unwrap_type_t< first >;
 
@@ -100,12 +91,12 @@ struct constructor< true, first, rest... >
 };
 
 template< typename first, typename ...rest >
-struct constructor< false, first, rest... >
+struct destructor_dispatcher< false, first, rest... >
 {
 
     using head = first;
-    //using tail = constructor< (__has_trivial_destructor(rest) && ...), rest... >; // redundant overengeneering
-    using tail = constructor< false, rest... >;
+    //using tail = destructor_dispatcher< (std::is_trivially_destructible_v< rest > && ...), rest... >; // redundant overengeneering
+    using tail = destructor_dispatcher< false, rest... >;
 
     union
     {
@@ -115,36 +106,45 @@ struct constructor< false, first, rest... >
 
     };
 
-    ~constructor() noexcept
+    ~destructor_dispatcher() noexcept
     {
         tail_.~tail(); // trivial tail is not specially processed, because whole versatile type can't get an advantage from it
     }
 
-    constructor() = default;
-
-    template< typename ...arguments >
-    constexpr
-    constructor(index_t< (sizeof...(rest) + 1) >,
-                arguments &&... _arguments) noexcept(__is_nothrow_constructible(head, arguments...))
-        : head_(std::forward< arguments >(_arguments)...)
-    { ; }
-
-    template< typename ...arguments >
-    constexpr
-    constructor(arguments &&... _arguments) noexcept(__is_nothrow_constructible(tail, arguments...))
-        : tail_(std::forward< arguments >(_arguments)...)
-    { ; }
-
-    constexpr
     void
-    destructor(std::size_t & _which) const noexcept(noexcept(head_.~head()) && noexcept(tail_.destructor(_which)))
+    free(std::size_t const _which) const noexcept(noexcept(destructor(_which)))
     {
-        if (_which == sizeof...(rest) + 1) {
+        if (_which == std::size_t{}) { // trivially constructible case
+            head_.~head();
+        } else {
+            destructor(_which);
+        }
+    }
+
+    void
+    destructor(std::size_t const _which) const noexcept(noexcept(head_.~head()) && noexcept(tail_.destructor(_which)))
+    {
+        if (_which == (sizeof...(rest) + 1)) {
             head_.~head();
         } else {
             tail_.destructor(_which);
         }
     }
+
+    constexpr
+    destructor_dispatcher() = default;
+
+    template< typename ...arguments >
+    constexpr
+    destructor_dispatcher(index_t< (sizeof...(rest) + 1) >, arguments &&... _arguments) noexcept(noexcept(::new (nullptr) head(std::declval< arguments >()...)))
+        : head_(std::forward< arguments >(_arguments)...)
+    { ; }
+
+    template< typename ...arguments >
+    constexpr
+    destructor_dispatcher(arguments &&... _arguments) noexcept(noexcept(::new (nullptr) tail(std::declval< arguments >()...)))
+        : tail_(std::forward< arguments >(_arguments)...)
+    { ; }
 
     using this_type = unwrap_type_t< first >;
 
@@ -181,33 +181,23 @@ struct constructor< false, first, rest... >
 };
 
 template< bool is_trivially_destructible, bool is_trivially_constructible, typename ...types >
-struct destructor;
+struct dispatcher;
 
-template< bool is_trivially_destructible, bool is_trivially_constructible >
-struct destructor< is_trivially_destructible, is_trivially_constructible >
+template< typename ...types >
+struct dispatcher< true, true, types... >
 {
 
-    static_assert(is_trivially_destructible);
-    static_assert(is_trivially_constructible);
-
-};
-
-template< typename first, typename ...rest >
-struct destructor< true, true, first, rest... >
-{
-
-    using storage = constructor< true, first, rest... >;
+    using storage = destructor_dispatcher< true, types... >;
 
     std::size_t which_;
     storage storage_;
 
-    destructor() = default;
-
-    template< typename index,
-              typename ...arguments >
     constexpr
-    destructor(index,
-               arguments &&... _arguments) noexcept(__is_nothrow_constructible(storage, index, arguments...))
+    dispatcher() = default;
+
+    template< typename index, typename ...arguments >
+    constexpr
+    dispatcher(index, arguments &&... _arguments) noexcept(noexcept(::new (nullptr) storage(index{}, std::forward< arguments >(_arguments)...)))
         : which_{index::value}
         , storage_(index{}, std::forward< arguments >(_arguments)...)
     { ; }
@@ -230,30 +220,28 @@ struct destructor< true, true, first, rest... >
 
 };
 
-template< typename first, typename ...rest >
-struct destructor< false, true, first, rest... >
+template< typename ...types >
+struct dispatcher< false, true, types... >
 {
 
-    using storage = constructor< false, first, rest... >;
+    using storage = destructor_dispatcher< false, types... >;
 
     std::size_t which_;
     storage storage_;
 
-    ~destructor() noexcept(noexcept(storage_.destructor(which_)))
+    ~dispatcher() noexcept(noexcept(storage_.destructor(which_)))
     {
-        storage_.destructor(which_);
+        storage_.free(which_);
     }
 
-    destructor() = default;
-
-    template< typename index,
-              typename ...arguments >
     constexpr
-    destructor(index,
-               arguments &&... _arguments) noexcept(__is_nothrow_constructible(storage, index, arguments...))
+    dispatcher() = default;
+
+    template< typename index, typename ...arguments >
+    constexpr
+    dispatcher(index, arguments &&... _arguments) noexcept(noexcept(::new (nullptr) storage(index{}, std::forward< arguments >(_arguments)...)))
         : which_{index::value}
-        , storage_(index{},
-                   std::forward< arguments >(_arguments)...)
+        , storage_(index{}, std::forward< arguments >(_arguments)...)
     { ; }
 
     template< typename type >
@@ -274,30 +262,27 @@ struct destructor< false, true, first, rest... >
 
 };
 
-template< typename first, typename ...rest >
-struct destructor< true, false, first, rest... >
+template< typename ...types >
+struct dispatcher< true, false, types... >
 {
 
-    using storage = constructor< true, first, rest... >;
+    using storage = destructor_dispatcher< true, types... >;
 
     std::size_t which_;
     storage storage_;
 
-    using default_index = index_of_default_constructible< first, rest..., void >;
+    using default_index = index_of_default_constructible< types..., void >;
 
     constexpr
-    destructor() noexcept(__is_nothrow_constructible(destructor, typename default_index::type))
-        : destructor(typename default_index::type{})
+    dispatcher() noexcept(noexcept(::new (nullptr) dispatcher(typename default_index::type{})))
+        : dispatcher(typename default_index::type{})
     { ; }
 
-    template< typename index,
-              typename ...arguments >
+    template< typename index, typename ...arguments >
     constexpr
-    destructor(index,
-               arguments &&... _arguments) noexcept(__is_nothrow_constructible(storage, index, arguments...))
+    dispatcher(index, arguments &&... _arguments) noexcept(noexcept(::new (nullptr) storage(index{}, std::forward< arguments >(_arguments)...)))
         : which_{index::value}
-        , storage_(index{},
-                   std::forward< arguments >(_arguments)...)
+        , storage_(index{}, std::forward< arguments >(_arguments)...)
     { ; }
 
     template< typename type >
@@ -318,35 +303,32 @@ struct destructor< true, false, first, rest... >
 
 };
 
-template< typename first, typename ...rest >
-struct destructor< false, false, first, rest... >
+template< typename ...types >
+struct dispatcher< false, false, types... >
 {
 
-    using storage = constructor< false, first, rest... >;
+    using storage = destructor_dispatcher< false, types... >;
 
     std::size_t which_;
     storage storage_;
 
-    ~destructor() noexcept(noexcept(storage_.destructor(which_)))
+    ~dispatcher() noexcept(noexcept(storage_.destructor(which_)))
     {
-        storage_.destructor(which_);
+        storage_.free(which_);
     }
 
-    using default_index = index_of_default_constructible< first, rest..., void >;
+    using default_index = index_of_default_constructible< types..., void >;
 
     constexpr
-    destructor() noexcept(__is_nothrow_constructible(destructor, typename default_index::type))
-        : destructor(typename default_index::type{})
+    dispatcher() noexcept(noexcept(::new (nullptr) dispatcher(typename default_index::type{})))
+        : dispatcher(typename default_index::type{})
     { ; }
 
-    template< typename index,
-              typename ...arguments >
+    template< typename index, typename ...arguments >
     constexpr
-    destructor(index,
-               arguments &&... _arguments) noexcept(__is_nothrow_constructible(storage, index, arguments...))
+    dispatcher(index, arguments &&... _arguments) noexcept(noexcept(::new (nullptr) storage(index{}, std::forward< arguments >(_arguments)...)))
         : which_{index::value}
-        , storage_(index{},
-                   std::forward< arguments >(_arguments)...)
+        , storage_(index{}, std::forward< arguments >(_arguments)...)
     { ; }
 
     template< typename type >
@@ -366,6 +348,9 @@ struct destructor< false, false, first, rest... >
     }
 
 };
+
+template< typename ...types >
+using dispatcher_t = dispatcher< (std::is_trivially_destructible_v< types > && ...), (std::is_trivially_default_constructible_v< types > && ...), types... >;
 
 template< bool is_default_constructible >
 struct enable_default_constructor;
@@ -374,6 +359,7 @@ template<>
 struct enable_default_constructor< true >
 {
 
+    constexpr
     enable_default_constructor() = default;
 
     constexpr
@@ -386,6 +372,7 @@ template<>
 struct enable_default_constructor< false >
 {
 
+    constexpr
     enable_default_constructor() = delete;
 
     constexpr
@@ -395,12 +382,15 @@ struct enable_default_constructor< false >
 };
 
 template< typename ...types >
+using enable_default_constructor_t = enable_default_constructor< (std::is_default_constructible_v< types > || ...) >;
+
+template< typename ...types >
 class versatile
-        : enable_default_constructor< (__is_constructible(types) || ...) > // EBO-optimized out
+        : enable_default_constructor_t< types... >
 {
 
-    using enabler = enable_default_constructor< (__is_constructible(types) || ...) >;
-    using storage = destructor< (__has_trivial_destructor(types) && ...), (__is_trivially_constructible(types) && ...), types... >; // __has_trivial_constructor not match __is_trivially_constructible results
+    using enabler = enable_default_constructor_t< types... >;
+    using storage = dispatcher_t< types... >;
 
     storage storage_;
 
@@ -421,34 +411,29 @@ public :
     template< typename type >
     using index_at_t = index_at_t< unwrap_type_t< type >, unwrap_type_t< types >..., void >;
 
-    template< typename type,
-              typename index = index_at_t< type > >
+    template< typename type >
     constexpr
     bool
     active() const noexcept
     {
-        return (which() == index::value);
+        return (which() == index_at_t< type >::value);
     }
 
+    constexpr
     versatile() = default;
 
-    template< typename type,
-              typename index = index_at_t< type > >
+    template< typename type, typename index = index_at_t< type > >
     constexpr
-    versatile(type && _value) noexcept(__is_nothrow_constructible(storage, index, type))
-        : enabler(nullptr)
-        , storage_(index{},
-                   std::forward< type >(_value))
+    versatile(type && _value) noexcept(noexcept(::new (nullptr) storage(index{}, std::forward< type >(_value))))
+        : enabler({})
+        , storage_(index{}, std::forward< type >(_value))
     { ; }
 
-    template< std::size_t i,
-              typename ...arguments > // prohibits using of versatile<>
+    template< std::size_t i, typename ...arguments >
     constexpr
-    versatile(index< i >,
-              arguments &&... _arguments) noexcept(__is_nothrow_constructible(storage, index_t< i >, arguments...))
-        : enabler(nullptr)
-        , storage_(index_t< i >{},
-                   std::forward< arguments >(_arguments)...)
+    versatile(index< i >, arguments &&... _arguments) noexcept(noexcept(::new (nullptr) storage(index_t< i >{}, std::forward< arguments >(_arguments)...)))
+        : enabler({})
+        , storage_(index_t< i >{}, std::forward< arguments >(_arguments)...)
     { ; }
 
     template< typename type,
@@ -470,15 +455,21 @@ public :
     }
 
     template< typename type,
-              typename index = index_at_t< type >,
-              typename = get_index_t< (__has_trivial_copy(unwrap_type_t< type >) && ... && __has_trivial_assign(types)) > > // enable_if_t >
+              typename index = index_at_t< type > >
     constexpr
     versatile &
-    operator = (type && _value) noexcept // trivial per se, but due to operator is user provided - is not
+    operator = (type && _value) noexcept
     {
         return (*this = versatile(std::forward< type >(_value))); // http://stackoverflow.com/questions/33936295/
     }
 
+    template< std::size_t i = sizeof...(types), typename ...arguments >
+    constexpr
+    void
+    emplace(arguments &&... _arguments) noexcept
+    {
+        *this = versatile(index< i >{}, std::forward< arguments >(_arguments)...);
+    }
 
 };
 
