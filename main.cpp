@@ -343,6 +343,18 @@ struct check_invariants
 
 };
 
+using ::versatile::type_qualifier;
+
+template< type_qualifier type_qual, typename type >
+CONSTEXPRF
+decltype(auto)
+forward_as(type && _value) noexcept
+{
+    using ::versatile::add_qualifier_t;
+    using decay_type = std::remove_cv_t< std::remove_reference_t< type > >;
+    return static_cast< add_qualifier_t< type_qual, decay_type > >(_value);
+}
+
 template< typename type, typename ...types >
 CONSTEXPRF
 bool
@@ -939,8 +951,6 @@ make_enumerator(F && f)
     return f;
 }
 
-using ::versatile::type_qualifier;
-
 template< std::size_t M >
 struct pair
 {
@@ -974,11 +984,15 @@ struct pair
 
 using ::versatile::type_qualifier_of;
 
-template< std::size_t M, type_qualifier R = type_qualifier::value >
+template< std::size_t M, type_qualifier type_qual = type_qualifier::rref >
 struct multivisitor
 {
 
     using result_type = pair< M >;
+
+    result_type & result_;
+
+    static constexpr type_qualifier type_qual_ = type_qual;
 
     CONSTEXPRF
     std::size_t
@@ -989,42 +1003,46 @@ struct multivisitor
 
     template< typename ...types >
     CONSTEXPRF
-    result_type
+    decltype(auto)
     operator () (types &&... _values) & noexcept
     {
         //ASSERT (M == sizeof...(types));
         //ASSERT (!(is_visitable< types >{} || ...));
-        return {{{type_qualifier_of< multivisitor & >, type_qualifier_of< types && >...}}, {{M, _values...}}};
+        result_ = {{{type_qualifier_of< multivisitor & >, type_qualifier_of< types && >...}}, {{M, _values...}}};
+        return forward_as< type_qual >(result_);
     }
 
     template< typename ...types >
     CONSTEXPRF
-    result_type
+    decltype(auto)
     operator () (types &&... _values) const & noexcept
     {
-        return {{{type_qualifier_of< multivisitor const & >, type_qualifier_of< types && >...}}, {{M, _values...}}};
+        result_ = {{{type_qualifier_of< multivisitor const & >, type_qualifier_of< types && >...}}, {{M, _values...}}};
+        return forward_as< type_qual >(result_);
     }
 
     template< typename ...types >
     CONSTEXPRF
-    result_type
+    decltype(auto)
     operator () (types &&... _values) && noexcept
     {
-        return {{{type_qualifier_of< multivisitor && >, type_qualifier_of< types && >...}}, {{M, _values...}}};
+        result_ = {{{type_qualifier_of< multivisitor && >, type_qualifier_of< types && >...}}, {{M, _values...}}};
+        return forward_as< type_qual >(result_);
     }
 
     template< typename ...types >
     CONSTEXPRF
-    result_type
+    decltype(auto)
     operator () (types &&... _values) const && noexcept
     {
-        return {{{type_qualifier_of< multivisitor const && >, type_qualifier_of< types && >...}}, {{M, _values...}}};
+        result_ = {{{type_qualifier_of< multivisitor const && >, type_qualifier_of< types && >...}}, {{M, _values...}}};
+        return forward_as< type_qual >(result_);
     }
 
 };
 
-template< std::size_t M, type_qualifier t >
-struct variadic_size< multivisitor< M, t > >
+template< std::size_t M, type_qualifier type_qual >
+struct variadic_size< multivisitor< M, type_qual > >
         : ::versatile::index< M >
 {
 
@@ -1032,15 +1050,6 @@ struct variadic_size< multivisitor< M, t > >
 
 static CONSTEXPR std::size_t qualifier_id_begin = static_cast< std::size_t >(type_qualifier_of< void * & >);
 static CONSTEXPR std::size_t qualifier_id_end = static_cast< std::size_t >(type_qualifier_of< void * volatile & >);
-
-template< type_qualifier t, typename type >
-CONSTEXPRF
-decltype(auto)
-forward_as(type && _value)
-{
-    using ::versatile::add_qualifier_t;
-    return static_cast< add_qualifier_t< t, type > >(_value);
-}
 
 template< typename ...types >
 struct fusor
@@ -1065,8 +1074,13 @@ private :
     {
         using ::versatile::at_index_t;
         using ::versatile::multivisit;
-        auto const lhs = multivisit(forward_as< static_cast< type_qualifier >(qualifier_id_begin + Q) >(*std::get< K >(stuff_))...);
-        ASSERT (sizeof...(types) == lhs.size());
+        decltype(auto) lhs = multivisit(forward_as< static_cast< type_qualifier >(qualifier_id_begin + Q) >(*std::get< K >(stuff_))...);
+        if (sizeof...(types) != lhs.size()) {
+            return false;
+        }
+        if (type_qualifier_of< decltype(lhs) > != std::get< 0 >(stuff_)->type_qual_) { // TODO:
+            return false;
+        }
         using tuple = std::tuple< types... >;
         pair< (sizeof...(types) - 1) > const rhs = {{{static_cast< type_qualifier >(qualifier_id_begin + Q)...}}, {{(variadic_size< std::tuple_element_t< K, tuple > >{} - 1 - std::get< K >(stuff_)->which())...}}};
         if (lhs == rhs) {
@@ -1095,6 +1109,8 @@ template< template< std::size_t I > class T,
 class test_perferct_forwarding
 {
 
+    static CONSTEXPR std::size_t ref_count = (qualifier_id_end - qualifier_id_begin); // test only reference types
+
     template< typename >
     struct variants;
 
@@ -1109,7 +1125,7 @@ class test_perferct_forwarding
 
     };
 
-    template< std::size_t ...I >
+    template< type_qualifier type_qual, std::size_t ...I >
     CONSTEXPRF
     static
     bool
@@ -1120,11 +1136,12 @@ class test_perferct_forwarding
         for (std::size_t & n : indices) {
             if (n != 0) return false;
         }
-        multivisitor< M > mv;
+        using MV = multivisitor< M, type_qual >;
+        typename MV::result_type result_{};
+        MV mv{result_};
         variants< std::make_index_sequence< N > > variants_; // non-const
         auto permutation_ = std::make_tuple(&mv, &variants_.variants_[indices[I]]...);
         auto const fusor_ = make_fusor(permutation_);
-        CONSTEXPR std::size_t ref_count = (qualifier_id_end - qualifier_id_begin); // test only reference types
         auto const enumerator_ = make_enumerator< ref_count, (I, ref_count)... >(fusor_);
         for (;;) {
             { // constexpr version of `permutation_ = std::make_tuple(&mv, &variants_.variants_[indices[I]]...);`
@@ -1150,6 +1167,15 @@ class test_perferct_forwarding
         return true;
     }
 
+    template< std::size_t ...Q >
+    CONSTEXPRF
+    static
+    bool
+    run(std::index_sequence< Q... >) noexcept
+    {
+        return (run< static_cast< type_qualifier >(qualifier_id_begin + Q) >(std::make_index_sequence< M >{}) && ...);
+    }
+
 public :
 
     CONSTEXPRF
@@ -1157,7 +1183,7 @@ public :
     bool
     run() noexcept
     {
-        return run(std::make_index_sequence< M >{});
+        return run(std::make_index_sequence< ref_count >{});
     }
 
 };
