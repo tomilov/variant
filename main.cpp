@@ -64,6 +64,49 @@ static_assert(std::is_same_v< copy_cv_reference_t< volatile A const &&, B >, vol
 namespace test_variant
 {
 
+template< typename first >
+struct aggregate
+        : ::versatile::identity< ::versatile::aggregate_wrapper< first > >
+{
+
+};
+
+template< std::size_t I = 0 >
+struct literal_type
+{
+
+    std::size_t i = I;
+
+    CONSTEXPRF
+    operator std::size_t () const noexcept
+    {
+        return i;
+    }
+
+};
+
+static_assert(std::is_literal_type_v< literal_type<> >, LOCATION);
+
+template< std::size_t I = 0 >
+struct common_type
+{
+
+    std::size_t i = I;
+
+    CONSTEXPRF
+    operator std::size_t () const noexcept
+    {
+        return i;
+    }
+
+    common_type() = default;
+    common_type(common_type const &) = default;
+    ~common_type() noexcept { ; }
+
+};
+
+static_assert(!std::is_literal_type_v< common_type<> >, LOCATION);
+
 template< template< typename ... > class wrapper = ::versatile::identity,
           template< typename ... > class variant = ::versatile::versatile >
 struct check_invariants
@@ -71,6 +114,53 @@ struct check_invariants
 
     template< typename ...types >
     using V = variant< typename wrapper< types >::type... >;
+
+    struct literal_type_invariants
+    {
+
+        using X = literal_type<>;
+        static_assert(std::is_literal_type_v< X >, LOCATION);
+        static_assert(std::is_default_constructible_v< X >, LOCATION);
+        static_assert(!std::is_trivially_default_constructible_v< X >, LOCATION);
+        static_assert(std::is_trivially_copyable_v< X >, LOCATION);
+        using U = V< X >;
+        static_assert(std::is_literal_type_v< U >, LOCATION);
+        static_assert(std::is_default_constructible_v< U >, LOCATION);
+        static_assert(!std::is_trivially_default_constructible_v< U >, LOCATION);
+        static_assert(std::is_trivially_copyable_v< U >, LOCATION);
+
+    };
+
+    struct common_type_invariants
+    {
+
+        using X = common_type<>;
+        static_assert(std::is_default_constructible_v< X >, LOCATION);
+        static_assert(!std::is_trivially_default_constructible_v< X >, LOCATION);
+        static_assert(std::is_destructible_v< X >, LOCATION);
+        static_assert(!std::is_trivially_destructible_v< X >, LOCATION);
+        static_assert(std::is_copy_constructible_v< X >, LOCATION);
+        static_assert(std::is_move_constructible_v< X >, LOCATION);
+        static_assert(!std::is_trivially_copy_constructible_v< X >, LOCATION);
+        static_assert(!std::is_trivially_move_constructible_v< X >, LOCATION);
+        static_assert(std::is_copy_assignable_v< X >, LOCATION);
+        static_assert(std::is_move_assignable_v< X >, LOCATION);
+        static_assert(std::is_trivially_copy_assignable_v< X >, LOCATION); // user-provided
+        static_assert(std::is_trivially_move_assignable_v< X >, LOCATION);
+        using U = V< X >;
+        static_assert(std::is_default_constructible_v< U >, LOCATION);
+        static_assert(!std::is_trivially_default_constructible_v< U >, LOCATION);
+        static_assert(std::is_destructible_v< U >, LOCATION);
+        static_assert(!std::is_trivially_destructible_v< U >, LOCATION);
+        static_assert(std::is_copy_constructible_v< U >, LOCATION);
+        static_assert(std::is_move_constructible_v< U >, LOCATION);
+        static_assert(!std::is_trivially_copy_constructible_v< U >, LOCATION);
+        static_assert(!std::is_trivially_move_constructible_v< U >, LOCATION);
+        static_assert(std::is_copy_assignable_v< U >, LOCATION);
+        static_assert(std::is_move_assignable_v< U >, LOCATION);
+        static_assert(std::is_trivially_copy_assignable_v< U >, LOCATION); // user-provided
+
+    };
 
     struct trivial
     {
@@ -246,19 +336,35 @@ struct check_invariants
     constexpr
     static
     bool
-    run() noexcept // for implicit instantiation of whole class
+    run() noexcept // just for implicit instantiation
     {
         return true;
     }
 
 };
 
-template< typename type, typename variant >
-constexpr
+template< typename type, typename ...types >
+CONSTEXPRF
 bool
-check_active(variant const & _variant) noexcept
+check_active(::versatile::versatile< types... > const & v) noexcept
 {
-    return _variant.template active< type >();
+    return v.template active< type >();
+}
+
+template< typename type, typename ...types >
+CONSTEXPRF
+type
+get(::versatile::versatile< types... > const & v) noexcept
+{
+    return static_cast< type >(static_cast< type & >(v));
+}
+
+template< typename type, typename ...types >
+CONSTEXPRF
+type
+get(::versatile::versatile< types... > & v) noexcept
+{
+    return static_cast< type >(static_cast< type & >(v));
 }
 
 template< template< typename ... > class wrapper = ::versatile::identity,
@@ -275,7 +381,7 @@ struct check_trivial
     conversion_assignment_operator() noexcept
     {
         {
-            //if (!(static_cast< A & >(v).i == 2)) return false;
+
         }
         return true;
     }
@@ -299,10 +405,10 @@ struct check_trivial
             using U = variant< int, double >;
             static_assert(std::is_trivial_v< U >, LOCATION);
             constexpr U i = 1;
-            static_assert(static_cast< int const & >(i) == 1, LOCATION);
+            static_assert(get< int const & >(i) == 1, LOCATION);
             constexpr U d = -1.1;
-            static_assert(!(static_cast< double const & >(d) < -1.1), LOCATION);
-            static_assert(!(-1.1 < static_cast< double const & >(d)), LOCATION);
+            static_assert(!(get< double const & >(d) < -1.1), LOCATION);
+            static_assert(!(-1.1 < get< double const & >(d)), LOCATION);
         }
         {
             struct A { int i; };
@@ -310,10 +416,10 @@ struct check_trivial
             using U = V< A, B >;
             static_assert(std::is_trivial_v< U >, LOCATION);
             constexpr U i = A{1};
-            static_assert(static_cast< A const & >(i).i == 1, LOCATION);
+            static_assert(get< A const & >(i).i == 1, LOCATION);
             constexpr U d = B{1.1};
-            static_assert(!(static_cast< B const & >(d).d < 1.1), LOCATION);
-            static_assert(!(1.1 < static_cast< B const & >(d).d), LOCATION);
+            static_assert(!(get< B const & >(d).d < 1.1), LOCATION);
+            static_assert(!(1.1 < get< B const & >(d).d), LOCATION);
         }
         return true;
     }
@@ -339,16 +445,16 @@ struct check_trivial
             static_assert(std::is_trivial_v< U >);
             U v{1};
             if (!(check_active< int >(v))) return false;
-            if (!(static_cast< int & >(v) == 1)) return false;
+            if (!(get< int & >(v) == 1)) return false;
             v = 'c';
             if (!(check_active< char & >(v))) return false;
-            if (!(static_cast< char & >(v) == 'c')) return false;
+            if (!(get< char & >(v) == 'c')) return false;
             v = -1.1;
             if (!(check_active< double & >(v))) return false;
-            if ((static_cast< double & >(v) < -1.1) || (-1.1 < static_cast< double & >(v))) return false;
+            if ((get< double & >(v) < -1.1) || (-1.1 < get< double & >(v))) return false;
             v = 2;
             if (!(check_active< int & >(v))) return false;
-            if (!(static_cast< int & >(v) == 2)) return false;
+            if (!(get< int & >(v) == 2)) return false;
         }
         {
             struct A { int i = 1; };
@@ -359,16 +465,16 @@ struct check_trivial
             static_assert(std::is_trivially_copyable_v< U >);
             U v{A{}};
             if (!(check_active< A >(v))) return false;
-            if (!(static_cast< A & >(v).i == 1)) return false;
+            if (!(get< A & >(v).i == 1)) return false;
             v = B{};
             if (!(check_active< B & >(v))) return false;
-            if (!(static_cast< B & >(v).i == 2)) return false;
+            if (!(get< B & >(v).i == 2)) return false;
             v = C{};
             if (!(check_active< C & >(v))) return false;
-            if (!(static_cast< C & >(v).i == 3)) return false;
+            if (!(get< C & >(v).i == 3)) return false;
             v = A{};
             if (!(check_active< A & >(v))) return false;
-            if (!(static_cast< A & >(v).i == 1)) return false;
+            if (!(get< A & >(v).i == 1)) return false;
         }
         {
             enum class E { A = 1 };
@@ -382,9 +488,9 @@ struct check_trivial
             enum class F { C, D };
             using U = variant< E, F >;
             U v = E::B;
-            if (!(static_cast< E >(v) == E::B)) return false;
+            if (!(get< E >(v) == E::B)) return false;
             v = F::C;
-            if (!(static_cast< F >(v) == F::C)) return false;
+            if (!(get< F >(v) == F::C)) return false;
         }
         return true;
     }
@@ -510,10 +616,10 @@ class check_literal
             using U = V< O >;
             CONSTEXPR U v{};
             ASSERT (check_active< O >(v));
-            ASSERT (static_cast< O const & >(v) == state::default_constructed);
+            ASSERT (get< O const & >(v) == state::default_constructed);
             U w;
             CHECK (check_active< O >(w));
-            CHECK (static_cast< O const & >(w) == state::default_constructed);
+            CHECK (get< O const & >(w) == state::default_constructed);
         }
         {
             struct A { CONSTEXPRF A(int i = 1) : j(i) { ; } int j; };
@@ -521,7 +627,7 @@ class check_literal
             static_assert(std::is_default_constructible_v< A >, LOCATION);
             CONSTEXPR U v{};
             ASSERT (check_active< A >(v));
-            ASSERT (static_cast< A const & >(v).j == 1);
+            ASSERT (get< A const & >(v).j == 1);
         }
         {
             struct A {};
@@ -574,7 +680,7 @@ class check_literal
             O o;
             CHECK (o == state::default_constructed);
             U v = o;
-            CHECK (static_cast< O & >(v) == state::copy_constructed);
+            CHECK (get< O & >(v) == state::copy_constructed);
             CHECK (o == state::default_constructed);
         }
         { // move conversion constructor
@@ -582,34 +688,34 @@ class check_literal
             O o;
             CHECK (o == state::default_constructed);
             U v = std::move(o);
-            CHECK (static_cast< O & >(v) == state::move_constructed);
+            CHECK (get< O & >(v) == state::move_constructed);
             CHECK (o == state::moved_from);
         }
         { // copy conversion operator
             using U = V< O >;
             U v;
-            CHECK (static_cast< O & >(v) == state::default_constructed);
+            CHECK (get< O & >(v) == state::default_constructed);
             //O o = v; // error: only direct initialization or explicit cast is allowed
             // O o(v); // OK
-            // O o = static_cast< O & >(v); // OK
+            // O o = get< O & >(v); // OK
             O o{v};
             CHECK (o == state::copy_constructed);
-            CHECK (static_cast< O & >(v) == state::default_constructed);
+            CHECK (get< O & >(v) == state::default_constructed);
         }
         { // move conversion operator (not works)
             using U = V< O >;
             U v;
-            CHECK (static_cast< O & >(v) == state::default_constructed);
+            CHECK (get< O & >(v) == state::default_constructed);
             //O o = std::move(v); // error: only direct initialization or explicit cast is allowed
             // O o(std::move(v)); // OK
-            // O o = std::move(static_cast< O & >(v)); // OK
+            // O o = std::move(get< O & >(v)); // OK
             O o{std::move(v)};
-            { // ! currently clang++ has bug #19917 for static_cast to rvalue reference and cv-ref-qualified overloaded conversion operators (templated) (if any) causes "ambiguity" error
+            { // ! currently clang++ has bug #19917 for get to rvalue reference and cv-ref-qualified overloaded conversion operators (templated) (if any) causes "ambiguity" error
                 CHECK (o != state::move_constructed);
-                CHECK (static_cast< O & >(v) != state::moved_from);
+                CHECK (get< O & >(v) != state::moved_from);
             }
             CHECK (o == state::copy_constructed);
-            CHECK (static_cast< O & >(v) == state::default_constructed);
+            CHECK (get< O & >(v) == state::default_constructed);
         }
         return true;
     }
@@ -631,24 +737,24 @@ class check_literal
             struct B { int i = 5; };
             using U = V< A, B >;
             U v = B{2};
-            CHECK (static_cast< B & >(v).i == 2);
+            CHECK (get< B & >(v).i == 2);
             U w = B{3};
-            CHECK (static_cast< B & >(w).i == 3);
+            CHECK (get< B & >(w).i == 3);
             v = w;
-            CHECK (static_cast< B & >(v).i == 3);
-            CHECK (static_cast< B & >(w).i == 3);
+            CHECK (get< B & >(v).i == 3);
+            CHECK (get< B & >(w).i == 3);
         }
         {
             struct A { int i = 1; };
             struct B { int i = 5; };
             using U = V< A, B >;
             U v = B{2};
-            CHECK (static_cast< B & >(v).i == 2);
+            CHECK (get< B & >(v).i == 2);
             U w = B{3};
-            CHECK (static_cast< B & >(w).i == 3);
+            CHECK (get< B & >(w).i == 3);
             v = std::move(w);
-            CHECK (static_cast< B & >(v).i == 3);
-            CHECK (static_cast< B & >(w).i == 3);
+            CHECK (get< B & >(v).i == 3);
+            CHECK (get< B & >(w).i == 3);
         }
         return true;
     }
@@ -670,15 +776,15 @@ class check_literal
             using U = V< A >;
             U v;
             CHECK (check_active< A >(v));
-            CHECK (static_cast< A & >(v).i == 1);
+            CHECK (get< A & >(v).i == 1);
             A a{2};
             v = a;
             CHECK (a.i == 2);
-            CHECK (static_cast< A & >(v).i == 2);
+            CHECK (get< A & >(v).i == 2);
             a.i = 3;
             v = std::move(a);
             CHECK (a.i == 3);
-            CHECK (static_cast< A & >(v).i == 3);
+            CHECK (get< A & >(v).i == 3);
         }
         // changing active member is only available for trivially copyable types
         return true;
@@ -729,11 +835,11 @@ class check_literal
         };
         using U = V< A >;
         U v;
-        CHECK (static_cast< A & >(v).j == 1);
+        CHECK (get< A & >(v).j == 1);
         v.emplace(3);
-        CHECK (static_cast< A & >(v).j == 3);
+        CHECK (get< A & >(v).j == 3);
         v.emplace(4, 3);
-        CHECK (static_cast< A & >(v).j == 7);
+        CHECK (get< A & >(v).j == 7);
         return true;
     }
 
@@ -868,7 +974,7 @@ struct pair
 
 using ::versatile::type_qualifier_of;
 
-template< std::size_t M >
+template< std::size_t M, type_qualifier R = type_qualifier::value >
 struct multivisitor
 {
 
@@ -917,8 +1023,8 @@ struct multivisitor
 
 };
 
-template< std::size_t M >
-struct variadic_size< multivisitor< M > >
+template< std::size_t M, type_qualifier t >
+struct variadic_size< multivisitor< M, t > >
         : ::versatile::index< M >
 {
 
@@ -926,6 +1032,15 @@ struct variadic_size< multivisitor< M > >
 
 static CONSTEXPR std::size_t qualifier_id_begin = static_cast< std::size_t >(type_qualifier_of< void * & >);
 static CONSTEXPR std::size_t qualifier_id_end = static_cast< std::size_t >(type_qualifier_of< void * volatile & >);
+
+template< type_qualifier t, typename type >
+CONSTEXPRF
+decltype(auto)
+forward_as(type && _value)
+{
+    using ::versatile::add_qualifier_t;
+    return static_cast< add_qualifier_t< t, type > >(_value);
+}
 
 template< typename ...types >
 struct fusor
@@ -948,12 +1063,12 @@ private :
     bool
     call(std::index_sequence< K... >) const noexcept
     {
-        using ::versatile::add_qualifier_t;
         using ::versatile::at_index_t;
         using ::versatile::multivisit;
-        auto const lhs = multivisit(static_cast< add_qualifier_t< static_cast< type_qualifier >(qualifier_id_begin + Q), types > >(*std::get< K >(stuff_))...);
+        auto const lhs = multivisit(forward_as< static_cast< type_qualifier >(qualifier_id_begin + Q) >(*std::get< K >(stuff_))...);
         ASSERT (sizeof...(types) == lhs.size());
-        pair< (sizeof...(types) - 1) > const rhs = {{{static_cast< type_qualifier >(qualifier_id_begin + Q)...}}, {{(variadic_size< at_index_t< K, types... > >{} - 1 - std::get< K >(stuff_)->which())...}}};
+        using tuple = std::tuple< types... >;
+        pair< (sizeof...(types) - 1) > const rhs = {{{static_cast< type_qualifier >(qualifier_id_begin + Q)...}}, {{(variadic_size< std::tuple_element_t< K, tuple > >{} - 1 - std::get< K >(stuff_)->which())...}}};
         if (lhs == rhs) {
             return false;
         }
@@ -1003,7 +1118,7 @@ class test_perferct_forwarding
         static_assert(sizeof...(I) == M);
         std::size_t indices[M] = {};
         for (std::size_t & n : indices) {
-            n = 0;
+            if (n != 0) return false;
         }
         multivisitor< M > mv;
         variants< std::make_index_sequence< N > > variants_; // non-const
@@ -1082,118 +1197,6 @@ operator || (lhs && _lhs, rhs && _rhs) = delete;
 #include <boost/variant.hpp>
 
 template< typename ...types >
-struct boost_variant_i
-        : boost::variant< types... >
-{
-
-    using base = boost::variant< types... >;
-
-    // can't correctly inherit constructors and assignment operators by `using base::base;` and `using base::operator =;`
-
-    boost_variant_i(boost_variant_i &) = default;
-    boost_variant_i(boost_variant_i const &) = default;
-    boost_variant_i(boost_variant_i &&) = default;
-
-    constexpr
-    boost_variant_i(boost_variant_i const && _rhs)
-        : base(std::move(_rhs.member_))
-    { ; }
-
-    template< typename ...arguments >
-    constexpr
-    boost_variant_i(arguments &&... _arguments)
-        : base(std::forward< arguments >(_arguments)...)
-    { ; }
-
-    boost_variant_i &
-    operator = (boost_variant_i const &) = default;
-    boost_variant_i &
-    operator = (boost_variant_i &) = default;
-    boost_variant_i &
-    operator = (boost_variant_i &&) = default;
-
-    constexpr
-    boost_variant_i &
-    operator = (boost_variant_i const && _rhs)
-    {
-        base::operator = (std::move(_rhs.member_));
-        return *this;
-    }
-
-    template< typename argument >
-    constexpr
-    boost_variant_i &
-    operator = (argument && _argument)
-    {
-        base::operator = (std::forward< argument >(_argument));
-        return *this;
-    }
-
-    constexpr
-    std::size_t
-    which() const
-    {
-        return (sizeof...(types) - static_cast< std::size_t >(base::which()));
-    }
-
-    template< typename type >
-    using index_at_t = ::versatile::index_at_t< ::versatile::unwrap_type_t< type >, ::versatile::unwrap_type_t< types >..., void >;
-
-    template< typename type >
-    constexpr
-    bool
-    active() const noexcept
-    {
-        return (index_at_t< type >::value == which());
-    }
-
-    template< typename type >
-    explicit
-    constexpr
-    operator type const & () const &
-    {
-        if (!active< type >()) {
-            throw std::bad_cast{};
-        }
-        return boost::get< type const & >(static_cast< boost_variant_i::base const & >(*this));
-    }
-
-    template< typename type >
-    explicit
-    constexpr
-    operator type & () &
-    {
-        if (!active< type >()) {
-            throw std::bad_cast{};
-        }
-        return boost::get< type & >(static_cast< boost_variant_i::base & >(*this));
-    }
-
-    template< typename type >
-    explicit
-    constexpr
-    operator type const && () const &&
-    {
-        if (!active< type >()) {
-            throw std::bad_cast{};
-        }
-        return boost::get< type const && >(static_cast< boost_variant_i::base const && >(*this));
-    }
-
-    template< typename type >
-    explicit
-    constexpr
-    operator type && () &&
-    {
-        if (!active< type >()) {
-            throw std::bad_cast{};
-        }
-        return boost::get< type && >(static_cast< boost_variant_i::base && >(*this));
-    }
-
-};
-
-template< typename ...types >
 struct boost_variant_c
 {
 
@@ -1259,7 +1262,7 @@ struct boost_variant_c
     template< typename type >
     explicit
     constexpr
-    operator type const & () const &
+    operator type const & () const
     {
         if (!active< type >()) {
             throw std::bad_cast{};
@@ -1270,7 +1273,7 @@ struct boost_variant_c
     template< typename type >
     explicit
     constexpr
-    operator type & () &
+    operator type & ()
     {
         if (!active< type >()) {
             throw std::bad_cast{};
@@ -1278,33 +1281,150 @@ struct boost_variant_c
         return boost::get< type & >(member_);
     }
 
-    template< typename type >
-    explicit
-    constexpr
-    operator type const && () const &&
-    {
-        if (!active< type >()) {
-            throw std::bad_cast{};
-        }
-        return boost::get< type const && >(member_);
-    }
-
-    template< typename type >
-    explicit
-    constexpr
-    operator type && () &&
-    {
-        if (!active< type >()) {
-            throw std::bad_cast{};
-        }
-        return boost::get< type && >(member_);
-    }
-
 private :
 
     boost::variant< types... > member_;
 
 };
+
+template< typename type, typename ...types >
+CONSTEXPRF
+bool
+check_active(::boost_variant_c< types... > const & v) noexcept
+{
+    return v.template active< type >();
+}
+
+template< typename type, typename ...types >
+CONSTEXPRF
+type
+get(boost_variant_c< types... > const & v) noexcept
+{
+    return static_cast< type >(static_cast< type & >(v));
+}
+
+template< typename type, typename ...types >
+CONSTEXPRF
+type
+get(boost_variant_c< types... > & v) noexcept
+{
+    return static_cast< type >(static_cast< type & >(v));
+}
+
+template< typename ...types >
+struct boost_variant_i
+        : boost::variant< types... >
+{
+
+    using base = boost::variant< types... >;
+
+    using base::base;
+    using base::operator =;
+
+    boost_variant_i(boost_variant_i &) = default;
+    boost_variant_i(boost_variant_i const &) = default;
+    boost_variant_i(boost_variant_i &&) = default;
+
+    constexpr
+    boost_variant_i(boost_variant_i const && _rhs)
+        : base(std::move(_rhs.member_))
+    { ; }
+
+    template< typename ...arguments >
+    constexpr
+    boost_variant_i(arguments &&... _arguments)
+        : base(std::forward< arguments >(_arguments)...)
+    { ; }
+
+    boost_variant_i &
+    operator = (boost_variant_i const &) = default;
+    boost_variant_i &
+    operator = (boost_variant_i &) = default;
+    boost_variant_i &
+    operator = (boost_variant_i &&) = default;
+
+    constexpr
+    boost_variant_i &
+    operator = (boost_variant_i const && _rhs)
+    {
+        base::operator = (std::move(_rhs.member_));
+        return *this;
+    }
+
+    template< typename argument >
+    constexpr
+    boost_variant_i &
+    operator = (argument && _argument)
+    {
+        base::operator = (std::forward< argument >(_argument));
+        return *this;
+    }
+
+    constexpr
+    std::size_t
+    which() const
+    {
+        return (sizeof...(types) - static_cast< std::size_t >(base::which()));
+    }
+
+    template< typename type >
+    using index_at_t = ::versatile::index_at_t< ::versatile::unwrap_type_t< type >, ::versatile::unwrap_type_t< types >..., void >;
+
+    template< typename type >
+    constexpr
+    bool
+    active() const noexcept
+    {
+        return (index_at_t< type >::value == which());
+    }
+
+    template< typename type >
+    explicit
+    constexpr
+    operator type const & () const
+    {
+        if (!active< type >()) {
+            throw std::bad_cast{};
+        }
+        return boost::get< type const & >(static_cast< boost_variant_i::base const & >(*this));
+    }
+
+    template< typename type >
+    explicit
+    constexpr
+    operator type & ()
+    {
+        if (!active< type >()) {
+            throw std::bad_cast{};
+        }
+        return boost::get< type & >(static_cast< boost_variant_i::base & >(*this));
+    }
+
+};
+
+template< typename type, typename ...types >
+CONSTEXPRF
+bool
+check_active(::boost_variant_i< types... > const & v) noexcept
+{
+    return v.template active< type >();
+}
+
+template< typename type, typename ...types >
+CONSTEXPRF
+type
+get(::boost_variant_i< types... > const & v) noexcept
+{
+    return static_cast< type >(static_cast< type & >(v));
+}
+
+template< typename type, typename ...types >
+CONSTEXPRF
+type
+get(::boost_variant_i< types... > & v) noexcept
+{
+    return static_cast< type >(static_cast< type & >(v));
+}
 
 namespace versatile
 {
@@ -1351,67 +1471,6 @@ struct unwrap_type< std::reference_wrapper< type > >
 #define ROWS COLS
 #endif
 
-namespace test_variant
-{
-
-template< typename first >
-struct aggregate
-        : ::versatile::identity< ::versatile::aggregate_wrapper< first > >
-{
-
-};
-
-template< std::size_t I = 0 >
-struct literal_type
-{
-
-    std::size_t i = I;
-
-    CONSTEXPRF
-    operator std::size_t () const noexcept
-    {
-        return i;
-    }
-
-};
-
-static_assert(std::is_literal_type_v< literal_type<> >, LOCATION);
-
-template< std::size_t I = 0 >
-struct common_type
-{
-
-    std::size_t i = I;
-
-    CONSTEXPRF
-    operator std::size_t () const noexcept
-    {
-        return i;
-    }
-
-    common_type() = default;
-    common_type(common_type const &) = default;
-    ~common_type() { ; }
-
-};
-
-static_assert(!std::is_literal_type_v< common_type<> >, LOCATION);
-
-static_assert(std::is_default_constructible_v< common_type<> >, LOCATION);
-static_assert(!std::is_trivially_default_constructible_v< common_type<> >, LOCATION);
-static_assert(std::is_destructible_v< common_type<> >, LOCATION);
-static_assert(!std::is_trivially_destructible_v< common_type<> >, LOCATION);
-static_assert(std::is_copy_constructible_v< common_type<> >, LOCATION);
-static_assert(std::is_move_constructible_v< common_type<> >, LOCATION);
-static_assert(!std::is_trivially_copy_constructible_v< common_type<> >, LOCATION);
-static_assert(!std::is_trivially_move_constructible_v< common_type<> >, LOCATION);
-static_assert(std::is_copy_assignable_v< common_type<> >, LOCATION);
-static_assert(std::is_move_assignable_v< common_type<> >, LOCATION);
-static_assert(std::is_trivially_copy_assignable_v< common_type<> >, LOCATION); // user-provided
-static_assert(std::is_trivially_move_assignable_v< common_type<> >, LOCATION);
-
-}
-
 int
 main()
 {
@@ -1434,9 +1493,8 @@ main()
                 using ::test_variant::check_literal;
                 ASSERT (check_literal< identity,  versatile >::run());
                 ASSERT (check_literal< aggregate, versatile >::run());
-
             }
-#if 0
+#if 1
             {
                 using ::test_variant::test_perferct_forwarding;
                 {
@@ -1463,8 +1521,19 @@ main()
         static_assert(std::is_literal_type< L >{}, LOCATION);
         static_assert(!std::is_literal_type< ::boost::variant< L > >{}, LOCATION); // ...while this is true:
 #ifdef VERSATILE_RUNTIME
-        //assert ((test_variant::check_literal< ::versatile::identity, ::boost_variant_i >::run()));
-        //assert ((test_variant::check_literal< aggregate, ::boost_variant_i >::run()));
+        using ::versatile::identity;
+        using ::test_variant::aggregate;
+        {
+            using ::test_variant::check_literal;
+            {
+                ASSERT (check_literal< identity,  ::boost_variant_i >::run());
+                ASSERT (check_literal< aggregate, ::boost_variant_i >::run());
+            }
+            {
+                ASSERT (check_literal< identity,  ::boost_variant_c >::run());
+                ASSERT (check_literal< aggregate, ::boost_variant_c >::run());
+            }
+        }
 #endif
 #if 0
         {
