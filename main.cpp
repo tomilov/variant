@@ -2496,7 +2496,7 @@ main()
                 ASSERT (check_literal< identity,  versatile >::run());
                 ASSERT (check_literal< aggregate, versatile >::run());
             }
-#if 0
+#if 1
             {
                 using ::test_variant::test_perferct_forwarding;
                 {
