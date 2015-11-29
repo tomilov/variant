@@ -34,6 +34,7 @@ class dispatcher< type_qual, visitor, decay_type< types... > >
     template< typename type, typename ...arguments >
     static
     constexpr
+    // not just only `decltype(auto)` due to problems in `callee_type`'s `decltype(&callee)` for 'value' returning type of `callee`
     decltype(std::declval< visitor >()(std::declval< type >(), std::declval< arguments >()...))
     callee(visitor & _visitor, visitable & _visitable, arguments &... _arguments)
     {
