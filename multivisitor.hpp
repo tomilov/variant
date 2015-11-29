@@ -2,6 +2,10 @@
 
 #include "prologue.hpp"
 
+#include <utility>
+#include <tuple>
+#include <array>
+
 namespace test_variant
 {
 

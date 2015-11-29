@@ -44,8 +44,10 @@ set( HEADERS
     "include/versatile/io.hpp"
 
     "prologue.hpp"
-    "boost_variant.hpp"
+    "traits.hpp"
+    "variant.hpp"
     "multivisitor.hpp"
+    "boost_variant.hpp"
 )
 
 add_executable( ${PROJECT_NAME} "main.cpp" ${HEADERS} )

@@ -15,7 +15,7 @@
 #define VERSATILE_RUNTIME
 
 #define STR(S) #S
-// double expansion of next macro argument
+// double expansion of macro argument
 #define STRN(N) STR(N)
 #define LOCATION "file '" __FILE__ "', line: " STRN(__LINE__)
 #define SA(...) static_assert((__VA_ARGS__), LOCATION)
@@ -38,14 +38,13 @@
 #endif
 
 namespace versatile
-{ // little extension
+{ // little extension (candidates to include in library)
 
 template< type_qualifier type_qual, typename type >
 constexpr
 decltype(auto)
 forward_as(type && _value) noexcept
 {
-    using ::versatile::add_qualifier_t;
     using decay_type = std::remove_cv_t< std::remove_reference_t< type > >;
     return static_cast< add_qualifier_t< type_qual, decay_type > >(_value);
 }
@@ -53,7 +52,7 @@ forward_as(type && _value) noexcept
 template< typename type, typename ...types >
 constexpr
 bool
-is_active(::versatile::versatile< types... > const & v) noexcept
+is_active(versatile< types... > const & v) noexcept
 {
     return v.template active< type >();
 }
