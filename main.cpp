@@ -191,76 +191,6 @@ struct check_invariants
     template< typename ...types >
     using V = variant< typename wrapper< types >::type... >;
 
-    struct literal_type_invariants
-    {
-
-        using L = literal_type<>;
-
-        SA(std::is_literal_type_v< L >);
-        SA(std::is_default_constructible_v< L >);
-        SA(!std::is_trivially_default_constructible_v< L >);
-        SA(std::is_trivially_copyable_v< L >);
-
-        using U = V< L >;
-
-        SA(std::is_literal_type_v< U >);
-        SA(std::is_default_constructible_v< U >);
-        SA(!std::is_trivially_default_constructible_v< U >);
-        SA(std::is_trivially_copyable_v< U >);
-
-        constexpr
-        static
-        bool
-        run() noexcept
-        {
-            return true;
-        }
-
-    };
-
-    struct common_type_invariants
-    {
-
-        using C = common_type<>;
-
-        SA(std::is_default_constructible_v< C >);
-        SA(!std::is_trivially_default_constructible_v< C >);
-        SA(std::is_destructible_v< C >);
-        SA(!std::is_trivially_destructible_v< C >);
-        SA(std::is_copy_constructible_v< C >);
-        SA(std::is_move_constructible_v< C >);
-        SA(!std::is_trivially_copy_constructible_v< C >);
-        SA(!std::is_trivially_move_constructible_v< C >);
-        SA(std::is_copy_assignable_v< C >);
-        SA(std::is_move_assignable_v< C >);
-        SA(std::is_trivially_copy_assignable_v< C >); // user-provided
-        SA(std::is_trivially_move_assignable_v< C >);
-
-        using U = V< C >;
-
-        SA(std::is_default_constructible_v< U >);
-        SA(!std::is_trivially_default_constructible_v< U >);
-        SA(std::is_destructible_v< U >);
-        SA(!std::is_trivially_destructible_v< U >);
-        SA(std::is_copy_constructible_v< U >);
-        SA(std::is_move_constructible_v< U >);
-        SA(!std::is_trivially_copy_constructible_v< U >);
-        SA(!std::is_trivially_move_constructible_v< U >);
-        SA(std::is_copy_assignable_v< U >);
-        SA(std::is_move_assignable_v< U >);
-        SA(std::is_trivially_copy_assignable_v< U >); // user-provided
-        SA(std::is_trivially_move_assignable_v< U >);
-
-        constexpr
-        static
-        bool
-        run() noexcept
-        {
-            return true;
-        }
-
-    };
-
     struct trivial
     {
 
@@ -268,34 +198,36 @@ struct check_invariants
         {
 
             int i;
-            constexpr S(int j) : i(j) { ; }
+            S(int j) : i(j) { ; }
 
-            CONSTEXPRF S() = default;
+            S() = default;
 
-            CONSTEXPRF S(S const &) = default;
-            //CONSTEXPRF S(S &) = default; // sould not be user-declared to be trivial
-            //CONSTEXPRF S(S const &&) { ; } // sould not be user-declared to be trivial
-            CONSTEXPRF S(S &&) = default;
+            S(S const &) = default;
+            //S(S &) = default; // ?sould not be user-declared to be trivial
+            //S(S const &&) { ; } // ?sould not be user-declared/provided to be trivial
+            S(S &&) = default;
 
-            CONSTEXPRF S & operator = (S const &) = default;
-            //CONSTEXPRF S & operator = (S &) = default; // sould not be user-declared to be trivial
-            //CONSTEXPRF S & operator = (S const &&) { return *this; } // sould not be user-declared to be trivial
-            CONSTEXPRF S & operator = (S &&) = default;
+            S & operator = (S const &) = default;
+            //S & operator = (S &) = default; // ?sould not be user-declared to be trivial
+            //S & operator = (S const &&) { return *this; } // ?sould not be user-declared/provided to be trivial
+            S & operator = (S &&) = default;
 
             ~S() = default;
 
         };
 
-        SA(std::is_trivial_v< S >);
-        SA(std::is_literal_type_v< S >);
-        SA(std::is_standard_layout_v< S >);
-        SA(std::is_pod_v< S >);
-
         using U = V< S >;
 
+        SA(std::is_trivial_v< S >);
         SA(std::is_trivial_v< U >);
-        SA(std::is_literal_type_v< U >);
+
+        SA(std::is_standard_layout_v< S >);
         SA(std::is_standard_layout_v< U >);
+
+        SA(std::is_literal_type_v< S >); // constexpr defaulted default c-tor
+        SA(std::is_literal_type_v< U >);
+
+        SA(std::is_pod_v< S >);
         SA(std::is_pod_v< U >);
 
         constexpr
@@ -308,7 +240,57 @@ struct check_invariants
 
     };
 
-    // S - strictest type
+    struct trivially_copyable
+    {
+
+        struct S
+        {
+
+            int i;
+            S(int j) : i(j) { ; }
+
+            S() { ; }
+
+            S(S const &) = default;
+            //S(S &) = default; // ?sould not be user-declared to be trivially copyable
+            //S(S const &&) { ; } // ?sould not be user-declared/provided to be trivially copyable
+            S(S &&) = default;
+
+            S & operator = (S const &) = default;
+            //S & operator = (S &) = default; // ?sould not be user-declared to be trivially copyable
+            //S & operator = (S const &&) { return *this; } // ?sould not be user-declared/provided to be trivially copyable
+            S & operator = (S &&) = default;
+
+            ~S() = default;
+
+        };
+
+        using U = V< S >;
+
+        SA(!std::is_trivially_default_constructible_v< S >);
+        SA(!std::is_trivially_default_constructible_v< U >);
+
+        SA(std::is_trivially_copyable_v< S >);
+        SA(std::is_trivially_copyable_v< U >);
+
+        SA(std::is_standard_layout_v< S >);
+        SA(std::is_standard_layout_v< U >);
+
+        SA(!std::is_literal_type_v< S >);
+        SA(!std::is_literal_type_v< U >);
+
+        SA(!std::is_pod_v< S >);
+        SA(!std::is_pod_v< U >);
+
+        constexpr
+        static
+        bool
+        run() noexcept
+        {
+            return true;
+        }
+
+    };
 
     struct default_constructor
     {
@@ -317,33 +299,75 @@ struct check_invariants
         {
 
             int i;
-            constexpr S(int j) : i(j) { ; }
+            S(int j) : i(j) { ; }
 
-            CONSTEXPRF S() { ; }
+            S() { ; }
 
-            CONSTEXPRF S(S const &) = default;
-            //CONSTEXPRF S(S &) = default; // sould not be user-declared to be trivially copyable
-            //CONSTEXPRF S(S const &&) { ; } // sould not be user-declared to be trivially copyable
-            CONSTEXPRF S(S &&) = default;
+            S(S const &) = default;
+            S(S &) = default;
+            //S(S const &&) { ; }
+            S(S &&) = default;
 
-            CONSTEXPRF S & operator = (S const &) = default;
-            //CONSTEXPRF S & operator = (S &) = default; // sould not be user-declared to be trivially copyable
-            //CONSTEXPRF S & operator = (S const &&) { return *this; } // sould not be user-declared to be trivially copyable
-            CONSTEXPRF S & operator = (S &&) = default;
+            S & operator = (S const &) = default;
+            S & operator = (S &) = default;
+            //S & operator = (S const &&) { return *this; }
+            S & operator = (S &&) = default;
 
             ~S() = default;
 
         };
 
-        SA(std::is_default_constructible_v< S >);
-        SA(!std::is_trivially_default_constructible_v< S >); // user-provided
-        SA(std::is_trivially_copyable_v< S >);
-
         using U = V< S >;
 
+        SA(std::is_default_constructible_v< S >);
         SA(std::is_default_constructible_v< U >);
-        SA(!std::is_trivially_default_constructible_v< U >); // U is a union with at least one variant member with non-trivial default constructor
-        SA(std::is_trivially_copyable_v< U >);
+        SA(!std::is_trivially_default_constructible_v< S >);
+        SA(!std::is_trivially_default_constructible_v< U >);
+
+        SA(std::is_destructible_v< S >);
+        SA(std::is_destructible_v< U >);
+        SA(std::is_trivially_destructible_v< S >);
+        SA(std::is_trivially_destructible_v< U >);
+
+        SA(std::is_copy_constructible_v< S >);
+        SA(std::is_copy_constructible_v< U >);
+        SA(is_vcopy_constructible_v< S >);
+        SA(is_vcopy_constructible_v< U >);
+
+        SA(std::is_move_constructible_v< S >);
+        SA(std::is_move_constructible_v< U >);
+        SA(is_cmove_constructible_v< S >);
+        SA(is_cmove_constructible_v< U >);
+
+        SA(std::is_trivially_copy_constructible_v< S >);
+        SA(std::is_trivially_copy_constructible_v< U >);
+        SA(!is_trivially_vcopy_constructible_v< S >);
+        SA(is_trivially_vcopy_constructible_v< U >);
+
+        SA(std::is_trivially_move_constructible_v< S >);
+        SA(std::is_trivially_move_constructible_v< U >);
+        SA(is_trivially_cmove_constructible_v< S >);
+        SA(is_trivially_cmove_constructible_v< U >);
+
+        SA(std::is_copy_assignable_v< S >);
+        SA(std::is_copy_assignable_v< U >);
+        SA(is_vcopy_assignable_v< S >);
+        SA(is_vcopy_assignable_v< U >);
+
+        SA(std::is_move_assignable_v< S >);
+        SA(std::is_move_assignable_v< U >);
+        SA(is_cmove_assignable_v< S >);
+        SA(is_cmove_assignable_v< U >);
+
+        SA(std::is_trivially_copy_assignable_v< S >);
+        SA(std::is_trivially_copy_assignable_v< U >);
+        SA(!is_trivially_vcopy_assignable_v< S >);
+        SA(is_trivially_vcopy_assignable_v< U >);
+
+        SA(std::is_trivially_move_assignable_v< S >);
+        SA(std::is_trivially_move_assignable_v< U >);
+        SA(is_trivially_cmove_assignable_v< S >);
+        SA(is_trivially_cmove_assignable_v< U >);
 
         constexpr
         static
@@ -362,31 +386,75 @@ struct check_invariants
         {
 
             int i;
-            constexpr S(int j) : i(j) { ; }
+            S(int j) : i(j) { ; }
 
-            CONSTEXPRF S() = default;
+            S() = default;
 
-            CONSTEXPRF S(S const &) = default;
-            CONSTEXPRF S(S &) = default;
-            //CONSTEXPRF S(S const &&) { ; }
-            CONSTEXPRF S(S &&) = default;
+            S(S const &) = default;
+            S(S &) = default;
+            //S(S const &&) { ; }
+            S(S &&) = default;
 
-            CONSTEXPRF S & operator = (S const &) = default;
-            CONSTEXPRF S & operator = (S &) = default;
-            //CONSTEXPRF S & operator = (S const &&) { return *this; }
-            CONSTEXPRF S & operator = (S &&) = default;
+            S & operator = (S const &) = default;
+            S & operator = (S &) = default;
+            //S & operator = (S const &&) { return *this; }
+            S & operator = (S &&) = default;
 
             ~S() { ; }
 
         };
 
-        SA(std::is_destructible_v< S >);
-        SA(!std::is_trivially_destructible_v< S >); // user-provided
-
         using U = V< S >;
 
+        SA(std::is_default_constructible_v< S >);
+        SA(std::is_default_constructible_v< U >);
+        SA(!std::is_trivially_default_constructible_v< S >);
+        SA(!std::is_trivially_default_constructible_v< U >);
+
+        SA(std::is_destructible_v< S >);
         SA(std::is_destructible_v< U >);
-        SA(!std::is_trivially_destructible_v< U >); // U is a union and has a variant member with non-trivial destructor
+        SA(!std::is_trivially_destructible_v< S >);
+        SA(!std::is_trivially_destructible_v< U >);
+
+        SA(std::is_copy_constructible_v< S >);
+        SA(std::is_copy_constructible_v< U >);
+        SA(is_vcopy_constructible_v< S >);
+        SA(is_vcopy_constructible_v< U >);
+
+        SA(std::is_move_constructible_v< S >);
+        SA(std::is_move_constructible_v< U >);
+        SA(is_cmove_constructible_v< S >);
+        SA(is_cmove_constructible_v< U >);
+
+        SA(!std::is_trivially_copy_constructible_v< S >);
+        SA(!std::is_trivially_copy_constructible_v< U >);
+        SA(!is_trivially_vcopy_constructible_v< S >);
+        SA(!is_trivially_vcopy_constructible_v< U >);
+
+        SA(!std::is_trivially_move_constructible_v< S >);
+        SA(!std::is_trivially_move_constructible_v< U >);
+        SA(!is_trivially_cmove_constructible_v< S >);
+        SA(!is_trivially_cmove_constructible_v< U >);
+
+        SA(std::is_copy_assignable_v< S >);
+        SA(std::is_copy_assignable_v< U >);
+        SA(is_vcopy_assignable_v< S >);
+        SA(is_vcopy_assignable_v< U >);
+
+        SA(std::is_move_assignable_v< S >);
+        SA(std::is_move_assignable_v< U >);
+        SA(is_cmove_assignable_v< S >);
+        SA(is_cmove_assignable_v< U >);
+
+        SA(std::is_trivially_copy_assignable_v< S >);
+        SA(std::is_trivially_copy_assignable_v< U >);
+        SA(!is_trivially_vcopy_assignable_v< S >);
+        SA(is_trivially_vcopy_assignable_v< U >);
+
+        SA(std::is_trivially_move_assignable_v< S >);
+        SA(std::is_trivially_move_assignable_v< U >);
+        SA(is_trivially_cmove_assignable_v< S >);
+        SA(is_trivially_cmove_assignable_v< U >);
 
         constexpr
         static
@@ -405,25 +473,26 @@ struct check_invariants
         {
 
             int i;
-            constexpr S(int j) : i(j) { ; }
+            S(int j) : i(j) { ; }
 
-            CONSTEXPRF S() = default;
+            S() = default;
 
-            CONSTEXPRF S(S const &) { ; }
-            CONSTEXPRF S(S &) = default;
-            //CONSTEXPRF S(S const &&) { ; }
-            CONSTEXPRF S(S &&) = default;
+            S(S const &) { ; }
+            S(S &) = default;
+            //S(S const &&) { ; }
+            S(S &&) = default;
 
-            CONSTEXPRF S & operator = (S const &) = default;
-            CONSTEXPRF S & operator = (S &) = default;
-            //CONSTEXPRF S & operator = (S const &&) { return *this; }
-            CONSTEXPRF S & operator = (S &&) = default;
+            S & operator = (S const &) = default;
+            S & operator = (S &) = default;
+            //S & operator = (S const &&) { return *this; }
+            S & operator = (S &&) = default;
 
             ~S() = default;
 
         };
 
         using U = V< S >;
+
         SA(std::is_default_constructible_v< S >);
         SA(std::is_default_constructible_v< U >);
         SA(std::is_trivially_default_constructible_v< S >);
@@ -471,7 +540,616 @@ struct check_invariants
 
         SA(std::is_trivially_move_assignable_v< S >);
         SA(std::is_trivially_move_assignable_v< U >);
-        SA(is_trivially_cmove_assignable_v< S >); // depends on whether cmove assignment operator user provided or not
+        SA(is_trivially_cmove_assignable_v< S >);
+        SA(is_trivially_cmove_assignable_v< U >);
+
+        constexpr
+        static
+        bool
+        run() noexcept
+        {
+            return true;
+        }
+
+    };
+
+    struct vcopy_constructor
+    {
+
+        struct S
+        {
+
+            int i;
+            S(int j) : i(j) { ; }
+
+            S() = default;
+
+            S(S const &) = default;
+            S(S &) { ; }
+            //S(S const &&) { ; }
+            S(S &&) = default;
+
+            S & operator = (S const &) = default;
+            S & operator = (S &) = default;
+            //S & operator = (S const &&) { return *this; }
+            S & operator = (S &&) = default;
+
+            ~S() = default;
+
+        };
+
+        using U = V< S >;
+
+        SA(std::is_default_constructible_v< S >);
+        SA(std::is_default_constructible_v< U >);
+        SA(std::is_trivially_default_constructible_v< S >);
+        SA(std::is_trivially_default_constructible_v< U >);
+
+        SA(std::is_destructible_v< S >);
+        SA(std::is_destructible_v< U >);
+        SA(std::is_trivially_destructible_v< S >);
+        SA(std::is_trivially_destructible_v< U >);
+
+        SA(std::is_copy_constructible_v< S >);
+        SA(std::is_copy_constructible_v< U >);
+        SA(is_vcopy_constructible_v< S >);
+        SA(is_vcopy_constructible_v< U >);
+
+        SA(std::is_move_constructible_v< S >);
+        SA(std::is_move_constructible_v< U >);
+        SA(is_cmove_constructible_v< S >);
+        SA(is_cmove_constructible_v< U >);
+
+        SA(std::is_trivially_copy_constructible_v< S >);
+        SA(std::is_trivially_copy_constructible_v< U >);
+        SA(!is_trivially_vcopy_constructible_v< S >);
+        SA(is_trivially_vcopy_constructible_v< U >);
+
+        SA(std::is_trivially_move_constructible_v< S >);
+        SA(std::is_trivially_move_constructible_v< U >);
+        SA(is_trivially_cmove_constructible_v< S >);
+        SA(is_trivially_cmove_constructible_v< U >);
+
+        SA(std::is_copy_assignable_v< S >);
+        SA(std::is_copy_assignable_v< U >);
+        SA(is_vcopy_assignable_v< S >);
+        SA(is_vcopy_assignable_v< U >);
+
+        SA(std::is_move_assignable_v< S >);
+        SA(std::is_move_assignable_v< U >);
+        SA(is_cmove_assignable_v< S >);
+        SA(is_cmove_assignable_v< U >);
+
+        SA(std::is_trivially_copy_assignable_v< S >);
+        SA(std::is_trivially_copy_assignable_v< U >);
+        SA(!is_trivially_vcopy_assignable_v< S >);
+        SA(is_trivially_vcopy_assignable_v< U >);
+
+        SA(std::is_trivially_move_assignable_v< S >);
+        SA(std::is_trivially_move_assignable_v< U >);
+        SA(is_trivially_cmove_assignable_v< S >);
+        SA(is_trivially_cmove_assignable_v< U >);
+
+        constexpr
+        static
+        bool
+        run() noexcept
+        {
+            return true;
+        }
+
+    };
+
+    struct move_constructor
+    {
+
+        struct S
+        {
+
+            int i;
+            S(int j) : i(j) { ; }
+
+            S() = default;
+
+            S(S const &) = default;
+            S(S &) = default;
+            //S(S const &&) { ; }
+            S(S &&) { ; }
+
+            S & operator = (S const &) = default;
+            S & operator = (S &) = default;
+            //S & operator = (S const &&) { return *this; }
+            S & operator = (S &&) = default;
+
+            ~S() = default;
+
+        };
+
+        using U = V< S >;
+
+        SA(std::is_default_constructible_v< S >);
+        SA(std::is_default_constructible_v< U >);
+        SA(std::is_trivially_default_constructible_v< S >);
+        SA(std::is_trivially_default_constructible_v< U >);
+
+        SA(std::is_destructible_v< S >);
+        SA(std::is_destructible_v< U >);
+        SA(std::is_trivially_destructible_v< S >);
+        SA(std::is_trivially_destructible_v< U >);
+
+        SA(std::is_copy_constructible_v< S >);
+        SA(std::is_copy_constructible_v< U >);
+        SA(is_vcopy_constructible_v< S >);
+        SA(is_vcopy_constructible_v< U >);
+
+        SA(std::is_move_constructible_v< S >);
+        SA(std::is_move_constructible_v< U >);
+        SA(is_cmove_constructible_v< S >);
+        SA(is_cmove_constructible_v< U >);
+
+        SA(std::is_trivially_copy_constructible_v< S >);
+        SA(std::is_trivially_copy_constructible_v< U >);
+        SA(!is_trivially_vcopy_constructible_v< S >);
+        SA(is_trivially_vcopy_constructible_v< U >);
+
+        SA(!std::is_trivially_move_constructible_v< S >);
+        SA(!std::is_trivially_move_constructible_v< U >);
+        SA(is_trivially_cmove_constructible_v< S >);
+        SA(is_trivially_cmove_constructible_v< U >);
+
+        SA(std::is_copy_assignable_v< S >);
+        SA(std::is_copy_assignable_v< U >);
+        SA(is_vcopy_assignable_v< S >);
+        SA(is_vcopy_assignable_v< U >);
+
+        SA(std::is_move_assignable_v< S >);
+        SA(std::is_move_assignable_v< U >);
+        SA(is_cmove_assignable_v< S >);
+        SA(is_cmove_assignable_v< U >);
+
+        SA(std::is_trivially_copy_assignable_v< S >);
+        SA(std::is_trivially_copy_assignable_v< U >);
+        SA(!is_trivially_vcopy_assignable_v< S >);
+        SA(is_trivially_vcopy_assignable_v< U >);
+
+        SA(std::is_trivially_move_assignable_v< S >);
+        SA(std::is_trivially_move_assignable_v< U >);
+        SA(is_trivially_cmove_assignable_v< S >);
+        SA(is_trivially_cmove_assignable_v< U >);
+
+        constexpr
+        static
+        bool
+        run() noexcept
+        {
+            return true;
+        }
+
+    };
+
+    struct cmove_constructor
+    {
+
+        struct S
+        {
+
+            int i;
+            S(int j) : i(j) { ; }
+
+            S() = default;
+
+            S(S const &) = default;
+            S(S &) = default;
+            /*!*/S(S const &&) { ; }
+            S(S &&) { ; }
+
+            S & operator = (S const &) = default;
+            S & operator = (S &) = default;
+            //S & operator = (S const &&) { return *this; }
+            S & operator = (S &&) = default;
+
+            ~S() = default;
+
+        };
+
+        using U = V< S >;
+
+        SA(std::is_default_constructible_v< S >);
+        SA(std::is_default_constructible_v< U >);
+        SA(std::is_trivially_default_constructible_v< S >);
+        SA(std::is_trivially_default_constructible_v< U >);
+
+        SA(std::is_destructible_v< S >);
+        SA(std::is_destructible_v< U >);
+        SA(std::is_trivially_destructible_v< S >);
+        SA(std::is_trivially_destructible_v< U >);
+
+        SA(std::is_copy_constructible_v< S >);
+        SA(std::is_copy_constructible_v< U >);
+        SA(is_vcopy_constructible_v< S >);
+        SA(is_vcopy_constructible_v< U >);
+
+        SA(std::is_move_constructible_v< S >);
+        SA(std::is_move_constructible_v< U >);
+        SA(is_cmove_constructible_v< S >);
+        SA(is_cmove_constructible_v< U >);
+
+        SA(std::is_trivially_copy_constructible_v< S >);
+        SA(std::is_trivially_copy_constructible_v< U >);
+        SA(!is_trivially_vcopy_constructible_v< S >);
+        SA(is_trivially_vcopy_constructible_v< U >);
+
+        SA(!std::is_trivially_move_constructible_v< S >);
+        SA(!std::is_trivially_move_constructible_v< U >);
+        SA(!is_trivially_cmove_constructible_v< S >);
+        SA(is_trivially_cmove_constructible_v< U >);
+
+        SA(std::is_copy_assignable_v< S >);
+        SA(std::is_copy_assignable_v< U >);
+        SA(is_vcopy_assignable_v< S >);
+        SA(is_vcopy_assignable_v< U >);
+
+        SA(std::is_move_assignable_v< S >);
+        SA(std::is_move_assignable_v< U >);
+        SA(is_cmove_assignable_v< S >);
+        SA(is_cmove_assignable_v< U >);
+
+        SA(std::is_trivially_copy_assignable_v< S >);
+        SA(std::is_trivially_copy_assignable_v< U >);
+        SA(!is_trivially_vcopy_assignable_v< S >);
+        SA(is_trivially_vcopy_assignable_v< U >);
+
+        SA(std::is_trivially_move_assignable_v< S >);
+        SA(std::is_trivially_move_assignable_v< U >);
+        SA(is_trivially_cmove_assignable_v< S >);
+        SA(is_trivially_cmove_assignable_v< U >);
+
+        constexpr
+        static
+        bool
+        run() noexcept
+        {
+            return true;
+        }
+
+    };
+
+    struct copy_assignment
+    {
+
+        struct S
+        {
+
+            int i;
+            S(int j) : i(j) { ; }
+
+            S() = default;
+
+            S(S const &) = default;
+            S(S &) = default;
+            //S(S const &&) { ; }
+            S(S &&) = default;
+
+            S & operator = (S const &) { ; }
+            S & operator = (S &) = default;
+            //S & operator = (S const &&) { return *this; }
+            S & operator = (S &&) = default;
+
+            ~S() = default;
+
+        };
+
+        using U = V< S >;
+
+        SA(std::is_default_constructible_v< S >);
+        SA(std::is_default_constructible_v< U >);
+        SA(std::is_trivially_default_constructible_v< S >);
+        SA(std::is_trivially_default_constructible_v< U >);
+
+        SA(std::is_destructible_v< S >);
+        SA(std::is_destructible_v< U >);
+        SA(std::is_trivially_destructible_v< S >);
+        SA(std::is_trivially_destructible_v< U >);
+
+        SA(std::is_copy_constructible_v< S >);
+        SA(std::is_copy_constructible_v< U >);
+        SA(is_vcopy_constructible_v< S >);
+        SA(is_vcopy_constructible_v< U >);
+
+        SA(std::is_move_constructible_v< S >);
+        SA(std::is_move_constructible_v< U >);
+        SA(is_cmove_constructible_v< S >);
+        SA(is_cmove_constructible_v< U >);
+
+        SA(std::is_trivially_copy_constructible_v< S >);
+        SA(std::is_trivially_copy_constructible_v< U >);
+        SA(!is_trivially_vcopy_constructible_v< S >);
+        SA(is_trivially_vcopy_constructible_v< U >);
+
+        SA(std::is_trivially_move_constructible_v< S >);
+        SA(std::is_trivially_move_constructible_v< U >);
+        SA(is_trivially_cmove_constructible_v< S >);
+        SA(is_trivially_cmove_constructible_v< U >);
+
+        SA(std::is_copy_assignable_v< S >);
+        SA(!std::is_copy_assignable_v< U >);
+        SA(is_vcopy_assignable_v< S >);
+        SA(!is_vcopy_assignable_v< U >);
+
+        SA(std::is_move_assignable_v< S >);
+        SA(std::is_move_assignable_v< U >);
+        SA(is_cmove_assignable_v< S >);
+        SA(!is_cmove_assignable_v< U >);
+
+        SA(!std::is_trivially_copy_assignable_v< S >);
+        SA(!std::is_trivially_copy_assignable_v< U >);
+        SA(!is_trivially_vcopy_assignable_v< S >);
+        SA(!is_trivially_vcopy_assignable_v< U >);
+
+        SA(std::is_trivially_move_assignable_v< S >);
+        SA(std::is_trivially_move_assignable_v< U >);
+        SA(!is_trivially_cmove_assignable_v< S >);
+        SA(!is_trivially_cmove_assignable_v< U >);
+
+        constexpr
+        static
+        bool
+        run() noexcept
+        {
+            return true;
+        }
+
+    };
+
+    struct vcopy_assignment
+    {
+
+        struct S
+        {
+
+            int i;
+            S(int j) : i(j) { ; }
+
+            S() = default;
+
+            S(S const &) = default;
+            S(S &) = default;
+            //S(S const &&) { ; }
+            S(S &&) = default;
+
+            S & operator = (S const &) = default;
+            S & operator = (S &) { ; }
+            //S & operator = (S const &&) { return *this; }
+            S & operator = (S &&) = default;
+
+            ~S() = default;
+
+        };
+
+        using U = V< S >;
+
+        SA(std::is_default_constructible_v< S >);
+        SA(std::is_default_constructible_v< U >);
+        SA(std::is_trivially_default_constructible_v< S >);
+        SA(std::is_trivially_default_constructible_v< U >);
+
+        SA(std::is_destructible_v< S >);
+        SA(std::is_destructible_v< U >);
+        SA(std::is_trivially_destructible_v< S >);
+        SA(std::is_trivially_destructible_v< U >);
+
+        SA(std::is_copy_constructible_v< S >);
+        SA(std::is_copy_constructible_v< U >);
+        SA(is_vcopy_constructible_v< S >);
+        SA(is_vcopy_constructible_v< U >);
+
+        SA(std::is_move_constructible_v< S >);
+        SA(std::is_move_constructible_v< U >);
+        SA(is_cmove_constructible_v< S >);
+        SA(is_cmove_constructible_v< U >);
+
+        SA(std::is_trivially_copy_constructible_v< S >);
+        SA(std::is_trivially_copy_constructible_v< U >);
+        SA(!is_trivially_vcopy_constructible_v< S >);
+        SA(is_trivially_vcopy_constructible_v< U >);
+
+        SA(std::is_trivially_move_constructible_v< S >);
+        SA(std::is_trivially_move_constructible_v< U >);
+        SA(is_trivially_cmove_constructible_v< S >);
+        SA(is_trivially_cmove_constructible_v< U >);
+
+        SA(std::is_copy_assignable_v< S >);
+        SA(std::is_copy_assignable_v< U >);
+        SA(is_vcopy_assignable_v< S >);
+        SA(is_vcopy_assignable_v< U >);
+
+        SA(std::is_move_assignable_v< S >);
+        SA(std::is_move_assignable_v< U >);
+        SA(is_cmove_assignable_v< S >);
+        SA(is_cmove_assignable_v< U >);
+
+        SA(std::is_trivially_copy_assignable_v< S >);
+        SA(std::is_trivially_copy_assignable_v< U >);
+        SA(!is_trivially_vcopy_assignable_v< S >);
+        SA(is_trivially_vcopy_assignable_v< U >);
+
+        SA(std::is_trivially_move_assignable_v< S >);
+        SA(std::is_trivially_move_assignable_v< U >);
+        SA(is_trivially_cmove_assignable_v< S >);
+        SA(is_trivially_cmove_assignable_v< U >);
+
+        constexpr
+        static
+        bool
+        run() noexcept
+        {
+            return true;
+        }
+
+    };
+
+    struct move_assignment
+    {
+
+        struct S
+        {
+
+            int i;
+            S(int j) : i(j) { ; }
+
+            S() = default;
+
+            S(S const &) = default;
+            S(S &) = default;
+            //S(S const &&) { ; }
+            S(S &&) = default;
+
+            S & operator = (S const &) = default;
+            S & operator = (S &) = default;
+            //S & operator = (S const &&) { return *this; }
+            S & operator = (S &&) { ; }
+
+            ~S() = default;
+
+        };
+
+        using U = V< S >;
+
+        SA(std::is_default_constructible_v< S >);
+        SA(std::is_default_constructible_v< U >);
+        SA(std::is_trivially_default_constructible_v< S >);
+        SA(std::is_trivially_default_constructible_v< U >);
+
+        SA(std::is_destructible_v< S >);
+        SA(std::is_destructible_v< U >);
+        SA(std::is_trivially_destructible_v< S >);
+        SA(std::is_trivially_destructible_v< U >);
+
+        SA(std::is_copy_constructible_v< S >);
+        SA(std::is_copy_constructible_v< U >);
+        SA(is_vcopy_constructible_v< S >);
+        SA(is_vcopy_constructible_v< U >);
+
+        SA(std::is_move_constructible_v< S >);
+        SA(std::is_move_constructible_v< U >);
+        SA(is_cmove_constructible_v< S >);
+        SA(is_cmove_constructible_v< U >);
+
+        SA(std::is_trivially_copy_constructible_v< S >);
+        SA(std::is_trivially_copy_constructible_v< U >);
+        SA(!is_trivially_vcopy_constructible_v< S >);
+        SA(is_trivially_vcopy_constructible_v< U >);
+
+        SA(std::is_trivially_move_constructible_v< S >);
+        SA(std::is_trivially_move_constructible_v< U >);
+        SA(is_trivially_cmove_constructible_v< S >);
+        SA(is_trivially_cmove_constructible_v< U >);
+
+        SA(std::is_copy_assignable_v< S >);
+        SA(std::is_copy_assignable_v< U >);
+        SA(is_vcopy_assignable_v< S >);
+        SA(is_vcopy_assignable_v< U >);
+
+        SA(std::is_move_assignable_v< S >);
+        SA(std::is_move_assignable_v< U >);
+        SA(is_cmove_assignable_v< S >);
+        SA(is_cmove_assignable_v< U >);
+
+        SA(std::is_trivially_copy_assignable_v< S >);
+        SA(std::is_trivially_copy_assignable_v< U >);
+        SA(!is_trivially_vcopy_assignable_v< S >);
+        SA(is_trivially_vcopy_assignable_v< U >);
+
+        SA(!std::is_trivially_move_assignable_v< S >);
+        SA(std::is_trivially_move_assignable_v< U >);
+        SA(is_trivially_cmove_assignable_v< S >);
+        SA(is_trivially_cmove_assignable_v< U >);
+
+        constexpr
+        static
+        bool
+        run() noexcept
+        {
+            return true;
+        }
+
+    };
+
+    struct cmove_assignment
+    {
+
+        struct S
+        {
+
+            int i;
+            S(int j) : i(j) { ; }
+
+            S() = default;
+
+            S(S const &) = default;
+            S(S &) = default;
+            //S(S const &&) { ; }
+            S(S &&) = default;
+
+            S & operator = (S const &) = default;
+            S & operator = (S &) = default;
+            S & operator = (S const &&) { return *this; }
+            /*!*/S & operator = (S &&) { ; }
+
+            ~S() = default;
+
+        };
+
+        using U = V< S >;
+
+        SA(std::is_default_constructible_v< S >);
+        SA(std::is_default_constructible_v< U >);
+        SA(std::is_trivially_default_constructible_v< S >);
+        SA(std::is_trivially_default_constructible_v< U >);
+
+        SA(std::is_destructible_v< S >);
+        SA(std::is_destructible_v< U >);
+        SA(std::is_trivially_destructible_v< S >);
+        SA(std::is_trivially_destructible_v< U >);
+
+        SA(std::is_copy_constructible_v< S >);
+        SA(std::is_copy_constructible_v< U >);
+        SA(is_vcopy_constructible_v< S >);
+        SA(is_vcopy_constructible_v< U >);
+
+        SA(std::is_move_constructible_v< S >);
+        SA(std::is_move_constructible_v< U >);
+        SA(is_cmove_constructible_v< S >);
+        SA(is_cmove_constructible_v< U >);
+
+        SA(std::is_trivially_copy_constructible_v< S >);
+        SA(std::is_trivially_copy_constructible_v< U >);
+        SA(!is_trivially_vcopy_constructible_v< S >);
+        SA(is_trivially_vcopy_constructible_v< U >);
+
+        SA(std::is_trivially_move_constructible_v< S >);
+        SA(std::is_trivially_move_constructible_v< U >);
+        SA(is_trivially_cmove_constructible_v< S >);
+        SA(is_trivially_cmove_constructible_v< U >);
+
+        SA(std::is_copy_assignable_v< S >);
+        SA(std::is_copy_assignable_v< U >);
+        SA(is_vcopy_assignable_v< S >);
+        SA(is_vcopy_assignable_v< U >);
+
+        SA(std::is_move_assignable_v< S >);
+        SA(std::is_move_assignable_v< U >);
+        SA(is_cmove_assignable_v< S >);
+        SA(is_cmove_assignable_v< U >);
+
+        SA(std::is_trivially_copy_assignable_v< S >);
+        SA(std::is_trivially_copy_assignable_v< U >);
+        SA(!is_trivially_vcopy_assignable_v< S >);
+        SA(is_trivially_vcopy_assignable_v< U >);
+
+        SA(!std::is_trivially_move_assignable_v< S >);
+        SA(std::is_trivially_move_assignable_v< U >);
+        SA(!is_trivially_cmove_assignable_v< S >);
         SA(is_trivially_cmove_assignable_v< U >);
 
         constexpr
@@ -489,17 +1167,18 @@ struct check_invariants
     bool
     run() noexcept // just for implicit instantiation
     {
-        SA(literal_type_invariants::run());
-        SA(common_type_invariants ::run());
         SA(trivial                ::run());
+        SA(trivially_copyable     ::run());
         SA(default_constructor    ::run());
         SA(destructor             ::run());
         SA(copy_constructor       ::run());
-        //SA(vcopy_constructor      ::run());
-        //SA(move_constructor       ::run());
-        //SA(copy_assignment        ::run());
-        //SA(vcopy_assignment       ::run());
-        //SA(move_assignment        ::run());
+        SA(vcopy_constructor      ::run());
+        SA(move_constructor       ::run());
+        SA(cmove_constructor      ::run());
+        SA(copy_assignment        ::run());
+        SA(vcopy_assignment       ::run());
+        SA(move_assignment        ::run());
+        SA(cmove_assignment       ::run());
         return true;
     }
 
