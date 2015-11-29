@@ -21,27 +21,27 @@ struct is_visitable
 namespace details
 {
 
-template< type_qualifier _type_qualifier, typename visitor, typename visitable >
+template< type_qualifier type_qual, typename visitor, typename visitable >
 class dispatcher;
 
-template< type_qualifier _type_qualifier, typename visitor,
+template< type_qualifier type_qual, typename visitor,
           template< typename ...types > class decay_type, typename ...types >
-class dispatcher< _type_qualifier, visitor, decay_type< types... > >
+class dispatcher< type_qual, visitor, decay_type< types... > >
 {
 
-    using visitable = add_qualifier_t< _type_qualifier, decay_type< types... > >;
+    using visitable = add_qualifier_t< type_qual, decay_type< types... > >;
 
     template< typename type, typename ...arguments >
     static
     constexpr
-    decltype(auto)
+    decltype(std::declval< visitor >()(std::declval< type >(), std::declval< arguments >()...))
     callee(visitor & _visitor, visitable & _visitable, arguments &... _arguments)
     {
         return std::forward< visitor >(_visitor)(static_cast< type >(static_cast< type & >(_visitable)), std::forward< arguments >(_arguments)...);
     }
 
     template< typename type >
-    using qualify_type_t = add_qualifier_t< _type_qualifier, unwrap_type_t< type > >;
+    using qualify_type_t = add_qualifier_t< type_qual, unwrap_type_t< type > >;
 
     template< typename ...arguments >
     using callee_type = decltype(&dispatcher::template callee< qualify_type_t< typename identity< types... >::type >, arguments... >);
@@ -63,10 +63,10 @@ public :
 
 };
 
-template< type_qualifier _type_qualifier, typename visitor,
+template< type_qualifier type_qual, typename visitor,
           template< typename ...types > class decay_type, typename ...types >
 template< typename ...arguments >
-constexpr typename dispatcher< _type_qualifier, visitor, decay_type< types... > >::template callee_type< arguments... > dispatcher< _type_qualifier, visitor, decay_type< types... > >::callies_[sizeof...(types)];
+constexpr typename dispatcher< type_qual, visitor, decay_type< types... > >::template callee_type< arguments... > dispatcher< type_qual, visitor, decay_type< types... > >::callies_[sizeof...(types)];
 
 }
 

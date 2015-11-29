@@ -58,14 +58,12 @@ struct destructor_dispatcher< true, first, rest... >
 
     using this_type = unwrap_type_t< first >;
 
-    explicit
     constexpr
     operator this_type const & () const noexcept
     {
         return static_cast< this_type const & >(head_);
     }
 
-    explicit
     constexpr
     operator this_type & () noexcept
     {
@@ -73,19 +71,17 @@ struct destructor_dispatcher< true, first, rest... >
     }
 
     template< typename type >
-    explicit
     constexpr
     operator type const & () const noexcept
     {
-        return static_cast< type const & >(tail_);
+        return tail_;
     }
 
     template< typename type >
-    explicit
     constexpr
     operator type & () noexcept
     {
-        return static_cast< type & >(tail_);
+        return tail_;
     }
 
 };
@@ -106,11 +102,29 @@ struct destructor_dispatcher< false, first, rest... >
 
     };
 
+    constexpr
+    destructor_dispatcher(destructor_dispatcher const &) = default;
+    constexpr
+    destructor_dispatcher(destructor_dispatcher &) = default;
+    constexpr
+    destructor_dispatcher(destructor_dispatcher &&) = default;
+
+    constexpr
+    destructor_dispatcher
+    & operator = (destructor_dispatcher const &) = default;
+    constexpr
+    destructor_dispatcher
+    & operator = (destructor_dispatcher &) = default;
+    constexpr
+    destructor_dispatcher
+    & operator = (destructor_dispatcher &&) = default;
+
     ~destructor_dispatcher() noexcept
     {
         tail_.~tail(); // trivial tail is not specially processed, because whole versatile type can't get an advantage from it
     }
 
+    constexpr
     void
     free(std::size_t const _which) const noexcept(noexcept(destructor(_which)))
     {
@@ -121,6 +135,7 @@ struct destructor_dispatcher< false, first, rest... >
         }
     }
 
+    constexpr
     void
     destructor(std::size_t const _which) const noexcept(noexcept(head_.~head()) && noexcept(tail_.destructor(_which)))
     {
@@ -148,14 +163,12 @@ struct destructor_dispatcher< false, first, rest... >
 
     using this_type = unwrap_type_t< first >;
 
-    explicit
     constexpr
     operator this_type const & () const noexcept
     {
         return static_cast< this_type const & >(head_);
     }
 
-    explicit
     constexpr
     operator this_type & () noexcept
     {
@@ -163,19 +176,17 @@ struct destructor_dispatcher< false, first, rest... >
     }
 
     template< typename type >
-    explicit
     constexpr
     operator type const & () const noexcept
     {
-        return static_cast< type const & >(tail_);
+        return tail_;
     }
 
     template< typename type >
-    explicit
     constexpr
     operator type & () noexcept
     {
-        return static_cast< type & >(tail_);
+        return tail_;
     }
 
 };
@@ -203,19 +214,17 @@ struct dispatcher< true, true, types... >
     { ; }
 
     template< typename type >
-    explicit
     constexpr
     operator type const & () const noexcept
     {
-        return static_cast< type const & >(storage_);
+        return storage_;
     }
 
     template< typename type >
-    explicit
     constexpr
     operator type & () noexcept
     {
-        return static_cast< type & >(storage_);
+        return storage_;
     }
 
 };
@@ -228,6 +237,23 @@ struct dispatcher< false, true, types... >
 
     std::size_t which_;
     storage storage_;
+
+    constexpr
+    dispatcher(dispatcher const &) = default;
+    constexpr
+    dispatcher(dispatcher &) = default;
+    constexpr
+    dispatcher(dispatcher &&) = default;
+
+    constexpr
+    dispatcher
+    & operator = (dispatcher const &) = default;
+    constexpr
+    dispatcher
+    & operator = (dispatcher &) = default;
+    constexpr
+    dispatcher
+    & operator = (dispatcher &&) = default;
 
     ~dispatcher() noexcept(noexcept(storage_.destructor(which_)))
     {
@@ -245,19 +271,17 @@ struct dispatcher< false, true, types... >
     { ; }
 
     template< typename type >
-    explicit
     constexpr
     operator type const & () const noexcept
     {
-        return static_cast< type const & >(storage_);
+        return storage_;
     }
 
     template< typename type >
-    explicit
     constexpr
     operator type & () noexcept
     {
-        return static_cast< type & >(storage_);
+        return storage_;
     }
 
 };
@@ -286,19 +310,17 @@ struct dispatcher< true, false, types... >
     { ; }
 
     template< typename type >
-    explicit
     constexpr
     operator type const & () const noexcept
     {
-        return static_cast< type const & >(storage_);
+        return storage_;
     }
 
     template< typename type >
-    explicit
     constexpr
     operator type & () noexcept
     {
-        return static_cast< type & >(storage_);
+        return storage_;
     }
 
 };
@@ -311,6 +333,23 @@ struct dispatcher< false, false, types... >
 
     std::size_t which_;
     storage storage_;
+
+    constexpr
+    dispatcher(dispatcher const &) = default;
+    constexpr
+    dispatcher(dispatcher &) = default;
+    constexpr
+    dispatcher(dispatcher &&) = default;
+
+    constexpr
+    dispatcher
+    & operator = (dispatcher const &) = default;
+    constexpr
+    dispatcher
+    & operator = (dispatcher &) = default;
+    constexpr
+    dispatcher
+    & operator = (dispatcher &&) = default;
 
     ~dispatcher() noexcept(noexcept(storage_.destructor(which_)))
     {
@@ -332,19 +371,17 @@ struct dispatcher< false, false, types... >
     { ; }
 
     template< typename type >
-    explicit
     constexpr
     operator type const & () const noexcept
     {
-        return static_cast< type const & >(storage_);
+        return storage_;
     }
 
     template< typename type >
-    explicit
     constexpr
     operator type & () noexcept
     {
-        return static_cast< type & >(storage_);
+        return storage_;
     }
 
 };
@@ -442,7 +479,7 @@ public :
     constexpr
     operator type const & () const noexcept
     {
-        return static_cast< type const & >(storage_);
+        return storage_;
     }
 
     template< typename type,
@@ -451,7 +488,7 @@ public :
     constexpr
     operator type & () noexcept
     {
-        return static_cast< type & >(storage_);
+        return storage_;
     }
 
     template< typename type,

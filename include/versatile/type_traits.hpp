@@ -158,6 +158,6 @@ template< bool ...values >
 using get_index_t = typename get_index< values... >::type;
 
 template< typename ...types >
-using index_of_default_constructible = get_index< __is_constructible(types)... >;
+using index_of_default_constructible = get_index< std::is_default_constructible_v< types >... >;
 
 }
