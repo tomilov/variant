@@ -1,6 +1,6 @@
 #pragma once
 
-#include <versatile.hpp>
+#include "prologue.hpp"
 
 #include <boost/variant.hpp>
 
