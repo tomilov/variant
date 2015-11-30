@@ -37,7 +37,7 @@ main()
                 }
                 {
                     using ::test_variant::common_type;
-                    assert ((test_perferct_forwarding< common_type, versatile, 2, 2 >::run()));
+                    //assert ((test_perferct_forwarding< common_type, versatile, 2, 2 >::run()));
                 }
             }
 #endif

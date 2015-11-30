@@ -57,7 +57,7 @@ template< typename to > struct add_type_qualifier< type_qualifier::volatile_cons
 template< typename to > struct add_type_qualifier< type_qualifier::volatile_const_rref  , to > { using type = volatile to const &&; };
 
 template< type_qualifier _type_qualifier, typename to >
-using add_qualifier_t = typename add_type_qualifier< _type_qualifier, to >::type;
+using add_type_qualifier_t = typename add_type_qualifier< _type_qualifier, to >::type;
 
 template< typename from > constexpr type_qualifier type_qualifier_of                           = type_qualifier::value                ;
 template< typename from > constexpr type_qualifier type_qualifier_of<          from const    > = type_qualifier::const_value          ;
@@ -73,17 +73,10 @@ template< typename from > constexpr type_qualifier type_qualifier_of< volatile f
 template< typename from > constexpr type_qualifier type_qualifier_of< volatile from const && > = type_qualifier::volatile_const_rref  ;
 
 template< typename from, typename to >
-using copy_cv_reference_t = add_qualifier_t< type_qualifier_of< from >, to >;
+using copy_cv_reference_t = add_type_qualifier_t< type_qualifier_of< from >, to >;
 
 template< std::size_t i >
 using index_t = std::integral_constant< std::size_t, i >;
-
-template< std::size_t i >
-struct index
-        : index_t< i >
-{
-
-};
 
 template< typename type, typename ...types >
 struct index_at
@@ -93,7 +86,7 @@ struct index_at
 
 template< typename type, typename ...rest >
 struct index_at< type, type, rest... >
-        : index< sizeof...(rest) >
+        : index_t< sizeof...(rest) >
 {
 
 };
@@ -142,7 +135,7 @@ struct get_index<>
 
 template< bool ...rest >
 struct get_index< true, rest... >
-        : index< sizeof...(rest) >
+        : index_t< sizeof...(rest) >
 {
 
 };

@@ -12,6 +12,12 @@
 namespace versatile
 {
 
+template< std::size_t i >
+struct index
+{
+
+};
+
 template< bool is_trivially_destructible, typename ...types >
 struct destructor_dispatcher;
 
@@ -423,7 +429,7 @@ using enable_default_constructor_t = enable_default_constructor< (std::is_defaul
 
 template< typename ...types >
 class versatile
-        : enable_default_constructor_t< types... >
+        : enable_default_constructor_t< types... > // akrzemi1's technique
 {
 
     using enabler = enable_default_constructor_t< types... >;

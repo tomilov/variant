@@ -46,7 +46,7 @@ decltype(auto)
 forward_as(type && _value) noexcept
 {
     using decay_type = std::remove_cv_t< std::remove_reference_t< type > >;
-    return static_cast< add_qualifier_t< type_qual, decay_type > >(_value);
+    return static_cast< add_type_qualifier_t< type_qual, decay_type > >(_value);
 }
 
 template< typename type, typename ...types >

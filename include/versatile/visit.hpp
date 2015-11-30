@@ -29,7 +29,7 @@ template< type_qualifier type_qual, typename visitor,
 class dispatcher< type_qual, visitor, decay_type< types... > >
 {
 
-    using visitable = add_qualifier_t< type_qual, decay_type< types... > >;
+    using visitable = add_type_qualifier_t< type_qual, decay_type< types... > >;
 
     template< typename type, typename ...arguments >
     static
@@ -42,7 +42,7 @@ class dispatcher< type_qual, visitor, decay_type< types... > >
     }
 
     template< typename type >
-    using qualify_type_t = add_qualifier_t< type_qual, unwrap_type_t< type > >;
+    using qualify_type_t = add_type_qualifier_t< type_qual, unwrap_type_t< type > >;
 
     template< typename ...arguments >
     using callee_type = decltype(&dispatcher::template callee< qualify_type_t< typename identity< types... >::type >, arguments... >);
