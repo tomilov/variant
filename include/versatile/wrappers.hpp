@@ -19,7 +19,7 @@ struct unwrap_type
 template< typename type >
 using unwrap_type_t = typename unwrap_type< std::decay_t< type > >::type;
 
-template< typename type >//std::conditional_t< std::is_class_v< type >, type, embrace< type > > >
+template< typename type >
 struct aggregate_wrapper
     : type
 {
@@ -55,7 +55,7 @@ struct recursive_wrapper
 {
 
     template< typename ...arguments,
-              typename = decltype(type(std::declval< arguments >()...)) >
+              typename = decltype(::new (nullptr) type(std::declval< arguments >()...)) >
     recursive_wrapper(arguments &&... _arguments)
         : storage_(std::make_unique< type >(std::forward< arguments >(_arguments)...))
     { ; }
