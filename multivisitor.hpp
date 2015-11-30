@@ -202,14 +202,46 @@ struct variadic_size< multivisitor< M, type_qual > >
 
 static constexpr std::size_t type_qual_begin = static_cast< std::size_t >(type_qualifier_of< void * & >);
 static constexpr std::size_t type_qual_end = static_cast< std::size_t >(type_qualifier_of< void * volatile & >);
+static constexpr std::size_t ref_count_ = (type_qual_end - type_qual_begin);
 
-template< typename multivisitor, typename variants >
+template< typename array_type >
+struct subscripter
+{
+
+    array_type & array_;
+
+    constexpr
+    array_type &
+    operator () () const noexcept
+    {
+        return array_;
+    }
+
+    template< typename first, typename ...rest >
+    constexpr
+    decltype(auto)
+    operator () (first & _first, rest &... _rest) const noexcept
+    {
+        return operator () (_rest...)[_first];
+    }
+
+};
+
+template< typename array_type, typename ...indices >
+constexpr
+decltype(auto)
+subscript(array_type & _array, indices const &... _indices) noexcept
+{
+    return subscripter< array_type >{_array}(_indices...);
+}
+
+template< typename multivisitor, typename variants, typename result_type >
 struct fusor
 {
 
-    static constexpr std::size_t size_ = std::extent< variants >::value;
+    static constexpr std::size_t M = std::extent< variants >::value;
 
-    template< typename = std::make_index_sequence< size_ > >
+    template< typename = std::make_index_sequence< M > >
     struct fuse;
 
     template< std::size_t ...i >
@@ -219,21 +251,33 @@ struct fusor
         multivisitor multivisitor_;
         variants variants_;
         std::size_t counter_;
+        result_type result_;
 
         template< std::size_t m, std::size_t ...v >
         CONSTEXPRF
         bool
         operator () () noexcept
         {
-            SA(size_ == sizeof...(v));
+            SA(M == sizeof...(v));
             constexpr type_qualifier type_qual_m = static_cast< type_qualifier >(type_qual_begin + m);
             constexpr type_qualifier type_quals_v[sizeof...(v)] = {static_cast< type_qualifier >(type_qual_begin + v)...};
-            pair< size_ > const rhs = {{type_qual_m, type_quals_v[i]...}, {size_ + 1, variants_[i].which()...}};
+            pair< M > const rhs = {{type_qual_m, type_quals_v[i]...}, {M + 1, variants_[i].which()...}};
             decltype(auto) lhs = ::versatile::multivisit(forward_as< type_qual_m >(multivisitor_),
                                                          forward_as< type_quals_v[i] >(variants_[i])...);
-            CHECK (size_ + 1 == lhs.size());
-            CHECK (type_qualifier_of< decltype(lhs) > == multivisitor_.type_qual_);
-            CHECK (lhs == rhs);
+            if (M + 1 != lhs.size()) {
+                return false;
+            }
+            if (type_qualifier_of< decltype(lhs) > != multivisitor_.type_qual_) {
+                return false;
+            }
+            if (!(lhs == rhs)) {
+                return false;
+            }
+            bool & r = subscript(result_, m, v..., (variants_[i].which() - 1)...);
+            if (r) {
+                return false;
+            }
+            r = true;
             ++counter_;
             return true;
         }
@@ -244,15 +288,40 @@ struct fusor
 
     constexpr
     auto &
-    operator [] (std::size_t const n)
+    operator [] (std::size_t const i)
     {
-        return fuse_.variants_[n];
+        return fuse_.variants_[i];
     }
 
 };
 
+template< typename value_type, std::size_t ...extents >
+struct multiarray;
+
+template< typename array_type >
+struct multiarray< array_type >
+{
+
+    using type = array_type;
+
+};
+
+template< typename type, std::size_t first, std::size_t ...rest >
+struct multiarray< type, first, rest... >
+    : multiarray< type[first], rest... >
+{
+
+    using value_type = type;
+
+};
+
+template< typename value_type, std::size_t ...extents >
+using multiarray_t = typename multiarray< value_type, extents... >::type;
+
 // variant - variant
 // T - type generator
+// variant - variant type
+// wrapper - wrapper for alternative (bounded) types
 // M - multivisitor arity, N - number of alternative (bounded) types
 template< template< std::size_t I > class T,
           template< typename ...types > class variant,
@@ -260,8 +329,6 @@ template< template< std::size_t I > class T,
           std::size_t M = 2, std::size_t N = M >
 class test_perferct_forwarding
 {
-
-    static constexpr std::size_t ref_count_ = (type_qual_end - type_qual_begin); // test only reference types
 
     template< type_qualifier type_qual,
               std::size_t ...i, std::size_t ...j >
@@ -273,7 +340,8 @@ class test_perferct_forwarding
         using multivisitor_type = multivisitor< M, type_qual >;
         typename multivisitor_type::result_type result_{};
         using variant_type = variant< typename wrapper< T< N - j > >::type... >;
-        fusor< multivisitor_type, variant_type [M] > fusor_{{{result_}, {}, 0}};
+        using result_type = multiarray_t< bool, ref_count_, (static_cast< void >(i), ref_count_)..., (static_cast< void >(i), N)... >;
+        fusor< multivisitor_type, variant_type [M], result_type > fusor_{{{result_}, {}, 0, {}}};
         auto const enumerator_ = make_enumerator< ref_count_, (static_cast< void >(i), ref_count_)... >(fusor_.fuse_);
         variant_type variants_[N] = {T< N - j >{}...};
         std::size_t indices[M] = {};
@@ -298,7 +366,10 @@ class test_perferct_forwarding
             }
         }
         constexpr std::size_t count_ = ((static_cast< void >(i), (N * ref_count_)) * ...) * ref_count_; // N ^ M * ref_count_ ^ (M + 1)
-        CHECK (fusor_.fuse_.counter_ == count_);
+        if (fusor_.fuse_.counter_ != count_) {
+            return false;
+        }
+        SA(sizeof(result_type) == count_ * sizeof(bool)); // sizeof(bool) is implementation-defined
         return true;
     }
 
