@@ -3,8 +3,6 @@
 #include "prologue.hpp"
 
 #include <utility>
-#include <tuple>
-#include <array>
 
 namespace test_variant
 {
@@ -205,98 +203,105 @@ struct variadic_size< multivisitor< M, type_qual > >
 static constexpr std::size_t type_qual_begin = static_cast< std::size_t >(type_qualifier_of< void * & >);
 static constexpr std::size_t type_qual_end = static_cast< std::size_t >(type_qualifier_of< void * volatile & >);
 
-template< typename M, typename ...types >
-struct fusor;
-
-template< typename ...types, std::size_t ...K >
-struct fusor< std::index_sequence< K... >, types... >
+template< typename multivisitor, typename variants >
+struct fusor
 {
 
-    SA(sizeof...(types) == sizeof...(K));
+    static constexpr std::size_t size_ = std::extent< variants >::value;
 
-    std::tuple< types *... > const & stuff_;
+    template< typename = std::make_index_sequence< size_ > >
+    struct fuse;
 
-    template< std::size_t ...Q >
-    CONSTEXPRF
-    bool
-    operator () () const noexcept
+    template< std::size_t ...i >
+    struct fuse< std::index_sequence< i... > >
     {
-        static_assert(sizeof...(K) == sizeof...(Q));
-        constexpr type_qualifier type_quals[sizeof...(Q)] = {static_cast< type_qualifier >(type_qual_begin + Q)...};
-        decltype(auto) lhs = ::versatile::multivisit(forward_as< type_quals[K] >(*std::get< K >(stuff_))...);
-        if (sizeof...(types) != lhs.size()) {
-            return false;
+
+        multivisitor multivisitor_;
+        variants variants_;
+        std::size_t counter_;
+
+        template< std::size_t m, std::size_t ...v >
+        CONSTEXPRF
+        bool
+        operator () () noexcept
+        {
+            static_assert(size_ == sizeof...(v));
+            constexpr type_qualifier type_qual_m = static_cast< type_qualifier >(type_qual_begin + m);
+            constexpr type_qualifier type_quals_v[sizeof...(v)] = {static_cast< type_qualifier >(type_qual_begin + v)...};
+            pair< size_ > const rhs = {{type_qual_m, type_quals_v[i]...}, {size_ + 1, variants_[i].which()...}};
+            decltype(auto) lhs = ::versatile::multivisit(forward_as< type_qual_m >(multivisitor_),
+                                                         forward_as< type_quals_v[i] >(variants_[i])...);
+            CHECK (1 + size_ == lhs.size());
+            CHECK (type_qualifier_of< decltype(lhs) > == multivisitor_.type_qual_);
+            if (!(lhs == rhs)) {
+                return false;
+            }
+            ++counter_;
+            return true;
         }
-        if (type_qualifier_of< decltype(lhs) > != std::get< 0 >(stuff_)->type_qual_) {
-            return false;
-        }
-        pair< (sizeof...(types) - 1) > const rhs = {{type_quals[K]...}, {std::get< K >(stuff_)->which()...}};
-        return (lhs == rhs);
+
+    };
+
+    fuse<> fuse_;
+
+    constexpr
+    auto &
+    operator [] (std::size_t const n)
+    {
+        return fuse_.variants_[n];
     }
 
 };
-
-template< typename ...types >
-CONSTEXPRF
-fusor< std::index_sequence_for< types... >, types... >
-make_fusor(std::tuple< types *... > const & _stuff) noexcept
-{
-    SA(((type_qualifier_of< types > == type_qualifier::value) && ...));
-    return {_stuff};
-}
 
 // variant - variant
 // T - type generator
 // M - multivisitor arity, N - number of alternative (bounded) types
 template< template< std::size_t I > class T,
           template< typename ...types > class variant,
+          template< typename ...types > class wrapper = ::versatile::identity,
           std::size_t M = 2, std::size_t N = M >
 class test_perferct_forwarding
 {
 
     static constexpr std::size_t ref_count = (type_qual_end - type_qual_begin); // test only reference types
 
-    template< typename >
+    template< typename = std::make_index_sequence< N > >
     struct variants;
 
-    template< std::size_t ...J >
-    struct variants< std::index_sequence< J... > >
+    template< std::size_t ...j >
+    struct variants< std::index_sequence< j... > >
     {
 
-        using variant_type = variant< T< N - J >... >;
-        SA(N == sizeof...(J));
+        using variant_type = variant< typename wrapper< T< N - j > >::type... >;
 
-        variant_type variants_[N] = {T< N - J >{}...};
+        variant_type variants_[N] = {T< N - j >{}...};
 
         constexpr
-        variant_type &
-        operator [] (std::size_t const n)
+        variant_type const &
+        operator [] (std::size_t const n) const
         {
             return variants_[n];
         }
 
     };
 
-    template< type_qualifier type_qual, std::size_t ...I >
+    template< type_qualifier type_qual, std::size_t ...i >
     CONSTEXPRF
     static
     bool
-    run(std::index_sequence< I... >) noexcept
+    run(std::index_sequence< i... >) noexcept
     {
-        SA(sizeof...(I) == M);
+        SA(sizeof...(i) == M);
         std::size_t indices[M] = {};
         using multivisitor_type = multivisitor< M, type_qual >;
         typename multivisitor_type::result_type result_{};
-        multivisitor_type mv{result_};
-        variants< std::make_index_sequence< N > > variants_;
-        auto permutation_ = std::make_tuple(&mv, &variants_[indices[I]]...);
-        auto const fusor_ = make_fusor(permutation_);
-        auto const enumerator_ = make_enumerator< ref_count, (I, ref_count)... >(fusor_);
+        variants<> const variants_{};
+        using variant_type = typename variants<>::variant_type;
+        //constexpr std::size_t count_ = M * N *
+        fusor< multivisitor_type, variant_type [M] > fusor_{{{result_}, {}, 0}};
+        auto const enumerator_ = make_enumerator< ref_count, (i, ref_count)... >(fusor_.fuse_);
         for (;;) {
-            { // constexpr version of `permutation_ = std::make_tuple(&mv, &variants_[indices[I]]...);`
-                std::get< 0 >(permutation_) = &mv;
-                ((std::get< 1 + I >(permutation_) = &variants_[indices[I]]), ...);
-            }
+            ((fusor_[i] = variants_[indices[i]]), ...);
             if (!enumerator_()) {
                 return false;
             }
@@ -315,11 +320,7 @@ class test_perferct_forwarding
                 break;
             }
         }
-        for (std::size_t n = 0; n < N; ++n) {
-            if (variants_[n].which() != N - n) {
-                return false;
-            }
-        }
+        //std::cout << fusor_.fuse_.counter_ << std::endl;
         return true;
     }
 
