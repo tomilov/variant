@@ -18,6 +18,9 @@ struct is_visitable
 
 };
 
+template< typename type >
+constexpr bool is_visitable_v = is_visitable< type >::value;
+
 namespace details
 {
 
@@ -77,7 +80,7 @@ decltype(auto)
 visit(visitor && _visitor, visitable && _visitable, arguments &&... _arguments)
 {
     using decay_type = unwrap_type_t< visitable >;
-    static_assert(is_visitable< decay_type >::value);
+    static_assert(is_visitable_v< decay_type >, "second argument can be only visitable");
     return details::dispatcher< type_qualifier_of< visitable && >, visitor, decay_type >::template caller< arguments... >(_visitor, _visitable, _arguments...);
 }
 

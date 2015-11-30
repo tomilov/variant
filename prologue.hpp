@@ -45,8 +45,7 @@ constexpr
 decltype(auto)
 forward_as(type && _value) noexcept
 {
-    using decay_type = std::remove_cv_t< std::remove_reference_t< type > >;
-    return static_cast< add_type_qualifier_t< type_qual, decay_type > >(_value);
+    return static_cast< add_type_qualifier_t< type_qual, std::decay_t< type > > >(_value);
 }
 
 template< typename type, typename ...types >
@@ -61,7 +60,7 @@ is_active(versatile< types... > const & v) noexcept
 template< typename lhs, typename rhs,
           typename result_type = unwrap_type_t< rhs > >
 constexpr
-std::enable_if_t< (is_visitable< unwrap_type_t< lhs > >{} && !is_visitable< result_type >{}), result_type >
+std::enable_if_t< (is_visitable_v< unwrap_type_t< lhs > > && !is_visitable_v< result_type >), result_type >
 operator || (lhs && _lhs, rhs && _rhs) noexcept
 {
     if (_lhs.template active< result_type >()) {
@@ -74,14 +73,14 @@ operator || (lhs && _lhs, rhs && _rhs) noexcept
 template< typename lhs, typename rhs,
           typename result_type = unwrap_type_t< lhs > >
 constexpr
-std::enable_if_t< (!is_visitable< result_type >{} && is_visitable< unwrap_type_t< rhs > >{}), result_type >
+std::enable_if_t< (!is_visitable_v< result_type > && is_visitable_v< unwrap_type_t< rhs > >), result_type >
 operator || (lhs && _lhs, rhs && _rhs) noexcept
 {
     return (std::forward< rhs >(_rhs) || std::forward< lhs >(_lhs));
 }
 
 template< typename lhs, typename rhs >
-std::enable_if_t< (is_visitable< unwrap_type_t< lhs > >{} && is_visitable< unwrap_type_t< rhs > >{}) >
+std::enable_if_t< (is_visitable_v< unwrap_type_t< lhs > > && is_visitable_v< unwrap_type_t< rhs > >) >
 operator || (lhs && _lhs, rhs && _rhs) = delete;
 
 } // namespace versatile

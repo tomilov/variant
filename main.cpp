@@ -32,8 +32,8 @@ main()
                 using ::test_variant::test_perferct_forwarding;
                 {
                     using ::test_variant::literal_type;
-                    ASSERT (test_perferct_forwarding< literal_type, versatile, identity, 2, 2 >::run());
-                    //ASSERT (test_perferct_forwarding< literal_type, versatile, aggregate, 2, 2 >::run());
+                    ASSERT ((test_perferct_forwarding< literal_type, versatile, identity,  2, 2 >::run()));
+                    ASSERT ((test_perferct_forwarding< literal_type, versatile, aggregate, 2, 2 >::run()));
                 }
                 {
                     using ::test_variant::common_type;

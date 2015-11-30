@@ -159,7 +159,7 @@ struct multivisitor
     operator () (types &&... _values) & noexcept
     {
         //ASSERT (M == sizeof...(types));
-        //ASSERT (!(is_visitable< types >{} || ...));
+        //ASSERT (!(is_visitable_v< types > || ...));
         result_ = {{type_qualifier_of< multivisitor & >, type_qualifier_of< types && >...}, {which(), _values...}};
         return static_cast< return_type >(result_);
     }
@@ -225,17 +225,15 @@ struct fusor
         bool
         operator () () noexcept
         {
-            static_assert(size_ == sizeof...(v));
+            SA(size_ == sizeof...(v));
             constexpr type_qualifier type_qual_m = static_cast< type_qualifier >(type_qual_begin + m);
             constexpr type_qualifier type_quals_v[sizeof...(v)] = {static_cast< type_qualifier >(type_qual_begin + v)...};
             pair< size_ > const rhs = {{type_qual_m, type_quals_v[i]...}, {size_ + 1, variants_[i].which()...}};
             decltype(auto) lhs = ::versatile::multivisit(forward_as< type_qual_m >(multivisitor_),
                                                          forward_as< type_quals_v[i] >(variants_[i])...);
-            CHECK (1 + size_ == lhs.size());
+            CHECK (size_ + 1 == lhs.size());
             CHECK (type_qualifier_of< decltype(lhs) > == multivisitor_.type_qual_);
-            if (!(lhs == rhs)) {
-                return false;
-            }
+            CHECK (lhs == rhs);
             ++counter_;
             return true;
         }
@@ -263,43 +261,22 @@ template< template< std::size_t I > class T,
 class test_perferct_forwarding
 {
 
-    static constexpr std::size_t ref_count = (type_qual_end - type_qual_begin); // test only reference types
+    static constexpr std::size_t ref_count_ = (type_qual_end - type_qual_begin); // test only reference types
 
-    template< typename = std::make_index_sequence< N > >
-    struct variants;
-
-    template< std::size_t ...j >
-    struct variants< std::index_sequence< j... > >
-    {
-
-        using variant_type = variant< typename wrapper< T< N - j > >::type... >;
-
-        variant_type variants_[N] = {T< N - j >{}...};
-
-        constexpr
-        variant_type const &
-        operator [] (std::size_t const n) const
-        {
-            return variants_[n];
-        }
-
-    };
-
-    template< type_qualifier type_qual, std::size_t ...i >
+    template< type_qualifier type_qual,
+              std::size_t ...i, std::size_t ...j >
     CONSTEXPRF
     static
     bool
-    run(std::index_sequence< i... >) noexcept
+    run(std::index_sequence< i... >, std::index_sequence< j... >) noexcept
     {
-        SA(sizeof...(i) == M);
-        std::size_t indices[M] = {};
         using multivisitor_type = multivisitor< M, type_qual >;
         typename multivisitor_type::result_type result_{};
-        variants<> const variants_{};
-        using variant_type = typename variants<>::variant_type;
-        //constexpr std::size_t count_ = M * N *
+        using variant_type = variant< typename wrapper< T< N - j > >::type... >;
         fusor< multivisitor_type, variant_type [M] > fusor_{{{result_}, {}, 0}};
-        auto const enumerator_ = make_enumerator< ref_count, (i, ref_count)... >(fusor_.fuse_);
+        auto const enumerator_ = make_enumerator< ref_count_, (static_cast< void >(i), ref_count_)... >(fusor_.fuse_);
+        variant_type variants_[N] = {T< N - j >{}...};
+        std::size_t indices[M] = {};
         for (;;) {
             ((fusor_[i] = variants_[indices[i]]), ...);
             if (!enumerator_()) {
@@ -320,7 +297,8 @@ class test_perferct_forwarding
                 break;
             }
         }
-        //std::cout << fusor_.fuse_.counter_ << std::endl;
+        constexpr std::size_t count_ = ((static_cast< void >(i), (N * ref_count_)) * ...) * ref_count_; // N ^ M * ref_count_ ^ (M + 1)
+        CHECK (fusor_.fuse_.counter_ == count_);
         return true;
     }
 
@@ -332,12 +310,13 @@ public :
     run() noexcept
     {
         auto const i = std::make_index_sequence< M >{};
-        CHECK (run< type_qualifier::value       >(i));
-        CHECK (run< type_qualifier::const_value >(i));
-        CHECK (run< type_qualifier::lref        >(i));
-        CHECK (run< type_qualifier::rref        >(i));
-        CHECK (run< type_qualifier::const_lref  >(i));
-        CHECK (run< type_qualifier::const_rref  >(i));
+        auto const j = std::make_index_sequence< N >{};
+        CHECK (run< type_qualifier::value       >(i, j));
+        CHECK (run< type_qualifier::const_value >(i, j));
+        CHECK (run< type_qualifier::lref        >(i, j));
+        CHECK (run< type_qualifier::rref        >(i, j));
+        CHECK (run< type_qualifier::const_lref  >(i, j));
+        CHECK (run< type_qualifier::const_rref  >(i, j));
         return true;
     }
 
