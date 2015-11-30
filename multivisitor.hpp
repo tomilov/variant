@@ -12,7 +12,7 @@ struct variadic_size;
 
 template< template< typename ...types > class variadic, typename ...types >
 struct variadic_size< variadic< types... > >
-        : ::versatile::index< sizeof...(types) >
+        : ::versatile::index_t< sizeof...(types) >
 {
 
 };
@@ -195,7 +195,7 @@ struct multivisitor
 
 template< std::size_t M, type_qualifier type_qual >
 struct variadic_size< multivisitor< M, type_qual > >
-        : ::versatile::index< M >
+        : ::versatile::index_t< M >
 {
 
 };

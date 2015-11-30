@@ -19,26 +19,6 @@ struct unwrap_type
 template< typename type >
 using unwrap_type_t = typename unwrap_type< std::decay_t< type > >::type;
 
-template< typename type >
-struct embrace
-{
-
-    type value_;
-
-    constexpr
-    operator type const & () const noexcept
-    {
-        return value_;
-    }
-
-    constexpr
-    operator type & () noexcept
-    {
-        return value_;
-    }
-
-};
-
 template< typename type >//std::conditional_t< std::is_class_v< type >, type, embrace< type > > >
 struct aggregate_wrapper
     : type

@@ -13,7 +13,7 @@ namespace versatile
 {
 
 template< std::size_t i >
-struct index
+struct in_place
 {
 
 };
@@ -25,7 +25,6 @@ template< bool is_trivially_destructible >
 struct destructor_dispatcher< is_trivially_destructible >
 {
 
-    constexpr
     void
     destructor(std::size_t const) const noexcept
     { ; }
@@ -130,7 +129,6 @@ struct destructor_dispatcher< false, first, rest... >
         tail_.~tail(); // trivial tail is not specially processed, because whole versatile type can't get an advantage from it
     }
 
-    constexpr
     void
     free(std::size_t const _which) const noexcept(noexcept(destructor(_which)))
     {
@@ -141,7 +139,6 @@ struct destructor_dispatcher< false, first, rest... >
         }
     }
 
-    constexpr
     void
     destructor(std::size_t const _which) const noexcept(noexcept(head_.~head()) && noexcept(tail_.destructor(_which)))
     {
@@ -474,7 +471,7 @@ public :
 
     template< std::size_t i, typename ...arguments >
     constexpr
-    versatile(index< i >, arguments &&... _arguments) noexcept(noexcept(::new (nullptr) storage(index_t< i >{}, std::forward< arguments >(_arguments)...)))
+    versatile(in_place< i >, arguments &&... _arguments) noexcept(noexcept(::new (nullptr) storage(index_t< i >{}, std::forward< arguments >(_arguments)...)))
         : enabler({})
         , storage_(index_t< i >{}, std::forward< arguments >(_arguments)...)
     { ; }
@@ -511,7 +508,7 @@ public :
     void
     emplace(arguments &&... _arguments) noexcept
     {
-        *this = versatile(index< i >{}, std::forward< arguments >(_arguments)...);
+        *this = versatile(in_place< i >{}, std::forward< arguments >(_arguments)...);
     }
 
 };
