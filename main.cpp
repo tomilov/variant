@@ -20,8 +20,8 @@ main()
             }
             {
                 using ::test_variant::check_trivially_copyable;
-                ASSERT (check_trivially_copyable< identity,  versatile >::run());
-                ASSERT (check_trivially_copyable< aggregate, versatile >::run());
+                ASSERT ((check_trivially_copyable< identity,  versatile >::run()));
+                ASSERT ((check_trivially_copyable< aggregate, versatile >::run()));
             }
             {
                 using ::test_variant::check_literal;
