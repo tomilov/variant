@@ -12,12 +12,6 @@
 namespace versatile
 {
 
-template< std::size_t i >
-struct in_place
-{
-
-};
-
 template< bool is_trivially_destructible, typename ...types >
 struct destructor_dispatcher;
 
@@ -127,16 +121,6 @@ struct destructor_dispatcher< false, first, rest... >
     ~destructor_dispatcher() noexcept
     {
         tail_.~tail(); // trivial tail is not specially processed, because whole versatile type can't get an advantage from it
-    }
-
-    void
-    free(std::size_t const _which) const noexcept(noexcept(destructor(_which)))
-    {
-        if (_which == std::size_t{}) { // trivially constructible case
-            head_.~head();
-        } else {
-            destructor(_which);
-        }
     }
 
     void
@@ -260,7 +244,9 @@ struct dispatcher< false, true, types... >
 
     ~dispatcher() noexcept(noexcept(storage_.destructor(which_)))
     {
-        storage_.free(which_);
+        if (which_ != std::size_t{}) { // if not trivially default constructed
+            storage_.destructor(which_);
+        }
     }
 
     constexpr
@@ -356,7 +342,8 @@ struct dispatcher< false, false, types... >
 
     ~dispatcher() noexcept(noexcept(storage_.destructor(which_)))
     {
-        storage_.free(which_);
+        assert(which_ != std::size_t{}); // can't be trivially default constructed
+        storage_.destructor(which_);
     }
 
     using default_index = index_of_default_constructible< types..., void >;
@@ -423,6 +410,12 @@ struct enable_default_constructor< false >
 
 template< typename ...types >
 using enable_default_constructor_t = enable_default_constructor< (std::is_default_constructible_v< types > || ...) >;
+
+template< std::size_t _which >
+struct in_place
+{
+
+};
 
 template< typename ...types >
 class versatile
