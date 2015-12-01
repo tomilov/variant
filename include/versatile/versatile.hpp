@@ -191,6 +191,16 @@ struct dispatcher< true, true, types... >
     storage storage_;
 
     constexpr
+    std::size_t
+    which() const noexcept
+    {
+        if (which_ == std::size_t{}) { // is trivially default constructed?
+            return sizeof...(types); // if so, then it always point to the first (leftmost) alternative type
+        }
+        return which_;
+    }
+
+    constexpr
     dispatcher() = default;
 
     template< typename index, typename ...arguments >
@@ -224,6 +234,16 @@ struct dispatcher< false, true, types... >
 
     std::size_t which_;
     storage storage_;
+
+    constexpr
+    std::size_t
+    which() const noexcept
+    {
+        if (which_ == std::size_t{}) { // is trivially default constructed?
+            return sizeof...(types); // if so, then it always point to the first (leftmost) alternative type
+        }
+        return which_;
+    }
 
     constexpr
     dispatcher(dispatcher const &) = default;
@@ -284,6 +304,13 @@ struct dispatcher< true, false, types... >
     std::size_t which_;
     storage storage_;
 
+    constexpr
+    std::size_t
+    which() const noexcept
+    {
+        return which_;
+    }
+
     using default_index = index_of_default_constructible< types..., void >;
 
     constexpr
@@ -322,6 +349,13 @@ struct dispatcher< false, false, types... >
 
     std::size_t which_;
     storage storage_;
+
+    constexpr
+    std::size_t
+    which() const noexcept
+    {
+        return which_;
+    }
 
     constexpr
     dispatcher(dispatcher const &) = default;
@@ -435,10 +469,7 @@ public :
     std::size_t
     which() const noexcept
     {
-        if (storage_.which_ == std::size_t{}) { // is trivially default constructed?
-            return sizeof...(types); // if so, then it always point to the first (leftmost) alternative type
-        }
-        return storage_.which_;
+        return storage_.which();
     }
 
     template< typename type >

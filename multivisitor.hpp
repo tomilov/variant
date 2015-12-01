@@ -113,6 +113,13 @@ struct pair
     }
 
     CONSTEXPRF
+    bool
+    operator != (pair const & _rhs) const noexcept
+    {
+        return !operator == (_rhs);
+    }
+
+    CONSTEXPRF
     std::size_t
     size() const noexcept
     {
