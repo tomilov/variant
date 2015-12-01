@@ -29,7 +29,10 @@ struct literal_type
 
 };
 
+SA(!std::is_trivially_default_constructible_v< literal_type<> >);
+SA(std::is_default_constructible_v< literal_type<> >);
 SA(std::is_literal_type_v< literal_type<> >);
+SA(std::is_trivially_copyable_v< literal_type<> >);
 
 template< std::size_t I = 0 >
 struct common_type
@@ -45,35 +48,48 @@ struct common_type
 
     common_type() = default;
     common_type(common_type const &) = default;
+    common_type(common_type &) = default;
+    common_type(common_type &&) = default;
+    common_type & operator = (common_type const &) = default;
+    common_type & operator = (common_type &) = default;
+    common_type & operator = (common_type &&) = default;
     ~common_type() noexcept { ; }
 
 };
 
 SA(!std::is_literal_type_v< common_type<> >);
+SA(!std::is_trivially_default_constructible_v< common_type<> >);
+SA(!std::is_trivially_destructible_v< common_type<> >);
+SA(std::is_default_constructible_v< common_type<> >);
+SA(std::is_destructible_v< common_type<> >);
+SA(!std::is_trivially_copy_constructible_v< common_type<> >); // ?
+SA(!std::is_trivially_move_constructible_v< common_type<> >); // ?
+SA(std::is_trivially_copy_assignable_v< common_type<> >);
+SA(std::is_trivially_move_assignable_v< common_type<> >);
 
 template< typename type >
-static constexpr bool is_vcopy_constructible_v = std::is_constructible_v< type, type & >;
+constexpr bool is_vcopy_constructible_v = std::is_constructible_v< type, type & >;
 
 template< typename type >
-static constexpr bool is_cmove_constructible_v = std::is_constructible_v< type, type const && >;
+constexpr bool is_cmove_constructible_v = std::is_constructible_v< type, type const && >;
 
 template< typename type >
-static constexpr bool is_vcopy_assignable_v = std::is_assignable_v< type &, type & >;
+constexpr bool is_vcopy_assignable_v = std::is_assignable_v< type &, type & >;
 
 template< typename type >
-static constexpr bool is_cmove_assignable_v = std::is_assignable_v< type &, type const && >;
+constexpr bool is_cmove_assignable_v = std::is_assignable_v< type &, type const && >;
 
 template< typename type >
-static constexpr bool is_trivially_vcopy_constructible_v = std::is_trivially_constructible_v< type, type & >;
+constexpr bool is_trivially_vcopy_constructible_v = std::is_trivially_constructible_v< type, type & >;
 
 template< typename type >
-static constexpr bool is_trivially_cmove_constructible_v = std::is_trivially_constructible_v< type, type const && >;
+constexpr bool is_trivially_cmove_constructible_v = std::is_trivially_constructible_v< type, type const && >;
 
 template< typename type >
-static constexpr bool is_trivially_vcopy_assignable_v = std::is_trivially_assignable_v< type &, type & >;
+constexpr bool is_trivially_vcopy_assignable_v = std::is_trivially_assignable_v< type &, type & >;
 
 template< typename type >
-static constexpr bool is_trivially_cmove_assignable_v = std::is_trivially_assignable_v< type &, type const && >;
+ constexpr bool is_trivially_cmove_assignable_v = std::is_trivially_assignable_v< type &, type const && >;
 
 template< template< typename ... > class wrapper = ::versatile::identity,
           template< typename ... > class variant = ::versatile::versatile >
@@ -1327,6 +1343,7 @@ struct check_trivially_copyable
             SA(is_vcopy_assignable_v< U >);
             SA(std::is_move_assignable_v< U >);
             SA(is_cmove_assignable_v< U >);
+#if 0
             {
                 U const v{N{}};
                 CHECK (is_active< N >(v));
@@ -1334,8 +1351,7 @@ struct check_trivially_copyable
                 CHECK (is_active< S >(w));
                 w = v; // clang bug: non-constexpr assignment operator of U for constexpr S.
                 CHECK (is_active< N >(w));
-            }return true;
-#if 0
+            }
             {
                 U const v{S{}};
                 CHECK (is_active< S >(v));

@@ -182,9 +182,9 @@ struct multivisitor
 
 };
 
-static constexpr std::size_t type_qual_begin = static_cast< std::size_t >(type_qualifier_of< void * & >);
-static constexpr std::size_t type_qual_end = static_cast< std::size_t >(type_qualifier_of< void * volatile & >);
-static constexpr std::size_t ref_count_ = (type_qual_end - type_qual_begin);
+constexpr std::size_t type_qual_begin = static_cast< std::size_t >(type_qualifier_of< void * & >);
+constexpr std::size_t type_qual_end = static_cast< std::size_t >(type_qualifier_of< void * volatile & >);
+constexpr std::size_t ref_count_ = (type_qual_end - type_qual_begin);
 
 template< typename array_type >
 struct subscripter

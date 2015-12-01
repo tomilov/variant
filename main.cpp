@@ -8,6 +8,7 @@
 int
 main()
 {
+#if 1
     { // versatile
         using ::versatile::versatile;
         {
@@ -88,6 +89,7 @@ main()
     { // eggs::variant
 
     }
+#endif
     return EXIT_SUCCESS;
 }
 
