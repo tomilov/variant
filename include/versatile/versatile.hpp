@@ -51,13 +51,13 @@ struct destructor_dispatcher< true, first, rest... >
 
     template< typename ...arguments >
     constexpr
-    destructor_dispatcher(index_t< (sizeof...(rest) + 1) >, arguments &&... _arguments) noexcept(noexcept(::new (nullptr) head(std::declval< arguments >()...)))
+    destructor_dispatcher(index_t< (sizeof...(rest) + 1) >, arguments &&... _arguments) noexcept(noexcept(::new (std::declval< void * >()) head(std::declval< arguments >()...)))
         : head_(std::forward< arguments >(_arguments)...)
     { ; }
 
     template< typename ...arguments >
     constexpr
-    destructor_dispatcher(arguments &&... _arguments) noexcept(noexcept(::new (nullptr) tail(std::declval< arguments >()...)))
+    destructor_dispatcher(arguments &&... _arguments) noexcept(noexcept(::new (std::declval< void * >()) tail(std::declval< arguments >()...)))
         : tail_(std::forward< arguments >(_arguments)...)
     { ; }
 
@@ -154,13 +154,13 @@ struct destructor_dispatcher< false, first, rest... >
 
     template< typename ...arguments >
     constexpr
-    destructor_dispatcher(index_t< (sizeof...(rest) + 1) >, arguments &&... _arguments) noexcept(noexcept(::new (nullptr) head(std::declval< arguments >()...)))
+    destructor_dispatcher(index_t< (sizeof...(rest) + 1) >, arguments &&... _arguments) noexcept(noexcept(::new (std::declval< void * >()) head(std::declval< arguments >()...)))
         : head_(std::forward< arguments >(_arguments)...)
     { ; }
 
     template< typename ...arguments >
     constexpr
-    destructor_dispatcher(arguments &&... _arguments) noexcept(noexcept(::new (nullptr) tail(std::declval< arguments >()...)))
+    destructor_dispatcher(arguments &&... _arguments) noexcept(noexcept(::new (std::declval< void * >()) tail(std::declval< arguments >()...)))
         : tail_(std::forward< arguments >(_arguments)...)
     { ; }
 
@@ -211,7 +211,7 @@ struct dispatcher< true, true, types... >
 
     template< typename index, typename ...arguments >
     constexpr
-    dispatcher(index, arguments &&... _arguments) noexcept(noexcept(::new (nullptr) storage(index{}, std::forward< arguments >(_arguments)...)))
+    dispatcher(index, arguments &&... _arguments) noexcept(noexcept(::new (std::declval< void * >()) storage(index{}, std::forward< arguments >(_arguments)...)))
         : which_{index::value}
         , storage_(index{}, std::forward< arguments >(_arguments)...)
     { ; }
@@ -268,7 +268,7 @@ struct dispatcher< false, true, types... >
 
     template< typename index, typename ...arguments >
     constexpr
-    dispatcher(index, arguments &&... _arguments) noexcept(noexcept(::new (nullptr) storage(index{}, std::forward< arguments >(_arguments)...)))
+    dispatcher(index, arguments &&... _arguments) noexcept(noexcept(::new (std::declval< void * >()) storage(index{}, std::forward< arguments >(_arguments)...)))
         : which_{index::value}
         , storage_(index{}, std::forward< arguments >(_arguments)...)
     { ; }
@@ -301,13 +301,13 @@ struct dispatcher< true, false, types... >
     using default_index = index_of_default_constructible< types..., void >;
 
     constexpr
-    dispatcher() noexcept(noexcept(::new (nullptr) dispatcher(typename default_index::type{})))
+    dispatcher() noexcept(noexcept(::new (std::declval< void * >()) dispatcher(typename default_index::type{})))
         : dispatcher(typename default_index::type{})
     { ; }
 
     template< typename index, typename ...arguments >
     constexpr
-    dispatcher(index, arguments &&... _arguments) noexcept(noexcept(::new (nullptr) storage(index{}, std::forward< arguments >(_arguments)...)))
+    dispatcher(index, arguments &&... _arguments) noexcept(noexcept(::new (std::declval< void * >()) storage(index{}, std::forward< arguments >(_arguments)...)))
         : which_{index::value}
         , storage_(index{}, std::forward< arguments >(_arguments)...)
     { ; }
@@ -362,13 +362,13 @@ struct dispatcher< false, false, types... >
     using default_index = index_of_default_constructible< types..., void >;
 
     constexpr
-    dispatcher() noexcept(noexcept(::new (nullptr) dispatcher(typename default_index::type{})))
+    dispatcher() noexcept(noexcept(::new (std::declval< void * >()) dispatcher(typename default_index::type{})))
         : dispatcher(typename default_index::type{})
     { ; }
 
     template< typename index, typename ...arguments >
     constexpr
-    dispatcher(index, arguments &&... _arguments) noexcept(noexcept(::new (nullptr) storage(index{}, std::forward< arguments >(_arguments)...)))
+    dispatcher(index, arguments &&... _arguments) noexcept(noexcept(::new (std::declval< void * >()) storage(index{}, std::forward< arguments >(_arguments)...)))
         : which_{index::value}
         , storage_(index{}, std::forward< arguments >(_arguments)...)
     { ; }
@@ -464,14 +464,14 @@ public :
 
     template< typename type, typename index = index_at_t< type > >
     constexpr
-    versatile(type && _value) noexcept(noexcept(::new (nullptr) storage(index{}, std::forward< type >(_value))))
+    versatile(type && _value) noexcept(noexcept(::new (std::declval< void * >()) storage(index{}, std::forward< type >(_value))))
         : enabler({})
         , storage_(index{}, std::forward< type >(_value))
     { ; }
 
     template< std::size_t i, typename ...arguments >
     constexpr
-    versatile(in_place< i >, arguments &&... _arguments) noexcept(noexcept(::new (nullptr) storage(index_t< i >{}, std::forward< arguments >(_arguments)...)))
+    versatile(in_place< i >, arguments &&... _arguments) noexcept(noexcept(::new (std::declval< void * >()) storage(index_t< i >{}, std::forward< arguments >(_arguments)...)))
         : enabler({})
         , storage_(index_t< i >{}, std::forward< arguments >(_arguments)...)
     { ; }

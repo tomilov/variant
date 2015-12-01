@@ -24,11 +24,11 @@ struct enumerator
     static constexpr std::size_t size_ = sizeof...(indices);
     static constexpr std::size_t count_ = (indices * ...);
 
-    template< typename I >
+    template< typename I, typename C >
     struct decomposer;
 
-    template< std::size_t ...I >
-    struct decomposer< std::index_sequence< I... > >
+    template< std::size_t ...I, std::size_t ...C >
+    struct decomposer< std::index_sequence< I... >, std::index_sequence< C... > >
     {
 
         F & f;
@@ -38,7 +38,7 @@ struct enumerator
         static
         constexpr
         std::size_t
-        order(std::size_t const i)
+        order(std::size_t const i) noexcept
         {
             std::size_t o = 1;
             for (std::size_t n = i + 1; n < size_; ++n) {
@@ -52,7 +52,7 @@ struct enumerator
         static
         constexpr
         std::size_t
-        digit(std::size_t c, std::size_t const i)
+        digit(std::size_t c, std::size_t const i) noexcept
         {
             for (std::size_t n = 0; n < i; ++n) {
                 c = c % orders_[n];
@@ -60,31 +60,30 @@ struct enumerator
             return c / orders_[i];
         }
 
+        constexpr
+        bool
+        operator () () const noexcept
+        {
+            return (call< C >() && ...);
+        }
+
         template< std::size_t c >
         constexpr
         bool
-        call() const
+        call() const noexcept
         {
-            return f.template operator () < digit(c, I)... >(); // error here
+            return f(std::index_sequence< digit(c, I)... >{});
         }
 
     };
 
-    decomposer< std::make_index_sequence< size_ > > const decomposer_;
+    decomposer< std::make_index_sequence< size_ >, std::make_index_sequence< count_ > > const decomposer_;
 
     constexpr
     bool
-    operator () () const
+    operator () () const noexcept
     {
-        return call(std::make_index_sequence< count_ >{});
-    }
-
-    template< std::size_t ...counter >
-    constexpr
-    bool
-    call(std::index_sequence< counter... >) const
-    {
-        return (decomposer_.template call< counter >() && ...);
+        return decomposer_();
     }
 
 };
@@ -92,7 +91,7 @@ struct enumerator
 template< std::size_t ...indices, typename F >
 CONSTEXPRF
 enumerator< F, indices... >
-make_enumerator(F & f)
+make_enumerator(F & f) noexcept
 {
     SA(0 < sizeof...(indices));
     SA(((0 < indices) && ...));
@@ -256,7 +255,7 @@ struct fusor
         template< std::size_t m, std::size_t ...v >
         CONSTEXPRF
         bool
-        operator () () noexcept
+        operator () (std::index_sequence< m, v... >) noexcept
         {
             SA(M == sizeof...(v));
             constexpr type_qualifier type_qual_m = static_cast< type_qualifier >(type_qual_begin + m);
@@ -288,7 +287,7 @@ struct fusor
 
     constexpr
     auto &
-    operator [] (std::size_t const i)
+    operator [] (std::size_t const i) noexcept
     {
         return fuse_.variants_[i];
     }
