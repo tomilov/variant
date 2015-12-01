@@ -7,16 +7,6 @@
 namespace test_variant
 {
 
-template< typename variadic >
-struct variadic_size;
-
-template< template< typename ...types > class variadic, typename ...types >
-struct variadic_size< variadic< types... > >
-        : ::versatile::index_t< sizeof...(types) >
-{
-
-};
-
 template< typename F, std::size_t ...indices >
 struct enumerator
 {
@@ -192,13 +182,6 @@ struct multivisitor
 
 };
 
-template< std::size_t M, type_qualifier type_qual >
-struct variadic_size< multivisitor< M, type_qual > >
-        : ::versatile::index_t< M >
-{
-
-};
-
 static constexpr std::size_t type_qual_begin = static_cast< std::size_t >(type_qualifier_of< void * & >);
 static constexpr std::size_t type_qual_end = static_cast< std::size_t >(type_qualifier_of< void * volatile & >);
 static constexpr std::size_t ref_count_ = (type_qual_end - type_qual_begin);
@@ -219,7 +202,7 @@ struct subscripter
     template< typename first, typename ...rest >
     constexpr
     decltype(auto)
-    operator () (first & _first, rest &... _rest) const noexcept
+    operator () (first const & _first, rest const &... _rest) const noexcept
     {
         return operator () (_rest...)[_first];
     }
