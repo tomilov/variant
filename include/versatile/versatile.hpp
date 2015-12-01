@@ -476,8 +476,7 @@ public :
         , storage_(index_t< i >{}, std::forward< arguments >(_arguments)...)
     { ; }
 
-    template< typename type,
-              typename index = index_at_t< type > >
+    template< typename type, typename index = index_at_t< type > >
     explicit
     constexpr
     operator type const & () const noexcept
@@ -485,8 +484,7 @@ public :
         return storage_;
     }
 
-    template< typename type,
-              typename index = index_at_t< type > >
+    template< typename type, typename index = index_at_t< type > >
     explicit
     constexpr
     operator type & () noexcept
@@ -494,8 +492,7 @@ public :
         return storage_;
     }
 
-    template< typename type,
-              typename index = index_at_t< type > >
+    template< typename type, typename index = index_at_t< type > >
     constexpr
     versatile &
     operator = (type && _value) noexcept
@@ -509,6 +506,14 @@ public :
     emplace(arguments &&... _arguments) noexcept
     {
         *this = versatile(in_place< i >{}, std::forward< arguments >(_arguments)...);
+    }
+
+    template< typename type, typename ...arguments, typename index = index_at_t< type > >
+    constexpr
+    void
+    emplace(arguments &&... _arguments) noexcept
+    {
+        *this = versatile(in_place< index::value >{}, std::forward< arguments >(_arguments)...);
     }
 
 };
