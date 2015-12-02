@@ -43,36 +43,36 @@ main()
 
     }
     { // boost::variant
-        using ::test_boost_variant::variant_i;
-        using ::test_boost_variant::variant_c;
         struct L {};
         SA(std::is_literal_type< L >{});
         SA(!std::is_literal_type< ::boost::variant< L > >{});
-        using ::versatile::identity;
-        using ::test_variant::aggregate;
 #if 1
+        using ::test_boost_variant::variant_i;
+        using ::test_boost_variant::variant_c;
+        using ::versatile::identity;
+        using ::test_boost_variant::boost_recursive_wrapper;
         {
             using ::test_variant::test_perferct_forwarding;
             {
                 using ::test_variant::literal_type;
                 {
                     assert ((test_perferct_forwarding< literal_type, variant_i, identity,  2, 2 >::run()));
-                    assert ((test_perferct_forwarding< literal_type, variant_c, aggregate, 2, 2 >::run()));
+                    assert ((test_perferct_forwarding< literal_type, variant_c, boost_recursive_wrapper, 2, 2 >::run()));
                 }
                 {
                     assert ((test_perferct_forwarding< literal_type, variant_i, identity,  2, 2 >::run()));
-                    assert ((test_perferct_forwarding< literal_type, variant_c, aggregate, 2, 2 >::run()));
+                    assert ((test_perferct_forwarding< literal_type, variant_c, boost_recursive_wrapper, 2, 2 >::run()));
                 }
             }
             {
                 using ::test_variant::common_type;
                 {
                     assert ((test_perferct_forwarding< common_type, variant_i, identity,  2, 2 >::run()));
-                    assert ((test_perferct_forwarding< common_type, variant_c, aggregate, 2, 2 >::run()));
+                    assert ((test_perferct_forwarding< common_type, variant_c, boost_recursive_wrapper, 2, 2 >::run()));
                 }
                 {
                     assert ((test_perferct_forwarding< common_type, variant_i, identity,  2, 2 >::run()));
-                    assert ((test_perferct_forwarding< common_type, variant_c, aggregate, 2, 2 >::run()));
+                    assert ((test_perferct_forwarding< common_type, variant_c, boost_recursive_wrapper, 2, 2 >::run()));
                 }
             }
         }

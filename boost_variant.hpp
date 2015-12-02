@@ -36,7 +36,8 @@ struct variant_c
         : member_(std::forward< type >(_value))
     { ; }
 
-    template< typename argument >
+    template< typename argument,
+              typename = index_at_t< argument > >
     constexpr
     variant_c &
     operator = (argument && _argument)
@@ -60,7 +61,8 @@ struct variant_c
         return (index_at_t< type >::value == which());
     }
 
-    template< typename type >
+    template< typename type,
+              typename = index_at_t< type > >
     explicit
     constexpr
     operator type const & () const
@@ -68,10 +70,11 @@ struct variant_c
         if (!active< type >()) {
             throw std::bad_cast{};
         }
-        return static_cast< type const & >(boost::get< type >(member_));
+        return boost::get< type >(member_);
     }
 
-    template< typename type >
+    template< typename type,
+              typename = index_at_t< type > >
     explicit
     constexpr
     operator type & ()
@@ -79,7 +82,7 @@ struct variant_c
         if (!active< type >()) {
             throw std::bad_cast{};
         }
-        return static_cast< type & >(boost::get< type >(member_));
+        return boost::get< type >(member_);
     }
 
 private :
@@ -145,7 +148,8 @@ struct variant_i
         : base(std::forward< type >(_value))
     { ; }
 
-    template< typename argument >
+    template< typename argument,
+              typename = index_at_t< argument > >
     constexpr
     variant_i &
     operator = (argument && _argument)
@@ -169,7 +173,8 @@ struct variant_i
         return (index_at_t< type >::value == which());
     }
 
-    template< typename type >
+    template< typename type,
+              typename = index_at_t< type > >
     explicit
     constexpr
     operator type const & () const
@@ -177,10 +182,11 @@ struct variant_i
         if (!active< type >()) {
             throw std::bad_cast{};
         }
-        return static_cast< type const & >(boost::get< type >(static_cast< variant_i::base const & >(*this)));
+        return boost::get< type >(static_cast< variant_i::base const & >(*this));
     }
 
-    template< typename type >
+    template< typename type,
+              typename = index_at_t< type > >
     explicit
     constexpr
     operator type & ()
@@ -188,7 +194,7 @@ struct variant_i
         if (!active< type >()) {
             throw std::bad_cast{};
         }
-        return static_cast< type & >(boost::get< type >(static_cast< variant_i::base & >(*this)));
+        return boost::get< type >(static_cast< variant_i::base & >(*this));
     }
 
 };
@@ -216,6 +222,13 @@ get(variant_i< types... > & v) noexcept
 {
     return static_cast< type >(static_cast< type & >(v));
 }
+
+template< typename type >
+struct boost_recursive_wrapper
+        : ::versatile::identity< ::boost::recursive_wrapper< type > >
+{
+
+};
 
 } // namespace test_boost_variant
 

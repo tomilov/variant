@@ -8,9 +8,9 @@
 namespace test_variant
 {
 
-template< typename first >
+template< typename type >
 struct aggregate
-        : ::versatile::identity< ::versatile::aggregate_wrapper< first > >
+        : ::versatile::identity< ::versatile::aggregate_wrapper< type > >
 {
 
 };
