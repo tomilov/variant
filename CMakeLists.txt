@@ -23,7 +23,7 @@ set( CMAKE_COLOR_MAKEFILE   ON )
 #set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address" )
 
 set( CMAKE_CXX_COMPILER             "clang++")
-set( CMAKE_CXX_FLAGS                "${CMAKE_CXX_FLAGS} -W -Weverything -pedantic -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded -fconstexpr-steps=50000000 -ftemplate-backtrace-limit=0 -fdiagnostics-color=always" )
+set( CMAKE_CXX_FLAGS                "${CMAKE_CXX_FLAGS} -W -Weverything -Wmismatched-tags -pedantic -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded -fconstexpr-steps=50000000 -ftemplate-backtrace-limit=0 -fdiagnostics-color=always" )
 set( CMAKE_CXX_FLAGS                "${CMAKE_CXX_FLAGS} -std=gnu++1z -stdlib=libc++")
 set( CMAKE_CXX_FLAGS_RELEASE        "-Ofast -DNDEBUG=1 -march=native")
 set( CMAKE_CXX_FLAGS_MINSIZEREL     "-Os -DNDEBUG=1 -march=native")

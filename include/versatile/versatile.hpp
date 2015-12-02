@@ -13,7 +13,7 @@ namespace versatile
 {
 
 template< bool is_trivially_destructible, typename ...types >
-struct destructor_dispatcher;
+class destructor_dispatcher;
 
 template< bool is_trivially_destructible >
 struct destructor_dispatcher< is_trivially_destructible >
@@ -26,7 +26,7 @@ struct destructor_dispatcher< is_trivially_destructible >
 };
 
 template< typename first, typename ...rest >
-struct destructor_dispatcher< true, first, rest... >
+class destructor_dispatcher< true, first, rest... >
 {
 
     using head = first;
@@ -39,6 +39,8 @@ struct destructor_dispatcher< true, first, rest... >
         tail tail_;
 
     };
+
+public :
 
     constexpr
     destructor_dispatcher() = default;
@@ -86,7 +88,7 @@ struct destructor_dispatcher< true, first, rest... >
 };
 
 template< typename first, typename ...rest >
-struct destructor_dispatcher< false, first, rest... >
+class destructor_dispatcher< false, first, rest... >
 {
 
     using head = first;
@@ -100,6 +102,8 @@ struct destructor_dispatcher< false, first, rest... >
         tail tail_;
 
     };
+
+public :
 
     constexpr
     destructor_dispatcher(destructor_dispatcher const &) = default;
@@ -179,16 +183,18 @@ struct destructor_dispatcher< false, first, rest... >
 };
 
 template< bool is_trivially_destructible, bool is_trivially_constructible, typename ...types >
-struct dispatcher;
+class dispatcher;
 
 template< typename ...types >
-struct dispatcher< true, true, types... >
+class dispatcher< true, true, types... >
 {
 
     using storage = destructor_dispatcher< true, types... >;
 
     std::size_t which_;
     storage storage_;
+
+public :
 
     constexpr
     std::size_t
@@ -227,13 +233,15 @@ struct dispatcher< true, true, types... >
 };
 
 template< typename ...types >
-struct dispatcher< false, true, types... >
+class dispatcher< false, true, types... >
 {
 
     using storage = destructor_dispatcher< false, types... >;
 
     std::size_t which_;
     storage storage_;
+
+public :
 
     constexpr
     std::size_t
@@ -296,7 +304,7 @@ struct dispatcher< false, true, types... >
 };
 
 template< typename ...types >
-struct dispatcher< true, false, types... >
+class dispatcher< true, false, types... >
 {
 
     using storage = destructor_dispatcher< true, types... >;
@@ -304,10 +312,13 @@ struct dispatcher< true, false, types... >
     std::size_t which_;
     storage storage_;
 
+public :
+
     constexpr
     std::size_t
     which() const noexcept
     {
+        assert(which_ != std::size_t{});
         return which_;
     }
 
@@ -342,7 +353,7 @@ struct dispatcher< true, false, types... >
 };
 
 template< typename ...types >
-struct dispatcher< false, false, types... >
+class dispatcher< false, false, types... >
 {
 
     using storage = destructor_dispatcher< false, types... >;
@@ -350,10 +361,13 @@ struct dispatcher< false, false, types... >
     std::size_t which_;
     storage storage_;
 
+public :
+
     constexpr
     std::size_t
     which() const noexcept
     {
+        assert(which_ != std::size_t{});
         return which_;
     }
 
@@ -521,6 +535,7 @@ public :
     versatile &
     operator = (type && _value) noexcept
     {
+        static_assert(std::is_trivially_assignable_v< versatile, versatile >, "all alternative types should be trivially move assignable");
         return (*this = versatile(std::forward< type >(_value))); // http://stackoverflow.com/questions/33936295/
     }
 
@@ -529,6 +544,7 @@ public :
     void
     emplace(arguments &&... _arguments) noexcept
     {
+        static_assert(std::is_trivially_assignable_v< versatile, versatile >, "all alternative types should be trivially move assignable");
         *this = versatile(in_place< i >{}, std::forward< arguments >(_arguments)...);
     }
 
@@ -537,6 +553,7 @@ public :
     void
     emplace(arguments &&... _arguments) noexcept
     {
+        static_assert(std::is_trivially_assignable_v< versatile, versatile >, "all alternative types should be trivially move assignable");
         *this = versatile(in_place< index::value >{}, std::forward< arguments >(_arguments)...);
     }
 

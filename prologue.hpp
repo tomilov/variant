@@ -99,11 +99,11 @@ operator || (lhs && _lhs, rhs && _rhs) = delete;
 #define STRN(N) STR(N)
 #define LOCATION "file '" __FILE__ "', line: " STRN(__LINE__)
 #define SA(...) static_assert((__VA_ARGS__), LOCATION)
+#define CHECK(...) { assert((__VA_ARGS__)); }
 #ifdef VERSATILE_RUNTIME
 #define ASSERT(...) { assert((__VA_ARGS__)); }
 #define CONSTEXPR const
 #define CONSTEXPRF
-#define CHECK(...) { assert((__VA_ARGS__)); }
 #define DESTRUCTOR { ; }
 //#define CBRA {
 //#define CKET }
@@ -111,7 +111,6 @@ operator || (lhs && _lhs, rhs && _rhs) = delete;
 #define ASSERT(...) { SA(__VA_ARGS__); }
 #define CONSTEXPR constexpr
 #define CONSTEXPRF constexpr
-#define CHECK(...) { if (!(__VA_ARGS__)) return false; }
 #define DESTRUCTOR = default;
 //#define CBRA { struct _ { static constexpr bool call() noexcept {
 //#define CKET return true; } }; SA(_::call()); }

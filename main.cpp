@@ -20,14 +20,9 @@ main()
                 ASSERT (check_invariants< aggregate, versatile >::run());
             }
             {
-                using ::test_variant::check_trivially_copyable;
-                ASSERT ((check_trivially_copyable< identity,  versatile >::run()));
-                ASSERT ((check_trivially_copyable< aggregate, versatile >::run()));
-            }
-            {
-                using ::test_variant::check_literal;
-                ASSERT (check_literal< identity,  versatile >::run());
-                ASSERT (check_literal< aggregate, versatile >::run());
+                using ::test_variant::check_trivial;
+                ASSERT ((check_trivial< identity,  versatile >::run()));
+                ASSERT ((check_trivial< aggregate, versatile >::run()));
             }
             {
                 using ::test_variant::test_perferct_forwarding;
@@ -50,38 +45,35 @@ main()
     { // boost::variant
         using ::test_boost_variant::variant_i;
         using ::test_boost_variant::variant_c;
-#if 0
         struct L {};
         SA(std::is_literal_type< L >{});
         SA(!std::is_literal_type< ::boost::variant< L > >{});
-#ifdef VERSATILE_RUNTIME
         using ::versatile::identity;
         using ::test_variant::aggregate;
-        {
-            using ::test_variant::check_literal;
-            {
-                ASSERT (check_literal< identity,  variant_i >::run());
-                ASSERT (check_literal< aggregate, variant_i >::run());
-            }
-            {
-                ASSERT (check_literal< identity,  variant_c >::run());
-                ASSERT (check_literal< aggregate, variant_c >::run());
-            }
-        }
-#endif
-#endif
-#if 0
+#if 1
         {
             using ::test_variant::test_perferct_forwarding;
             {
                 using ::test_variant::literal_type;
-                assert ((test_perferct_forwarding< literal_type, variant_i, 2, 2 >::run()));
-                assert ((test_perferct_forwarding< literal_type, variant_c, 2, 2 >::run()));
+                {
+                    assert ((test_perferct_forwarding< literal_type, variant_i, identity,  2, 2 >::run()));
+                    assert ((test_perferct_forwarding< literal_type, variant_c, aggregate, 2, 2 >::run()));
+                }
+                {
+                    assert ((test_perferct_forwarding< literal_type, variant_i, identity,  2, 2 >::run()));
+                    assert ((test_perferct_forwarding< literal_type, variant_c, aggregate, 2, 2 >::run()));
+                }
             }
             {
                 using ::test_variant::common_type;
-                assert ((test_perferct_forwarding< common_type, variant_i, 2, 2 >::run()));
-                assert ((test_perferct_forwarding< common_type, variant_c, 2, 2 >::run()));
+                {
+                    assert ((test_perferct_forwarding< common_type, variant_i, identity,  2, 2 >::run()));
+                    assert ((test_perferct_forwarding< common_type, variant_c, aggregate, 2, 2 >::run()));
+                }
+                {
+                    assert ((test_perferct_forwarding< common_type, variant_i, identity,  2, 2 >::run()));
+                    assert ((test_perferct_forwarding< common_type, variant_c, aggregate, 2, 2 >::run()));
+                }
             }
         }
 #endif

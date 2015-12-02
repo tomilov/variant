@@ -13,20 +13,14 @@ struct variant_c
 
     using variant = boost::variant< types... >;
 
+    template< typename type >
+    using index_at_t = ::versatile::index_at_t< ::versatile::unwrap_type_t< type >, ::versatile::unwrap_type_t< types >..., void >;
+
+    variant_c() = default;
+
     variant_c(variant_c &) = default;
     variant_c(variant_c const &) = default;
     variant_c(variant_c &&) = default;
-
-    constexpr
-    variant_c(variant_c const && _rhs)
-        : member_(std::move(_rhs.member_))
-    { ; }
-
-    template< typename ...arguments >
-    constexpr
-    variant_c(arguments &&... _arguments)
-        : member_(std::forward< arguments >(_arguments)...)
-    { ; }
 
     variant_c &
     operator = (variant_c const &) = default;
@@ -35,13 +29,12 @@ struct variant_c
     variant_c &
     operator = (variant_c &&) = default;
 
+    template< typename type,
+              typename = index_at_t< type > >
     constexpr
-    variant_c &
-    operator = (variant_c const && _rhs)
-    {
-        member_ = std::move(_rhs.member_);
-        return *this;
-    }
+    variant_c(type && _value)
+        : member_(std::forward< type >(_value))
+    { ; }
 
     template< typename argument >
     constexpr
@@ -60,9 +53,6 @@ struct variant_c
     }
 
     template< typename type >
-    using index_at_t = ::versatile::index_at_t< ::versatile::unwrap_type_t< type >, ::versatile::unwrap_type_t< types >..., void >;
-
-    template< typename type >
     constexpr
     bool
     active() const noexcept
@@ -78,7 +68,7 @@ struct variant_c
         if (!active< type >()) {
             throw std::bad_cast{};
         }
-        return boost::get< type const & >(member_);
+        return static_cast< type const & >(boost::get< type >(member_));
     }
 
     template< typename type >
@@ -89,7 +79,7 @@ struct variant_c
         if (!active< type >()) {
             throw std::bad_cast{};
         }
-        return boost::get< type & >(member_);
+        return static_cast< type & >(boost::get< type >(member_));
     }
 
 private :
@@ -129,23 +119,17 @@ struct variant_i
 
     using base = boost::variant< types... >;
 
+    template< typename type >
+    using index_at_t = ::versatile::index_at_t< ::versatile::unwrap_type_t< type >, ::versatile::unwrap_type_t< types >..., void >;
+
     //using base::base; // seems there is wrong design of boost::variant constructor
     //using base::operator =;
+
+    variant_i() = default;
 
     variant_i(variant_i &) = default;
     variant_i(variant_i const &) = default;
     variant_i(variant_i &&) = default;
-
-    constexpr
-    variant_i(variant_i const && _rhs)
-        : base(std::move(_rhs.member_))
-    { ; }
-
-    template< typename ...arguments >
-    constexpr
-    variant_i(arguments &&... _arguments)
-        : base(std::forward< arguments >(_arguments)...)
-    { ; }
 
     variant_i &
     operator = (variant_i const &) = default;
@@ -154,13 +138,12 @@ struct variant_i
     variant_i &
     operator = (variant_i &&) = default;
 
+    template< typename type,
+              typename = index_at_t< type > >
     constexpr
-    variant_i &
-    operator = (variant_i const && _rhs)
-    {
-        base::operator = (std::move(_rhs.member_));
-        return *this;
-    }
+    variant_i(type && _value)
+        : base(std::forward< type >(_value))
+    { ; }
 
     template< typename argument >
     constexpr
@@ -179,9 +162,6 @@ struct variant_i
     }
 
     template< typename type >
-    using index_at_t = ::versatile::index_at_t< ::versatile::unwrap_type_t< type >, ::versatile::unwrap_type_t< types >..., void >;
-
-    template< typename type >
     constexpr
     bool
     active() const noexcept
@@ -197,7 +177,7 @@ struct variant_i
         if (!active< type >()) {
             throw std::bad_cast{};
         }
-        return boost::get< type const & >(static_cast< variant_i::base const & >(*this));
+        return static_cast< type const & >(boost::get< type >(static_cast< variant_i::base const & >(*this)));
     }
 
     template< typename type >
@@ -208,7 +188,7 @@ struct variant_i
         if (!active< type >()) {
             throw std::bad_cast{};
         }
-        return boost::get< type & >(static_cast< variant_i::base & >(*this));
+        return static_cast< type & >(boost::get< type >(static_cast< variant_i::base & >(*this)));
     }
 
 };

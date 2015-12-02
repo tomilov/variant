@@ -89,7 +89,7 @@ template< typename type >
 constexpr bool is_trivially_vcopy_assignable_v = std::is_trivially_assignable_v< type &, type & >;
 
 template< typename type >
- constexpr bool is_trivially_cmove_assignable_v = std::is_trivially_assignable_v< type &, type const && >;
+constexpr bool is_trivially_cmove_assignable_v = std::is_trivially_assignable_v< type &, type const && >;
 
 template< template< typename ... > class wrapper = ::versatile::identity,
           template< typename ... > class variant = ::versatile::versatile >
@@ -1092,13 +1092,20 @@ struct check_invariants
 
 };
 
+template< typename from, typename to >
+struct is_explicitly_convertible // akrzemi1's answer http://stackoverflow.com/a/16894048/1430927
+        : std::bool_constant< (std::is_constructible_v< to, from > && !std::is_convertible< from, to >::value) >
+{
+
+};
+
 using ::versatile::is_active;
 using ::versatile::forward_as;
 using ::versatile::get;
 
 template< template< typename ... > class wrapper = ::versatile::identity,
           template< typename ... > class variant = ::versatile::versatile >
-struct check_trivially_copyable
+struct check_trivial
 {
 
     template< typename ...types >
@@ -1128,16 +1135,28 @@ struct check_trivially_copyable
         {
             using U = V< S, N >;
             SA(std::is_trivially_default_constructible_v< U >);
-            U v;
-            CHECK (is_active< S >(v));
+            {
+                CONSTEXPR U v{};
+                ASSERT (is_active< S >(v));
+            }
+            {
+                U v;
+                CHECK (is_active< S >(v));
+            }
         }
         {
             using U = V< N, S >;
             SA(std::is_trivially_default_constructible_v< U >);
-            U v;
-            CHECK (is_active< N >(v));
+            {
+                CONSTEXPR U v{};
+                ASSERT (is_active< N >(v));
+            }
+            {
+                U v;
+                CHECK (is_active< N >(v));
+            }
         }
-        return false;
+        return true;
     }
 
     CONSTEXPRF
@@ -1158,28 +1177,20 @@ struct check_trivially_copyable
             CONSTEXPRF S & operator = (S &&) { return *this; }
             ~S() = default;
         };
-        constexpr auto tcc = std::is_trivially_copy_constructible_v< S >;
-        constexpr auto tvcc = is_trivially_vcopy_constructible_v< S >;
-        constexpr auto tmc = std::is_trivially_move_constructible_v< S >;
-        constexpr auto tcmc = is_trivially_cmove_constructible_v< S >;
-        constexpr auto cc = std::is_copy_constructible_v< S >;
-        constexpr auto vcc = is_vcopy_constructible_v< S >;
-        constexpr auto mc = std::is_move_constructible_v< S >;
-        constexpr auto cmc = is_cmove_constructible_v< S >;
-        SA(tcc);
-        SA(!tvcc); // ?
-        SA(tmc);
-        SA(tcmc);
-        SA(cc);
-        SA(vcc);
-        SA(mc);
-        SA(cmc);
+        SA(std::is_trivially_copy_constructible_v< S >);
+        SA(!is_trivially_vcopy_constructible_v< S >   ); // ?
+        SA(std::is_trivially_move_constructible_v< S >);
+        SA(is_trivially_cmove_constructible_v< S >    );
+        SA(std::is_copy_constructible_v< S >          );
+        SA(is_vcopy_constructible_v< S >              );
+        SA(std::is_move_constructible_v< S >          );
+        SA(is_cmove_constructible_v< S >              );
         struct N {};
         SA(std::is_trivial_v< N >);
         {
             using U = variant< S, N >;
             SA(std::is_trivially_copy_constructible_v< U >);
-            SA(is_trivially_vcopy_constructible_v< U >); // ?
+            SA(is_trivially_vcopy_constructible_v< U >);
             SA(std::is_trivially_move_constructible_v< U >);
             SA(is_trivially_cmove_constructible_v< U >);
             SA(std::is_copy_constructible_v< U >);
@@ -1187,110 +1198,110 @@ struct check_trivially_copyable
             SA(std::is_move_constructible_v< U >);
             SA(is_cmove_constructible_v< U >);
             {
-                U const v{N{}};
-                CHECK (is_active< N >(v));
-                U w{v};
-                CHECK (is_active< N >(w));
+                CONSTEXPR U v{N{}};
+                ASSERT (is_active< N >(v));
+                CONSTEXPR U w{v};
+                ASSERT (is_active< N >(w));
             }
             {
-                U const v{S{}};
-                CHECK (is_active< S >(v));
-                U w{v};
-                CHECK (is_active< S >(w));
+                CONSTEXPR U v{S{}};
+                ASSERT (is_active< S >(v));
+                CONSTEXPR U w{v};
+                ASSERT (is_active< S >(w));
             }
             {
                 U v{N{}};
                 CHECK (is_active< N >(v));
-                U w{v};
+                U const w{v};
                 CHECK (is_active< N >(w));
             }
             {
                 U v{S{}};
                 CHECK (is_active< S >(v));
-                U w{v};
+                U const w{v};
                 CHECK (is_active< S >(w));
             }
             {
-                U const v{N{}};
-                CHECK (is_active< N >(v));
-                U w{std::move(v)};
-                CHECK (is_active< N >(w));
+                CONSTEXPR U v{N{}};
+                ASSERT (is_active< N >(v));
+                CONSTEXPR U w{std::move(v)};
+                ASSERT (is_active< N >(w));
             }
             {
-                U const v{S{}};
-                CHECK (is_active< S >(v));
-                U w{std::move(v)};
-                CHECK (is_active< S >(w));
+                CONSTEXPR U v{S{}};
+                ASSERT (is_active< S >(v));
+                CONSTEXPR U w{std::move(v)};
+                ASSERT (is_active< S >(w));
             }
             {
                 U v{N{}};
                 CHECK (is_active< N >(v));
-                U w{std::move(v)};
+                U const w{std::move(v)};
                 CHECK (is_active< N >(w));
             }
             {
                 U v{S{}};
                 CHECK (is_active< S >(v));
-                U w{std::move(v)};
+                U const w{std::move(v)};
                 CHECK (is_active< S >(w));
             }
         }
         {
             using U = variant< N, S >;
-            SA(tcc == std::is_trivially_copy_constructible_v< U >);
-            SA(tvcc != is_trivially_vcopy_constructible_v< U >); // ?
-            SA(tmc == std::is_trivially_move_constructible_v< U >);
-            SA(tcmc == is_trivially_cmove_constructible_v< U >);
+            SA(std::is_trivially_copy_constructible_v< U >);
+            SA(is_trivially_vcopy_constructible_v< U >);
+            SA(std::is_trivially_move_constructible_v< U >);
+            SA(is_trivially_cmove_constructible_v< U >);
             SA(std::is_copy_constructible_v< U >);
             SA(is_vcopy_constructible_v< U >);
             SA(std::is_move_constructible_v< U >);
             SA(is_cmove_constructible_v< U >);
             {
-                U const v{N{}};
-                CHECK (is_active< N >(v));
-                U w{v};
-                CHECK (is_active< N >(w));
+                CONSTEXPR U v{N{}};
+                ASSERT (is_active< N >(v));
+                CONSTEXPR U w{v};
+                ASSERT (is_active< N >(w));
             }
             {
-                U const v{S{}};
-                CHECK (is_active< S >(v));
-                U w{v};
-                CHECK (is_active< S >(w));
+                CONSTEXPR U v{S{}};
+                ASSERT (is_active< S >(v));
+                CONSTEXPR U w{v};
+                ASSERT (is_active< S >(w));
             }
             {
                 U v{N{}};
                 CHECK (is_active< N >(v));
-                U w{v};
+                U const w{v};
                 CHECK (is_active< N >(w));
             }
             {
                 U v{S{}};
                 CHECK (is_active< S >(v));
-                U w{v};
+                U const w{v};
                 CHECK (is_active< S >(w));
             }
             {
-                U const v{N{}};
-                CHECK (is_active< N >(v));
-                U w{std::move(v)};
-                CHECK (is_active< N >(w));
+                CONSTEXPR U v{N{}};
+                ASSERT (is_active< N >(v));
+                CONSTEXPR U w{std::move(v)};
+                ASSERT (is_active< N >(w));
             }
             {
-                U const v{S{}};
-                CHECK (is_active< S >(v));
-                U w{std::move(v)};
-                CHECK (is_active< S >(w));
+                CONSTEXPR U v{S{}};
+                ASSERT (is_active< S >(v));
+                CONSTEXPR U w{std::move(v)};
+                ASSERT (is_active< S >(w));
             }
             {
                 U v{N{}};
                 CHECK (is_active< N >(v));
-                U w{std::move(v)};
+                U const w{std::move(v)};
                 CHECK (is_active< N >(w));
             }
             {
                 U v{S{}};
                 CHECK (is_active< S >(v));
-                U w{std::move(v)};
+                U const w{std::move(v)};
                 CHECK (is_active< S >(w));
             }
         }
@@ -1313,55 +1324,44 @@ struct check_trivially_copyable
             CONSTEXPRF S & operator = (S &) = default;
             //CONSTEXPRF S & operator = (S const &&) { return *this; }
             CONSTEXPRF S & operator = (S &&) = default;
-            ~S() DESTRUCTOR
+            //~S() DESTRUCTOR // clang bug: if destructor is user-declared and defaulted, then defaulted assignment operators become non-trivial and marked as non-constexpr
         };
-        constexpr auto tcc = std::is_trivially_copy_assignable_v< S >;
-        constexpr auto tvcc = is_trivially_vcopy_assignable_v< S >;
-        constexpr auto tmc = std::is_trivially_move_assignable_v< S >;
-        constexpr auto tcmc = is_trivially_cmove_assignable_v< S >;
-        constexpr auto cc = std::is_copy_assignable_v< S >;
-        constexpr auto vcc = is_vcopy_assignable_v< S >;
-        constexpr auto mc = std::is_move_assignable_v< S >;
-        constexpr auto cmc = is_cmove_assignable_v< S >;
-        SA(tcc);
-        SA(!tvcc); // ?
-        SA(tmc);
-        SA(tcmc);
-        SA(cc);
-        SA(vcc);
-        SA(mc);
-        SA(cmc);
+        SA(std::is_trivially_copy_assignable_v< S >);
+        SA(!is_trivially_vcopy_assignable_v< S >   ); // ?
+        SA(std::is_trivially_move_assignable_v< S >);
+        SA(is_trivially_cmove_assignable_v< S >    );
+        SA(std::is_copy_assignable_v< S >          );
+        SA(is_vcopy_assignable_v< S >              );
+        SA(std::is_move_assignable_v< S >          );
+        SA(is_cmove_assignable_v< S >              );
         struct N {};
         SA(std::is_trivial_v< N >);
         {
             using U = variant< S, N >;
             SA(std::is_trivially_copy_assignable_v< U >);
-            SA(is_trivially_vcopy_assignable_v< U >); // ?
+            SA(is_trivially_vcopy_assignable_v< U >);
             SA(std::is_trivially_move_assignable_v< U >);
             SA(is_trivially_cmove_assignable_v< U >);
             SA(std::is_copy_assignable_v< U >);
             SA(is_vcopy_assignable_v< U >);
             SA(std::is_move_assignable_v< U >);
             SA(is_cmove_assignable_v< U >);
-#if 0
             {
-                U const v{N{}};
-                CHECK (is_active< N >(v));
+                CONSTEXPR U v{N{}};
+                ASSERT (is_active< N >(v));
                 U w;
                 CHECK (is_active< S >(w));
-                w = v; // clang bug: non-constexpr assignment operator of U for constexpr S.
+                w = v;
                 CHECK (is_active< N >(w));
             }
             {
-                U const v{S{}};
-                CHECK (is_active< S >(v));
+                CONSTEXPR U v{S{}};
+                ASSERT (is_active< S >(v));
                 U w;
                 CHECK (is_active< S >(w));
                 w = v;
                 CHECK (is_active< S >(w));
             }
-#endif
-#if 0
             {
                 U v{N{}};
                 CHECK (is_active< N >(v));
@@ -1378,19 +1378,17 @@ struct check_trivially_copyable
                 w = v;
                 CHECK (is_active< S >(w));
             }
-#endif
-#if 0
             {
-                U const v{N{}};
-                CHECK (is_active< N >(v));
+                CONSTEXPR U v{N{}};
+                ASSERT (is_active< N >(v));
                 U w;
                 CHECK (is_active< S >(w));
                 w = std::move(v);
                 CHECK (is_active< N >(w));
             }
             {
-                U const v{S{}};
-                CHECK (is_active< S >(v));
+                CONSTEXPR U v{S{}};
+                ASSERT (is_active< S >(v));
                 U w;
                 CHECK (is_active< S >(w));
                 w = std::move(v);
@@ -1412,30 +1410,28 @@ struct check_trivially_copyable
                 w = std::move(v);
                 CHECK (is_active< S >(w));
             }
-#endif
         }
-#if 0
         {
             using U = variant< N, S >;
-            SA(tcc == std::is_trivially_copy_assignable_v< U >);
-            SA(tvcc != is_trivially_vcopy_assignable_v< U >); // ?
-            SA(tmc == std::is_trivially_move_assignable_v< U >);
-            SA(tcmc == is_trivially_cmove_assignable_v< U >);
+            SA(std::is_trivially_copy_assignable_v< U >);
+            SA(is_trivially_vcopy_assignable_v< U >);
+            SA(std::is_trivially_move_assignable_v< U >);
+            SA(is_trivially_cmove_assignable_v< U >);
             SA(std::is_copy_assignable_v< U >);
             SA(is_vcopy_assignable_v< U >);
             SA(std::is_move_assignable_v< U >);
             SA(is_cmove_assignable_v< U >);
             {
-                U const v{N{}};
-                CHECK (is_active< N >(v));
+                CONSTEXPR U v{N{}};
+                ASSERT (is_active< N >(v));
                 U w;
                 CHECK (is_active< N >(w));
                 w = v;
                 CHECK (is_active< N >(w));
             }
             {
-                U const v{S{}};
-                CHECK (is_active< S >(v));
+                CONSTEXPR U v{S{}};
+                ASSERT (is_active< S >(v));
                 U w;
                 CHECK (is_active< N >(w));
                 w = v;
@@ -1458,16 +1454,16 @@ struct check_trivially_copyable
                 CHECK (is_active< S >(w));
             }
             {
-                U const v{N{}};
-                CHECK (is_active< N >(v));
+                CONSTEXPR U v{N{}};
+                ASSERT (is_active< N >(v));
                 U w;
                 CHECK (is_active< N >(w));
                 w = std::move(v);
                 CHECK (is_active< N >(w));
             }
             {
-                U const v{S{}};
-                CHECK (is_active< S >(v));
+                CONSTEXPR U v{S{}};
+                ASSERT (is_active< S >(v));
                 U w;
                 CHECK (is_active< N >(w));
                 w = std::move(v);
@@ -1490,7 +1486,457 @@ struct check_trivially_copyable
                 CHECK (is_active< S >(w));
             }
         }
-#endif
+        return true;
+    }
+
+    CONSTEXPRF
+    static
+    bool
+    convertible() noexcept
+    {
+        enum class state
+        {
+            never_used = 0,
+            default_constructed,
+            copy_constructed,
+            vcopy_constructed,
+            move_constructed,
+            cmove_constructed,
+            copy_assigned,
+            vcopy_assigned,
+            move_assigned,
+            cmove_assigned,
+            moved_from,
+        };
+        SA(state::never_used == state{});
+        struct S
+        {
+            state state_ = state::never_used;
+            CONSTEXPRF S() : state_{state::default_constructed} { ; }
+            CONSTEXPRF S(S const &) : state_{state::copy_constructed} { ; }
+            CONSTEXPRF S(S &) : state_{state::vcopy_constructed} { ; }
+            //CONSTEXPRF S(S const &&) { state_ = state::cmove_constructed; }
+            CONSTEXPRF S(S && s) : state_{state::move_constructed} { s.state_ = state::moved_from; }
+            CONSTEXPRF S & operator = (S const &) { state_ = state::copy_assigned; return *this; }
+            CONSTEXPRF S & operator = (S &) { state_ = state::vcopy_assigned; return *this; }
+            //CONSTEXPRF S & operator = (S const &&) { state_ = state::cmove_assigned; return *this; }
+            CONSTEXPRF S & operator = (S && s) { state_ = state::move_assigned; s.state_ = state::moved_from; return *this; }
+            ~S() DESTRUCTOR
+        };
+        SA(!std::is_trivially_copy_constructible_v< S >);
+        SA(!is_trivially_vcopy_constructible_v< S >    );
+        SA(!std::is_trivially_move_constructible_v< S >);
+        SA(!is_trivially_cmove_constructible_v< S >    );
+        SA(std::is_copy_constructible_v< S >           );
+        SA(is_vcopy_constructible_v< S >               );
+        SA(std::is_move_constructible_v< S >           );
+        SA(is_cmove_constructible_v< S >               );
+        SA(!std::is_trivially_copy_assignable_v< S >   );
+        SA(!is_trivially_vcopy_assignable_v< S >       );
+        SA(!std::is_trivially_move_assignable_v< S >   );
+        SA(!is_trivially_cmove_assignable_v< S >       );
+        SA(std::is_copy_assignable_v< S >              );
+        SA(is_vcopy_assignable_v< S >                  );
+        SA(std::is_move_assignable_v< S >              );
+        SA(is_cmove_assignable_v< S >                  );
+        {
+            using U = variant< S >;
+            SA(!std::is_trivially_copy_constructible_v< U >);
+            SA(!is_trivially_vcopy_constructible_v< U >);
+            SA(!std::is_trivially_move_constructible_v< U >);
+            SA(!is_trivially_cmove_constructible_v< U >);
+            SA(!std::is_copy_constructible_v< U >);
+            SA(!is_vcopy_constructible_v< U >);
+            SA(std::is_move_constructible_v< U >); // ?
+            SA(!is_cmove_constructible_v< U >);
+            SA(!std::is_trivially_copy_assignable_v< U >);
+            SA(!is_trivially_vcopy_assignable_v< U >);
+            SA(!std::is_trivially_move_assignable_v< U >);
+            SA(!is_trivially_cmove_assignable_v< U >);
+            SA(!std::is_copy_assignable_v< U >);
+            SA(!is_vcopy_assignable_v< U >);
+            SA(!std::is_move_assignable_v< U >);
+            SA(!is_cmove_assignable_v< U >);
+            SA(is_explicitly_convertible< U, S >::value);
+            SA(is_explicitly_convertible< U const, S >::value);
+            SA(is_explicitly_convertible< U &, S >::value);
+            SA(is_explicitly_convertible< U const &, S >::value);
+            {
+                struct T {};
+                SA(!is_explicitly_convertible< U, T >::value); // SFINAE-disabled conversions
+                SA(!is_explicitly_convertible< U const, T >::value); // SFINAE-disabled conversions
+                SA(!is_explicitly_convertible< U &, T >::value); // SFINAE-disabled conversions
+                SA(!is_explicitly_convertible< U const &, T >::value); // SFINAE-disabled conversions
+            }
+            {
+                CONSTEXPR U v{};
+                ASSERT (is_active< S >(v));
+                ASSERT (static_cast< S const & >(v).state_ == state::default_constructed);
+                CONSTEXPR S s{v};
+                ASSERT (static_cast< S const & >(v).state_ == state::default_constructed);
+                ASSERT (s.state_ == state::copy_constructed);
+            }
+            {
+                U v;
+                CHECK (is_active< S >(v));
+                CHECK (static_cast< S & >(v).state_ == state::default_constructed);
+                S const s{v};
+                CHECK (static_cast< S & >(v).state_ == state::default_constructed);
+                CHECK (s.state_ == state::vcopy_constructed);
+            }
+            {
+                CONSTEXPR U v{};
+                ASSERT (is_active< S >(v));
+                ASSERT (static_cast< S const & >(v).state_ == state::default_constructed);
+                CONSTEXPR S l{std::move(v)};
+                ASSERT (static_cast< S const & >(v).state_ == state::default_constructed);
+                ASSERT (l.state_ == state::copy_constructed); // only lvalue-reference conversion operator currently is available
+                CONSTEXPR S r = std::move(static_cast< S const & >(v));
+                ASSERT (static_cast< S const & >(v).state_ == state::default_constructed);
+                ASSERT (r.state_ == state::copy_constructed); // `const &` operator win
+            }
+            {
+                U v;
+                CHECK (is_active< S >(v));
+                CHECK (static_cast< S & >(v).state_ == state::default_constructed);
+                S const l{std::move(v)};
+                CHECK (static_cast< S & >(v).state_ == state::default_constructed);
+                CHECK (l.state_ == state::vcopy_constructed); // only lvalue-reference to const conversion operator currently is available
+                S const r = std::move(static_cast< S & >(v));
+                CHECK (static_cast< S & >(v).state_ == state::moved_from);
+                CHECK (r.state_ == state::move_constructed);
+            }
+        }
+        return true;
+    }
+
+    CONSTEXPRF
+    static
+    bool
+    constructible() noexcept
+    {
+        enum class state
+        {
+            never_used = 0,
+            default_constructed,
+            copy_constructed,
+            vcopy_constructed,
+            move_constructed,
+            cmove_constructed,
+            copy_assigned,
+            vcopy_assigned,
+            move_assigned,
+            cmove_assigned,
+            moved_from,
+        };
+        SA(state::never_used == state{});
+        struct S
+        {
+            state state_ = state::never_used;
+            CONSTEXPRF S() : state_{state::default_constructed} { ; }
+            CONSTEXPRF S(S const &) : state_{state::copy_constructed} { ; }
+            CONSTEXPRF S(S &) : state_{state::vcopy_constructed} { ; }
+            //CONSTEXPRF S(S const &&) { state_ = state::cmove_constructed; }
+            CONSTEXPRF S(S && s) : state_{state::move_constructed} { s.state_ = state::moved_from; }
+            CONSTEXPRF S & operator = (S const &) { state_ = state::copy_assigned; return *this; }
+            CONSTEXPRF S & operator = (S &) { state_ = state::vcopy_assigned; return *this; }
+            //CONSTEXPRF S & operator = (S const &&) { state_ = state::cmove_assigned; return *this; }
+            CONSTEXPRF S & operator = (S && s) { state_ = state::move_assigned; s.state_ = state::moved_from; return *this; }
+            ~S() DESTRUCTOR
+        };
+        SA(!std::is_trivially_copy_constructible_v< S >);
+        SA(!is_trivially_vcopy_constructible_v< S >    ); // ?
+        SA(!std::is_trivially_move_constructible_v< S >);
+        SA(!is_trivially_cmove_constructible_v< S >    );
+        SA(std::is_copy_constructible_v< S >           );
+        SA(is_vcopy_constructible_v< S >               );
+        SA(std::is_move_constructible_v< S >           );
+        SA(is_cmove_constructible_v< S >               );
+        SA(!std::is_trivially_copy_assignable_v< S >   );
+        SA(!is_trivially_vcopy_assignable_v< S >       ); // ?
+        SA(!std::is_trivially_move_assignable_v< S >   );
+        SA(!is_trivially_cmove_assignable_v< S >       );
+        SA(std::is_copy_assignable_v< S >              );
+        SA(is_vcopy_assignable_v< S >                  );
+        SA(std::is_move_assignable_v< S >              );
+        SA(is_cmove_assignable_v< S >                  );
+        struct N {};
+        SA(std::is_trivial_v< N >);
+        {
+            using U = variant< S, N >;
+            SA(!std::is_trivially_copy_constructible_v< U >);
+            SA(!is_trivially_vcopy_constructible_v< U >); // ?
+            SA(!std::is_trivially_move_constructible_v< U >);
+            SA(!is_trivially_cmove_constructible_v< U >);
+            SA(!std::is_copy_constructible_v< U >);
+            SA(!is_vcopy_constructible_v< U >);
+            SA(std::is_move_constructible_v< U >); // ?
+            SA(!is_cmove_constructible_v< U >);
+            SA(!std::is_trivially_copy_assignable_v< U >);
+            SA(!is_trivially_vcopy_assignable_v< U >); // ?
+            SA(!std::is_trivially_move_assignable_v< U >);
+            SA(!is_trivially_cmove_assignable_v< U >);
+            SA(!std::is_copy_assignable_v< U >);
+            SA(!is_vcopy_assignable_v< U >);
+            SA(!std::is_move_assignable_v< U >);
+            SA(!is_cmove_assignable_v< U >);
+            {
+                CONSTEXPR S s{};
+                ASSERT (s.state_ == state::default_constructed);
+                CONSTEXPR U v{s};
+                ASSERT (is_active< S >(v));
+                ASSERT (static_cast< S const & >(v).state_ == state::copy_constructed);
+                ASSERT (s.state_ == state::default_constructed);
+            }
+            {
+                S s;
+                CHECK (s.state_ == state::default_constructed);
+                U v{s};
+                CHECK (is_active< S >(v));
+                CHECK (static_cast< S & >(v).state_ == state::vcopy_constructed);
+                CHECK (s.state_ == state::default_constructed);
+            }
+            {
+                CONSTEXPR S s{};
+                ASSERT (s.state_ == state::default_constructed);
+                CONSTEXPR U v{std::move(s)};
+                ASSERT (is_active< S >(v));
+                ASSERT (static_cast< S const & >(v).state_ == state::copy_constructed); // `const &` operator win
+                ASSERT (s.state_ == state::default_constructed);
+            }
+            {
+                S s;
+                CHECK (s.state_ == state::default_constructed);
+                U v{std::move(s)};
+                CHECK (is_active< S >(v));
+                CHECK (static_cast< S & >(v).state_ == state::move_constructed);
+                CHECK (s.state_ == state::moved_from);
+            }
+        }
+        {
+            using U = variant< N, S >;
+            SA(!std::is_trivially_copy_constructible_v< U >);
+            SA(!is_trivially_vcopy_constructible_v< U >); // ?
+            SA(!std::is_trivially_move_constructible_v< U >);
+            SA(!is_trivially_cmove_constructible_v< U >);
+            SA(!std::is_copy_constructible_v< U >);
+            SA(!is_vcopy_constructible_v< U >);
+            SA(std::is_move_constructible_v< U >); // ?
+            SA(!is_cmove_constructible_v< U >);
+            SA(!std::is_trivially_copy_assignable_v< U >);
+            SA(!is_trivially_vcopy_assignable_v< U >); // ?
+            SA(!std::is_trivially_move_assignable_v< U >);
+            SA(!is_trivially_cmove_assignable_v< U >);
+            SA(!std::is_copy_assignable_v< U >);
+            SA(!is_vcopy_assignable_v< U >);
+            SA(!std::is_move_assignable_v< U >);
+            SA(!is_cmove_assignable_v< U >);
+            {
+                CONSTEXPR S s{};
+                ASSERT (s.state_ == state::default_constructed);
+                CONSTEXPR U v{s};
+                ASSERT (is_active< S >(v));
+                ASSERT (static_cast< S const & >(v).state_ == state::copy_constructed);
+                ASSERT (s.state_ == state::default_constructed);
+            }
+            {
+                S s;
+                CHECK (s.state_ == state::default_constructed);
+                U v{s};
+                CHECK (is_active< S >(v));
+                CHECK (static_cast< S & >(v).state_ == state::vcopy_constructed);
+                CHECK (s.state_ == state::default_constructed);
+            }
+            {
+                CONSTEXPR S s{};
+                ASSERT (s.state_ == state::default_constructed);
+                CONSTEXPR U v{std::move(s)};
+                ASSERT (is_active< S >(v));
+                ASSERT (static_cast< S const & >(v).state_ == state::copy_constructed); // `const &` operator win
+                ASSERT (s.state_ == state::default_constructed);
+            }
+            {
+                S s;
+                CHECK (s.state_ == state::default_constructed);
+                U v{std::move(s)};
+                CHECK (is_active< S >(v));
+                CHECK (static_cast< S & >(v).state_ == state::move_constructed);
+                CHECK (s.state_ == state::moved_from);
+            }
+        }
+        return true;
+    }
+
+    CONSTEXPRF
+    static
+    bool
+    assignable() noexcept
+    {
+        enum class state
+        {
+            never_used = 0,
+            default_constructed,
+            copy_constructed,
+            vcopy_constructed,
+            move_constructed,
+            cmove_constructed,
+            copy_assigned,
+            vcopy_assigned,
+            move_assigned,
+            cmove_assigned,
+            moved_from,
+        };
+        SA(state::never_used == state{});
+        struct S
+        {
+            state state_ = state::never_used;
+            CONSTEXPRF S() : state_{state::default_constructed} { ; }
+            CONSTEXPRF S(S const &) : state_{state::copy_constructed} { ; }
+            CONSTEXPRF S(S &) : state_{state::vcopy_constructed} { ; }
+            //CONSTEXPRF S(S const &&) { state_ = state::cmove_constructed; }
+            CONSTEXPRF S(S && s) : state_{state::move_constructed} { s.state_ = state::moved_from; }
+            CONSTEXPRF S & operator = (S const &) = default;
+            CONSTEXPRF S & operator = (S &) = default;
+            //CONSTEXPRF S & operator = (S const &&) { return *this; }
+            CONSTEXPRF S & operator = (S &&) = default;
+            //~S() DESTRUCTOR // clang bug: if destructor is user-declared and defaulted, then defaulted assignment operators become non-trivial and marked as non-constexpr
+        };
+        SA(!std::is_trivially_copy_constructible_v< S >);
+        SA(!is_trivially_vcopy_constructible_v< S >    );
+        SA(!std::is_trivially_move_constructible_v< S >);
+        SA(!is_trivially_cmove_constructible_v< S >    );
+        SA(std::is_copy_constructible_v< S >           );
+        SA(is_vcopy_constructible_v< S >               );
+        SA(std::is_move_constructible_v< S >           );
+        SA(is_cmove_constructible_v< S >               );
+        SA(std::is_trivially_copy_assignable_v< S >    );
+        SA(!is_trivially_vcopy_assignable_v< S >       ); // ?
+        SA(std::is_trivially_move_assignable_v< S >    );
+        SA(is_trivially_cmove_assignable_v< S >        );
+        SA(std::is_copy_assignable_v< S >              );
+        SA(is_vcopy_assignable_v< S >                  );
+        SA(std::is_move_assignable_v< S >              );
+        SA(is_cmove_assignable_v< S >                  );
+        struct N {};
+        SA(std::is_trivial_v< N >);
+        {
+            using U = variant< S, N >;
+            SA(!std::is_trivially_copy_constructible_v< U >);
+            SA(!is_trivially_vcopy_constructible_v< U >); // ?
+            SA(!std::is_trivially_move_constructible_v< U >);
+            SA(!is_trivially_cmove_constructible_v< U >);
+            SA(!std::is_copy_constructible_v< U >);
+            SA(!is_vcopy_constructible_v< U >);
+            SA(std::is_move_constructible_v< U >); // ?
+            SA(!is_cmove_constructible_v< U >);
+            SA(std::is_trivially_copy_assignable_v< U >);
+            SA(is_trivially_vcopy_assignable_v< U >);
+            SA(std::is_trivially_move_assignable_v< U >);
+            SA(is_trivially_cmove_assignable_v< U >);
+            SA(std::is_copy_assignable_v< U >);
+            SA(is_vcopy_assignable_v< U >);
+            SA(std::is_move_assignable_v< U >);
+            SA(is_cmove_assignable_v< U >);
+            {
+                CONSTEXPR S s{};
+                ASSERT (s.state_ == state::default_constructed);
+                U v;
+                CHECK (is_active< S >(v));
+                v = s;
+                CHECK (is_active< S >(v));
+                CHECK (static_cast< S & >(v).state_ == state::copy_constructed);
+                ASSERT (s.state_ == state::default_constructed);
+            }
+            {
+                S s;
+                CHECK (s.state_ == state::default_constructed);
+                U v;
+                CHECK (is_active< S >(v));
+                v = s;
+                CHECK (is_active< S >(v));
+                CHECK (static_cast< S & >(v).state_ == state::vcopy_constructed);
+                CHECK (s.state_ == state::default_constructed);
+            }
+            {
+                CONSTEXPR S s{};
+                ASSERT (s.state_ == state::default_constructed);
+                U v;
+                CHECK (is_active< S >(v));
+                v = std::move(s);
+                CHECK (is_active< S >(v));
+                CHECK (static_cast< S & >(v).state_ == state::copy_constructed); // `const &` operator win
+                ASSERT (s.state_ == state::default_constructed);
+            }
+            {
+                S s;
+                CHECK (s.state_ == state::default_constructed);
+                U v;
+                CHECK (is_active< S >(v));
+                v = std::move(s);
+                CHECK (is_active< S >(v));
+                CHECK (static_cast< S & >(v).state_ == state::move_constructed);
+                CHECK (s.state_ == state::moved_from);
+            }
+        }
+        {
+            using U = variant< N, S >;
+            SA(!std::is_trivially_copy_constructible_v< U >);
+            SA(!is_trivially_vcopy_constructible_v< U >);
+            SA(!std::is_trivially_move_constructible_v< U >);
+            SA(!is_trivially_cmove_constructible_v< U >);
+            SA(!std::is_copy_constructible_v< U >);
+            SA(!is_vcopy_constructible_v< U >);
+            SA(std::is_move_constructible_v< U >); // ?
+            SA(!is_cmove_constructible_v< U >);
+            SA(std::is_trivially_copy_assignable_v< U >);
+            SA(is_trivially_vcopy_assignable_v< U >);
+            SA(std::is_trivially_move_assignable_v< U >);
+            SA(is_trivially_cmove_assignable_v< U >);
+            SA(std::is_copy_assignable_v< U >);
+            SA(is_vcopy_assignable_v< U >);
+            SA(std::is_move_assignable_v< U >);
+            SA(is_cmove_assignable_v< U >);
+            {
+                CONSTEXPR S s{};
+                ASSERT (s.state_ == state::default_constructed);
+                U v;
+                CHECK (is_active< N >(v));
+                v = s;
+                CHECK (is_active< S >(v));
+                CHECK (static_cast< S & >(v).state_ == state::copy_constructed);
+                ASSERT (s.state_ == state::default_constructed);
+            }
+            {
+                S s;
+                CHECK (s.state_ == state::default_constructed);
+                U v;
+                CHECK (is_active< N >(v));
+                v = s;
+                CHECK (is_active< S >(v));
+                CHECK (static_cast< S & >(v).state_ == state::vcopy_constructed);
+                CHECK (s.state_ == state::default_constructed);
+            }
+            {
+                CONSTEXPR S s{};
+                ASSERT (s.state_ == state::default_constructed);
+                U v;
+                CHECK (is_active< N >(v));
+                v = std::move(s);
+                CHECK (is_active< S >(v));
+                CHECK (static_cast< S & >(v).state_ == state::copy_constructed); // `const &` operator win
+                ASSERT (s.state_ == state::default_constructed);
+            }
+            {
+                S s;
+                CHECK (s.state_ == state::default_constructed);
+                U v;
+                CHECK (is_active< N >(v));
+                v = std::move(s);
+                CHECK (is_active< S >(v));
+                CHECK (static_cast< S & >(v).state_ == state::move_constructed);
+                CHECK (s.state_ == state::moved_from);
+            }
+        }
         return true;
     }
 
@@ -1499,350 +1945,12 @@ struct check_trivially_copyable
     bool
     run() noexcept
     {
+        ASSERT (trivially_default_constructible());
         ASSERT (trivially_copy_move_constructible());
         ASSERT (trivially_copy_move_assignable());
-        return true;
-    }
-
-};
-
-enum class state
-{
-    default_constructed,
-    copy_constructed,
-    move_constructed,
-    move_assigned,
-    copy_assigned,
-    moved_from,
-};
-
-struct oracle // akrzemi1's optional test
-{
-
-    CONSTEXPRF
-    oracle() noexcept
-        : s(state::default_constructed)
-    { ; }
-
-    CONSTEXPRF
-    oracle(oracle const &) noexcept
-        : s(state::copy_constructed)
-    { ; }
-
-    CONSTEXPRF
-    oracle(oracle && o) noexcept
-        : s(state::move_constructed)
-    {
-        o.s = state::moved_from;
-    }
-
-    CONSTEXPRF
-    oracle & operator = (oracle const &) noexcept
-    {
-        s = state::copy_assigned;
-        return *this;
-    }
-
-    CONSTEXPRF
-    oracle & operator = (oracle && o) noexcept
-    {
-        s = state::move_assigned;
-        o.s = state::moved_from;
-        return *this;
-    }
-
-    friend
-    CONSTEXPRF
-    bool
-    operator == (oracle const & o, state const _s) noexcept
-    {
-        return (o.s == _s);
-    }
-
-    friend
-    CONSTEXPRF
-    bool
-    operator == (state const _s, oracle const & o) noexcept
-    {
-        return operator == (o, _s);
-    }
-
-    friend
-    CONSTEXPRF
-    bool
-    operator != (oracle const & o, state const _s) noexcept
-    {
-        return !operator == (o, _s);
-    }
-
-    friend
-    CONSTEXPRF
-    bool
-    operator != (state const _s, oracle const & o) noexcept
-    {
-        return !operator == (o, _s);
-    }
-
-private :
-
-    state s;
-
-};
-
-template< typename from, typename to >
-struct is_explicitly_convertible // akrzemi1's answer http://stackoverflow.com/a/16894048/1430927
-        : std::bool_constant< (std::is_constructible_v< to, from > && !std::is_convertible< from, to >::value) >
-{
-
-};
-
-template< template< typename ... > class wrapper = ::versatile::identity,
-          template< typename ... > class variant = ::versatile::versatile >
-class check_literal
-{
-
-    template< typename ...types >
-    using V = variant< typename wrapper< types >::type... >;
-
-    using O = oracle;
-
-    CONSTEXPRF
-    static
-    bool
-    default_constructor() noexcept
-    {
-        {
-            using U = V< O >;
-            CONSTEXPR U v{};
-            ASSERT (is_active< O >(v));
-            ASSERT (get< O const & >(v) == state::default_constructed);
-            U w;
-            CHECK (is_active< O >(w));
-            CHECK (get< O const & >(w) == state::default_constructed);
-        }
-        {
-            struct A { CONSTEXPRF A(int i = 1) : j(i) { ; } int j; };
-            using U = V< A >;
-            SA(std::is_default_constructible_v< A >);
-            CONSTEXPR U v{};
-            ASSERT (is_active< A >(v));
-            ASSERT (get< A const & >(v).j == 1);
-        }
-        {
-            struct A {};
-            struct B {};
-            SA(std::is_default_constructible_v< A >);
-            SA(std::is_default_constructible_v< B >);
-            using U = V< A, B >;
-            SA(std::is_default_constructible_v< U >);
-            CONSTEXPR U v{};
-            ASSERT (is_active< A >(v));
-        }
-        {
-            struct A { CONSTEXPRF A(int) { ; } };
-            struct B {};
-            SA(!std::is_default_constructible_v< A >);
-            SA(std::is_default_constructible_v< B >);
-            using U = V< A, B >;
-            SA(std::is_default_constructible_v< U >);
-            CONSTEXPR U v{};
-            ASSERT (is_active< B >(v));
-        }
-        {
-            struct A {};
-            struct B { CONSTEXPRF B(int) { ; } };
-            SA(std::is_default_constructible_v< A >);
-            SA(!std::is_default_constructible_v< B >);
-            using U = V< A, B >;
-            SA(std::is_default_constructible_v< U >);
-            CONSTEXPR U v{};
-            ASSERT (is_active< A >(v));
-        }
-        return true;
-    }
-
-    CONSTEXPRF
-    static
-    bool
-    conversion_constructor_and_conversion_operator() noexcept
-    {
-        {
-            struct A {};
-            using U = V< A >;
-            SA(is_explicitly_convertible< U, A >::value);
-            SA(is_explicitly_convertible< U, A const >::value);
-            SA(!std::is_assignable_v< A &, U const >);
-            SA(!std::is_assignable_v< A &, U >);
-        }
-        { // copy conversion constructor
-            using U = V< O >;
-            O o;
-            CHECK (o == state::default_constructed);
-            U v = o;
-            CHECK (get< O & >(v) == state::copy_constructed);
-            CHECK (o == state::default_constructed);
-        }
-        { // move conversion constructor
-            using U = V< O >;
-            O o;
-            CHECK (o == state::default_constructed);
-            U v = std::move(o);
-            CHECK (get< O & >(v) == state::move_constructed);
-            CHECK (o == state::moved_from);
-        }
-        { // copy conversion operator
-            using U = V< O >;
-            U v;
-            CHECK (get< O & >(v) == state::default_constructed);
-            //O o = v; // error: only direct initialization or explicit cast is allowed
-            // O o(v); // OK
-            // O o = get< O & >(v); // OK
-            O o{v};
-            CHECK (o == state::copy_constructed);
-            CHECK (get< O & >(v) == state::default_constructed);
-        }
-        { // move conversion operator (not works)
-            using U = V< O >;
-            U v;
-            CHECK (get< O & >(v) == state::default_constructed);
-            //O o = std::move(v); // error: only direct initialization or explicit cast is allowed
-            // O o(std::move(v)); // OK
-            // O o = std::move(get< O & >(v)); // OK
-            O o{std::move(v)};
-            { // ! currently clang++ has bug #19917 for get to rvalue reference and cv-ref-qualified overloaded conversion operators (templated) (if any) causes "ambiguity" error
-                CHECK (o != state::move_constructed);
-                CHECK (get< O & >(v) != state::moved_from);
-            }
-            CHECK (o == state::copy_constructed);
-            CHECK (get< O & >(v) == state::default_constructed);
-        }
-        return true;
-    }
-
-    CONSTEXPRF
-    static
-    bool
-    copy_assignment_and_move_assignment_operators() noexcept
-    {
-        {
-            struct A {};
-            struct B {};
-            using U = V< A, B >;
-            SA(std::is_copy_assignable_v< U >);
-            SA(std::is_move_assignable_v< U >);
-        }
-        {
-            struct A { int i = 1; };
-            struct B { int i = 5; };
-            using U = V< A, B >;
-            U v = B{2};
-            CHECK (get< B & >(v).i == 2);
-            U w = B{3};
-            CHECK (get< B & >(w).i == 3);
-            v = w;
-            CHECK (get< B & >(v).i == 3);
-            CHECK (get< B & >(w).i == 3);
-        }
-        {
-            struct A { int i = 1; };
-            struct B { int i = 5; };
-            using U = V< A, B >;
-            U v = B{2};
-            CHECK (get< B & >(v).i == 2);
-            U w = B{3};
-            CHECK (get< B & >(w).i == 3);
-            v = std::move(w);
-            CHECK (get< B & >(v).i == 3);
-            CHECK (get< B & >(w).i == 3);
-        }
-        return true;
-    }
-
-    CONSTEXPRF
-    static
-    bool
-    conversion_assignment_operator() noexcept // http://stackoverflow.com/questions/33936295/
-    {
-        {
-            struct A {};
-            struct B {};
-            using U = V< A, B >;
-            SA(std::is_assignable_v< U, A >);
-            SA(std::is_assignable_v< U, B >);
-        }
-        { // altering active member
-            struct A { int i = 1; };
-            using U = V< A >;
-            U v;
-            CHECK (is_active< A >(v));
-            CHECK (get< A & >(v).i == 1);
-            A a{2};
-            v = a;
-            CHECK (a.i == 2);
-            CHECK (get< A & >(v).i == 2);
-            a.i = 3;
-            v = std::move(a);
-            CHECK (a.i == 3);
-            CHECK (get< A & >(v).i == 3);
-        }
-        // changing active member is only available for trivially copyable types
-        return true;
-    }
-
-    CONSTEXPRF
-    static
-    bool
-    copy_constructor_and_move_constructor() noexcept
-    {
-        {
-            struct A { int i = 1; };
-            struct B { int i = 2; };
-            struct C { int i = 3; };
-            using U = V< A, B, C >;
-            SA(std::is_copy_constructible_v< U >);
-            SA(std::is_move_constructible_v< U >);
-        }
-        {
-
-        }
-        return true;
-    }
-
-    CONSTEXPRF
-    static
-    bool
-    emplace() noexcept
-    {
-        struct A
-        {
-            CONSTEXPRF A() : j(1) { ; }
-            CONSTEXPRF A(int i) : j(i) { ; }
-            CONSTEXPRF A(int a, int b) : j(a + b) { ; }
-            int j;
-        };
-        using U = V< A >;
-        U v;
-        CHECK (get< A & >(v).j == 1);
-        v.emplace(3);
-        CHECK (get< A & >(v).j == 3);
-        v.emplace(4, 3);
-        CHECK (get< A & >(v).j == 7);
-        return true;
-    }
-
-public :
-
-    CONSTEXPRF
-    static
-    bool
-    run() noexcept
-    {
-        ASSERT (default_constructor());
-        ASSERT (copy_constructor_and_move_constructor());
-        ASSERT (copy_assignment_and_move_assignment_operators());
-        ASSERT (conversion_constructor_and_conversion_operator());
-        ASSERT (conversion_assignment_operator());
-        ASSERT (emplace());
+        ASSERT (convertible()); // conversion
+        ASSERT (constructible()); // conversion
+        ASSERT (assignable()); // conversion
         return true;
     }
 
