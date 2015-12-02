@@ -189,10 +189,6 @@ struct multivisitor
 
 };
 
-constexpr std::size_t type_qual_begin = static_cast< std::size_t >(type_qualifier_of< void * & >);
-constexpr std::size_t type_qual_end = static_cast< std::size_t >(type_qualifier_of< void * volatile & >);
-constexpr std::size_t ref_count_ = (type_qual_end - type_qual_begin);
-
 template< typename array_type >
 struct subscripter
 {
@@ -223,6 +219,9 @@ subscript(array_type & _array, indices const &... _indices) noexcept
 {
     return subscripter< array_type >{_array}(_indices...);
 }
+
+constexpr std::size_t type_qual_begin = static_cast< std::size_t >(type_qualifier_of< void * & >);
+constexpr std::size_t type_qual_end = static_cast< std::size_t >(type_qualifier_of< void * volatile & >);
 
 template< typename multivisitor, typename variants, typename result_type >
 struct fusor
@@ -307,12 +306,14 @@ struct multiarray< type, first, rest... >
 template< typename value_type, std::size_t ...extents >
 using multiarray_t = typename multiarray< value_type, extents... >::type;
 
+constexpr std::size_t ref_count_ = (type_qual_end - type_qual_begin);
+
 // variant - variant
 // T - type generator
-// variant - variant type
+// variant - variant template
 // wrapper - wrapper for alternative (bounded) types
 // M - multivisitor arity, N - number of alternative (bounded) types
-template< template< std::size_t I > class T,
+template< template< std::size_t I > class type,
           template< typename ...types > class variant,
           template< typename ...types > class wrapper = ::versatile::identity,
           std::size_t M = 2, std::size_t N = M >
@@ -328,11 +329,11 @@ class test_perferct_forwarding
     {
         using multivisitor_type = multivisitor< M, type_qual >;
         typename multivisitor_type::result_type result_{};
-        using variant_type = variant< typename wrapper< T< N - j > >::type... >;
+        using variant_type = variant< typename wrapper< type< N - j > >::type... >;
         using result_type = multiarray_t< bool, ref_count_, (static_cast< void >(i), ref_count_)..., (static_cast< void >(i), N)... >;
         fusor< multivisitor_type, variant_type [M], result_type > fusor_{{{result_}, {}, 0, {}}};
         auto const enumerator_ = make_enumerator< ref_count_, (static_cast< void >(i), ref_count_)... >(fusor_.fuse_);
-        variant_type variants_[N] = {T< N - j >{}...};
+        variant_type variants_[N] = {type< N - j >{}...};
         std::size_t indices[M] = {};
         for (;;) {
             ((fusor_[i] = variants_[indices[i]]), ...);

@@ -16,14 +16,20 @@ main()
             using ::test_variant::aggregate;
             {
                 using ::test_variant::check_invariants;
-                ASSERT (check_invariants< identity,  versatile >::run());
-                ASSERT (check_invariants< aggregate, versatile >::run());
+                ASSERT ((check_invariants< identity,  versatile >::run()));
+                ASSERT ((check_invariants< aggregate, versatile >::run()));
             }
             {
                 using ::test_variant::check_trivial;
                 ASSERT ((check_trivial< identity,  versatile >::run()));
                 ASSERT ((check_trivial< aggregate, versatile >::run()));
             }
+            {
+                using ::test_variant::check_common;
+                assert ((check_common<  identity, versatile >::run()));
+                assert ((check_common< aggregate, versatile >::run()));
+            }
+#if 0
             {
                 using ::test_variant::test_perferct_forwarding;
                 {
@@ -33,10 +39,11 @@ main()
                 }
                 {
                     using ::test_variant::common_type;
-                    //assert ((test_perferct_forwarding< common_type, versatile, identity,  2, 2 >::run()));
-                    //assert ((test_perferct_forwarding< common_type, versatile, aggregate, 2, 2 >::run()));
+                    assert ((test_perferct_forwarding< common_type, versatile, identity,  2, 2 >::run()));
+                    assert ((test_perferct_forwarding< common_type, versatile, aggregate, 2, 2 >::run()));
                 }
             }
+#endif
         }
     }
     { // variant
@@ -46,7 +53,7 @@ main()
         struct L {};
         SA(std::is_literal_type< L >{});
         SA(!std::is_literal_type< ::boost::variant< L > >{});
-#if 1
+#if 0
         using ::test_boost_variant::variant_i;
         using ::test_boost_variant::variant_c;
         using ::versatile::identity;
