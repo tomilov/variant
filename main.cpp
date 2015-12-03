@@ -26,7 +26,7 @@ main()
             }
             {
                 using ::test_variant::check_common;
-                assert ((check_common<  identity, versatile >::run()));
+                assert ((check_common< identity,  versatile >::run()));
                 assert ((check_common< aggregate, versatile >::run()));
             }
 #if 0

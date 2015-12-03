@@ -124,7 +124,7 @@ public :
 
     ~destructor_dispatcher() noexcept
     {
-        tail_.~tail(); // trivial tail is not specially processed, because whole versatile type can't get an advantage from it
+        //tail_.~tail();
     }
 
     void
@@ -200,8 +200,8 @@ public :
     std::size_t
     which() const noexcept
     {
-        if (which_ == std::size_t{}) { // is trivially default constructed?
-            return sizeof...(types); // if so, then it always point to the first (leftmost) alternative type
+        if (which_ == std::size_t{}) { // if value-initialized (<=> zero-initialized)
+            return sizeof...(types); // if so, then it always points to the first (leftmost) alternative type
         }
         return which_;
     }
@@ -247,8 +247,8 @@ public :
     std::size_t
     which() const noexcept
     {
-        if (which_ == std::size_t{}) { // is trivially default constructed?
-            return sizeof...(types); // if so, then it always point to the first (leftmost) alternative type
+        if (which_ == std::size_t{}) { // if value-initialized (<=> zero-initialized)
+            return sizeof...(types); // if so, then it always points to the first (leftmost) alternative type
         }
         return which_;
     }
@@ -272,7 +272,7 @@ public :
 
     ~dispatcher() noexcept(noexcept(storage_.destructor(which_)))
     {
-        if (which_ != std::size_t{}) { // if not trivially default constructed
+        if (which_ != std::size_t{}) { // if not value-initialized (<=> zero-initialized)
             storage_.destructor(which_);
         }
     }
@@ -318,7 +318,7 @@ public :
     std::size_t
     which() const noexcept
     {
-        assert(which_ != std::size_t{});
+        assert(which_ != std::size_t{}); // can't be zero-initialized
         return which_;
     }
 

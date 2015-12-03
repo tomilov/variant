@@ -25,19 +25,14 @@ class variant
 
 public :
 
-    using size_type = typename versatile::size_type;
-
-    static constexpr size_type width = sizeof...(types);
-
-    size_type
+    std::size_t
     which() const noexcept
     {
-        assert(!!storage_);
         return storage_->which();
     }
 
     template< typename type >
-    using index_t = typename versatile::template index_t< type >;
+    using index_at_t = typename versatile::template index_at_t< type >;
 
     template< typename type >
     bool
@@ -96,13 +91,6 @@ public :
         return variant{std::forward< arguments >(_arguments)...}.swap(*this);
     }
 
-    template< typename type >
-    void
-    replace(type && _value)
-    {
-        return variant{std::forward< type >(_value)}.swap(*this);
-    }
-
 private :
 
     struct assigner
@@ -114,7 +102,7 @@ private :
         void
         operator () (type && _value) const
         {
-            static_cast< unwrap_type_t< type > & >(destination_) = std::forward< type >(_value);
+            static_cast< type & >(destination_) = std::forward< type >(_value);
         }
 
     };
@@ -129,7 +117,7 @@ public :
         if (which() == _rhs.which()) {
             visit(assigner{*storage_},  std::forward< type >(_rhs));
         } else {
-            replace(std::forward< type >(_rhs));
+            emplace(std::forward< type >(_rhs));
         }
         return *this;
     }
@@ -158,7 +146,7 @@ public :
         return assign(std::move(_rhs));
     }
 
-    template< typename type >
+    template< typename type, typename index = index_at_t< type > >
     variant &
     operator = (type && _value) &
     {
@@ -166,12 +154,12 @@ public :
         if (active< decay_type >()) {
             static_cast< decay_type & >(*storage_) = std::forward< type >(_value);
         } else {
-            replace(std::forward< type >(_value));
+            emplace(std::forward< type >(_value));
         }
         return *this;
     }
 
-    template< typename type >
+    template< typename type, typename index = index_at_t< type > >
     explicit
     operator type & ()
     {
@@ -181,7 +169,7 @@ public :
         return static_cast< type & >(*storage_);
     }
 
-    template< typename type >
+    template< typename type, typename index = index_at_t< type > >
     explicit
     operator type const & () const
     {

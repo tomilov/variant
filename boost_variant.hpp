@@ -18,8 +18,8 @@ struct variant_c
 
     variant_c() = default;
 
-    variant_c(variant_c &) = default;
     variant_c(variant_c const &) = default;
+    variant_c(variant_c &) = default;
     variant_c(variant_c &&) = default;
 
     variant_c &
@@ -29,20 +29,18 @@ struct variant_c
     variant_c &
     operator = (variant_c &&) = default;
 
-    template< typename type,
-              typename = index_at_t< type > >
+    template< typename type, typename = index_at_t< type > >
     constexpr
     variant_c(type && _value)
         : member_(std::forward< type >(_value))
     { ; }
 
-    template< typename argument,
-              typename = index_at_t< argument > >
+    template< typename type, typename = index_at_t< type > >
     constexpr
     variant_c &
-    operator = (argument && _argument)
+    operator = (type && _value)
     {
-        member_ = std::forward< argument >(_argument);
+        member_ = std::forward< type >(_value);
         return *this;
     }
 
@@ -61,8 +59,7 @@ struct variant_c
         return (index_at_t< type >::value == which());
     }
 
-    template< typename type,
-              typename = index_at_t< type > >
+    template< typename type, typename = index_at_t< type > >
     explicit
     constexpr
     operator type const & () const
@@ -73,8 +70,7 @@ struct variant_c
         return boost::get< type >(member_);
     }
 
-    template< typename type,
-              typename = index_at_t< type > >
+    template< typename type, typename = index_at_t< type > >
     explicit
     constexpr
     operator type & ()
@@ -87,7 +83,7 @@ struct variant_c
 
 private :
 
-    boost::variant< types... > member_;
+    variant member_;
 
 };
 
@@ -130,8 +126,8 @@ struct variant_i
 
     variant_i() = default;
 
-    variant_i(variant_i &) = default;
     variant_i(variant_i const &) = default;
+    variant_i(variant_i &) = default;
     variant_i(variant_i &&) = default;
 
     variant_i &
@@ -141,20 +137,18 @@ struct variant_i
     variant_i &
     operator = (variant_i &&) = default;
 
-    template< typename type,
-              typename = index_at_t< type > >
+    template< typename type, typename = index_at_t< type > >
     constexpr
     variant_i(type && _value)
         : base(std::forward< type >(_value))
     { ; }
 
-    template< typename argument,
-              typename = index_at_t< argument > >
+    template< typename type, typename = index_at_t< type > >
     constexpr
     variant_i &
-    operator = (argument && _argument)
+    operator = (type && _value)
     {
-        base::operator = (std::forward< argument >(_argument));
+        base::operator = (std::forward< type >(_value));
         return *this;
     }
 
@@ -173,8 +167,7 @@ struct variant_i
         return (index_at_t< type >::value == which());
     }
 
-    template< typename type,
-              typename = index_at_t< type > >
+    template< typename type, typename = index_at_t< type > >
     explicit
     constexpr
     operator type const & () const
@@ -185,8 +178,7 @@ struct variant_i
         return boost::get< type >(static_cast< variant_i::base const & >(*this));
     }
 
-    template< typename type,
-              typename = index_at_t< type > >
+    template< typename type, typename = index_at_t< type > >
     explicit
     constexpr
     operator type & ()

@@ -1133,7 +1133,7 @@ class check_trivial
             CONSTEXPRF S & operator = (S &)  { return *this; }
             CONSTEXPRF S & operator = (S const &&) { return *this; }
             CONSTEXPRF S & operator = (S &&) { return *this; }
-            ~S() DESTRUCTOR
+            //~S() DESTRUCTOR
         };
         SA(std::is_trivially_default_constructible_v< S >);
         struct N {};
@@ -1146,7 +1146,7 @@ class check_trivial
                 ASSERT (is_active< S >(v));
             }
             {
-                U v;
+                U v{};
                 CHECK (is_active< S >(v));
             }
         }
@@ -1158,7 +1158,7 @@ class check_trivial
                 ASSERT (is_active< N >(v));
             }
             {
-                U v;
+                U v{};
                 CHECK (is_active< N >(v));
             }
         }
@@ -1355,7 +1355,7 @@ class check_trivial
             {
                 CONSTEXPR U v{N{}};
                 ASSERT (is_active< N >(v));
-                U w;
+                U w{};
                 CHECK (is_active< S >(w));
                 w = v;
                 CHECK (is_active< N >(w));
@@ -1363,7 +1363,7 @@ class check_trivial
             {
                 CONSTEXPR U v{S{}};
                 ASSERT (is_active< S >(v));
-                U w;
+                U w{};
                 CHECK (is_active< S >(w));
                 w = v;
                 CHECK (is_active< S >(w));
@@ -1371,7 +1371,7 @@ class check_trivial
             {
                 U v{N{}};
                 CHECK (is_active< N >(v));
-                U w;
+                U w{};
                 CHECK (is_active< S >(w));
                 w = v;
                 CHECK (is_active< N >(w));
@@ -1379,7 +1379,7 @@ class check_trivial
             {
                 U v{S{}};
                 CHECK (is_active< S >(v));
-                U w;
+                U w{};
                 CHECK (is_active< S >(w));
                 w = v;
                 CHECK (is_active< S >(w));
@@ -1387,7 +1387,7 @@ class check_trivial
             {
                 CONSTEXPR U v{N{}};
                 ASSERT (is_active< N >(v));
-                U w;
+                U w{};
                 CHECK (is_active< S >(w));
                 w = std::move(v);
                 CHECK (is_active< N >(w));
@@ -1395,7 +1395,7 @@ class check_trivial
             {
                 CONSTEXPR U v{S{}};
                 ASSERT (is_active< S >(v));
-                U w;
+                U w{};
                 CHECK (is_active< S >(w));
                 w = std::move(v);
                 CHECK (is_active< S >(w));
@@ -1403,7 +1403,7 @@ class check_trivial
             {
                 U v{N{}};
                 CHECK (is_active< N >(v));
-                U w;
+                U w{};
                 CHECK (is_active< S >(w));
                 w = std::move(v);
                 CHECK (is_active< N >(w));
@@ -1411,7 +1411,7 @@ class check_trivial
             {
                 U v{S{}};
                 CHECK (is_active< S >(v));
-                U w;
+                U w{};
                 CHECK (is_active< S >(w));
                 w = std::move(v);
                 CHECK (is_active< S >(w));
@@ -1430,7 +1430,7 @@ class check_trivial
             {
                 CONSTEXPR U v{N{}};
                 ASSERT (is_active< N >(v));
-                U w;
+                U w{};
                 CHECK (is_active< N >(w));
                 w = v;
                 CHECK (is_active< N >(w));
@@ -1438,7 +1438,7 @@ class check_trivial
             {
                 CONSTEXPR U v{S{}};
                 ASSERT (is_active< S >(v));
-                U w;
+                U w{};
                 CHECK (is_active< N >(w));
                 w = v;
                 CHECK (is_active< S >(w));
@@ -1446,7 +1446,7 @@ class check_trivial
             {
                 U v{N{}};
                 CHECK (is_active< N >(v));
-                U w;
+                U w{};
                 CHECK (is_active< N >(w));
                 w = v;
                 CHECK (is_active< N >(w));
@@ -1454,7 +1454,7 @@ class check_trivial
             {
                 U v{S{}};
                 CHECK (is_active< S >(v));
-                U w;
+                U w{};
                 CHECK (is_active< N >(w));
                 w = v;
                 CHECK (is_active< S >(w));
@@ -1462,7 +1462,7 @@ class check_trivial
             {
                 CONSTEXPR U v{N{}};
                 ASSERT (is_active< N >(v));
-                U w;
+                U w{};
                 CHECK (is_active< N >(w));
                 w = std::move(v);
                 CHECK (is_active< N >(w));
@@ -1470,7 +1470,7 @@ class check_trivial
             {
                 CONSTEXPR U v{S{}};
                 ASSERT (is_active< S >(v));
-                U w;
+                U w{};
                 CHECK (is_active< N >(w));
                 w = std::move(v);
                 CHECK (is_active< S >(w));
@@ -1478,7 +1478,7 @@ class check_trivial
             {
                 U v{N{}};
                 CHECK (is_active< N >(v));
-                U w;
+                U w{};
                 CHECK (is_active< N >(w));
                 w = std::move(v);
                 CHECK (is_active< N >(w));
@@ -1486,7 +1486,7 @@ class check_trivial
             {
                 U v{S{}};
                 CHECK (is_active< S >(v));
-                U w;
+                U w{};
                 CHECK (is_active< N >(w));
                 w = std::move(v);
                 CHECK (is_active< S >(w));
@@ -1585,7 +1585,7 @@ class check_trivial
                 ASSERT (s.state_ == state::copy_constructed);
             }
             {
-                U v;
+                U v{};
                 CHECK (is_active< S >(v));
                 CHECK (static_cast< S & >(v).state_ == state::default_constructed);
                 S const s{v};
@@ -1604,7 +1604,7 @@ class check_trivial
                 ASSERT (r.state_ == state::copy_constructed); // `const &` operator win
             }
             {
-                U v;
+                U v{};
                 CHECK (is_active< S >(v));
                 CHECK (static_cast< S & >(v).state_ == state::default_constructed);
                 S const l{std::move(v)};
@@ -1818,7 +1818,7 @@ class check_trivial
             {
                 CONSTEXPR S s{};
                 ASSERT (s.state_ == state::default_constructed);
-                U v;
+                U v{};
                 CHECK (is_active< S >(v));
                 v = s;
                 CHECK (is_active< S >(v));
@@ -1828,7 +1828,7 @@ class check_trivial
             {
                 S s;
                 CHECK (s.state_ == state::default_constructed);
-                U v;
+                U v{};
                 CHECK (is_active< S >(v));
                 v = s;
                 CHECK (is_active< S >(v));
@@ -1838,7 +1838,7 @@ class check_trivial
             {
                 CONSTEXPR S s{};
                 ASSERT (s.state_ == state::default_constructed);
-                U v;
+                U v{};
                 CHECK (is_active< S >(v));
                 v = std::move(s);
                 CHECK (is_active< S >(v));
@@ -1848,7 +1848,7 @@ class check_trivial
             {
                 S s;
                 CHECK (s.state_ == state::default_constructed);
-                U v;
+                U v{};
                 CHECK (is_active< S >(v));
                 v = std::move(s);
                 CHECK (is_active< S >(v));
@@ -1877,7 +1877,7 @@ class check_trivial
             {
                 CONSTEXPR S s{};
                 ASSERT (s.state_ == state::default_constructed);
-                U v;
+                U v{};
                 CHECK (is_active< N >(v));
                 v = s;
                 CHECK (is_active< S >(v));
@@ -1887,7 +1887,7 @@ class check_trivial
             {
                 S s;
                 CHECK (s.state_ == state::default_constructed);
-                U v;
+                U v{};
                 CHECK (is_active< N >(v));
                 v = s;
                 CHECK (is_active< S >(v));
@@ -1897,7 +1897,7 @@ class check_trivial
             {
                 CONSTEXPR S s{};
                 ASSERT (s.state_ == state::default_constructed);
-                U v;
+                U v{};
                 CHECK (is_active< N >(v));
                 v = std::move(s);
                 CHECK (is_active< S >(v));
@@ -1907,7 +1907,7 @@ class check_trivial
             {
                 S s;
                 CHECK (s.state_ == state::default_constructed);
-                U v;
+                U v{};
                 CHECK (is_active< N >(v));
                 v = std::move(s);
                 CHECK (is_active< S >(v));

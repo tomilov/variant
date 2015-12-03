@@ -92,7 +92,7 @@ operator || (lhs && _lhs, rhs && _rhs) = delete;
 #endif
 #include <cassert>
 
-//#define VERSATILE_RUNTIME
+#define VERSATILE_RUNTIME
 
 #define STR(S) #S
 // double expansion of macro argument

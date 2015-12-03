@@ -14,11 +14,11 @@ struct enumerator
     static constexpr std::size_t size_ = sizeof...(indices);
     static constexpr std::size_t count_ = (indices * ...);
 
-    template< typename I, typename C >
+    template< typename O, typename D >
     struct decomposer;
 
-    template< std::size_t ...I, std::size_t ...C >
-    struct decomposer< std::index_sequence< I... >, std::index_sequence< C... > >
+    template< std::size_t ...O, std::size_t ...D >
+    struct decomposer< std::index_sequence< O... >, std::index_sequence< D... > >
     {
 
         F & f;
@@ -37,32 +37,27 @@ struct enumerator
             return o;
         }
 
-        static constexpr std::size_t orders_[size_] = {order(I)...};
+        static constexpr std::size_t orders_[size_] = {order(O)...};
 
         static
         constexpr
         std::size_t
-        digit(std::size_t c, std::size_t const i) noexcept
+        digit(std::size_t d, std::size_t const o) noexcept
         {
-            for (std::size_t n = 0; n < i; ++n) {
-                c = c % orders_[n];
+            for (std::size_t n = 0; n < o; ++n) {
+                d = d % orders_[n];
             }
-            return c / orders_[i];
+            return d / orders_[o];
         }
+
+        template< std::size_t d >
+        using index_sequence = std::index_sequence< digit(d, O)... >;
 
         constexpr
         bool
         operator () () const noexcept
         {
-            return (call< C >() && ...);
-        }
-
-        template< std::size_t c >
-        constexpr
-        bool
-        call() const noexcept
-        {
-            return f(std::index_sequence< digit(c, I)... >{});
+            return (f(index_sequence< D >{}) && ...);
         }
 
     };
