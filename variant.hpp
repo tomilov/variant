@@ -4,6 +4,7 @@
 
 #include <type_traits>
 #include <utility>
+#include <typeinfo>
 #include <string>
 #include <vector>
 #include <deque>
@@ -50,26 +51,30 @@ struct common_type
         return i;
     }
 
-    common_type() = default;
-    common_type(common_type const &) = default;
-    common_type(common_type &) = default;
-    common_type(common_type &&) = default;
-    common_type & operator = (common_type const &) = default;
-    common_type & operator = (common_type &) = default;
-    common_type & operator = (common_type &&) = default;
-    ~common_type() noexcept { ; }
+    common_type() { ; }
+    common_type(common_type const & c) : i(c.i) { ; }
+    common_type(common_type & c) : i(c.i) { ; }
+    common_type(common_type && c) : i(c.i) { ; }
+    common_type & operator = (common_type const & c) { i = c.i; return *this; }
+    common_type & operator = (common_type & c) { i = c.i; return *this; }
+    common_type & operator = (common_type && c) { i = c.i; return *this; }
+    ~common_type() { i = ~0; }
 
 };
 
 SA(!std::is_literal_type_v< common_type<> >);
 SA(!std::is_trivially_default_constructible_v< common_type<> >);
 SA(!std::is_trivially_destructible_v< common_type<> >);
+SA(!std::is_trivially_copy_constructible_v< common_type<> >);
+SA(!std::is_trivially_move_constructible_v< common_type<> >);
+SA(!std::is_trivially_copy_assignable_v< common_type<> >);
+SA(!std::is_trivially_move_assignable_v< common_type<> >);
 SA(std::is_default_constructible_v< common_type<> >);
 SA(std::is_destructible_v< common_type<> >);
-SA(!std::is_trivially_copy_constructible_v< common_type<> >); // ?
-SA(!std::is_trivially_move_constructible_v< common_type<> >); // ?
-SA(std::is_trivially_copy_assignable_v< common_type<> >);
-SA(std::is_trivially_move_assignable_v< common_type<> >);
+SA(std::is_copy_constructible_v< common_type<> >);
+SA(std::is_move_constructible_v< common_type<> >);
+SA(std::is_copy_assignable_v< common_type<> >);
+SA(std::is_move_assignable_v< common_type<> >);
 
 template< typename type >
 constexpr bool is_vcopy_constructible_v = std::is_constructible_v< type, type & >;
@@ -1075,6 +1080,72 @@ class check_invariants
 
     };
 
+    template< typename C >
+    struct container
+    {
+
+        using U = V< C >;
+
+        SA(std::is_default_constructible_v< C >);
+        SA(std::is_default_constructible_v< U >);
+        SA(!std::is_trivially_default_constructible_v< C >);
+        SA(!std::is_trivially_default_constructible_v< U >);
+
+        SA(std::is_destructible_v< C >);
+        SA(std::is_destructible_v< U >);
+        SA(!std::is_trivially_destructible_v< C >);
+        SA(!std::is_trivially_destructible_v< U >);
+
+        SA(std::is_copy_constructible_v< C >);
+        SA(!std::is_copy_constructible_v< U >);
+        SA(is_vcopy_constructible_v< C >);
+        SA(!is_vcopy_constructible_v< U >);
+
+        SA(std::is_move_constructible_v< C >);
+        SA(std::is_move_constructible_v< U >); // ?
+        SA(is_cmove_constructible_v< C >);
+        SA(!is_cmove_constructible_v< U >);
+
+        SA(!std::is_trivially_copy_constructible_v< C >);
+        SA(!std::is_trivially_copy_constructible_v< U >);
+        SA(!is_trivially_vcopy_constructible_v< C >);
+        SA(!is_trivially_vcopy_constructible_v< U >);
+
+        SA(!std::is_trivially_move_constructible_v< C >);
+        SA(!std::is_trivially_move_constructible_v< U >);
+        SA(!is_trivially_cmove_constructible_v< C >);
+        SA(!is_trivially_cmove_constructible_v< U >);
+
+        SA(std::is_copy_assignable_v< C >);
+        SA(!std::is_copy_assignable_v< U >);
+        SA(is_vcopy_assignable_v< C >);
+        SA(!is_vcopy_assignable_v< U >);
+
+        SA(std::is_move_assignable_v< C >);
+        SA(!std::is_move_assignable_v< U >);
+        SA(is_cmove_assignable_v< C >);
+        SA(!is_cmove_assignable_v< U >);
+
+        SA(!std::is_trivially_copy_assignable_v< C >);
+        SA(!std::is_trivially_copy_assignable_v< U >);
+        SA(!is_trivially_vcopy_assignable_v< C >);
+        SA(!is_trivially_vcopy_assignable_v< U >);
+
+        SA(!std::is_trivially_move_assignable_v< C >);
+        SA(!std::is_trivially_move_assignable_v< U >);
+        SA(!is_trivially_cmove_assignable_v< C >);
+        SA(!is_trivially_cmove_assignable_v< U >);
+
+        constexpr
+        static
+        bool
+        run() noexcept
+        {
+            return true;
+        }
+
+    };
+
 public :
 
     constexpr
@@ -1082,6 +1153,13 @@ public :
     bool
     run() noexcept // just for implicit instantiation
     {
+        { // all std::containers are identical
+            using S = common_type<>;
+            SA(container< std::string >::run());
+            SA(container< std::vector< S > >::run());
+            SA(container< std::deque< S > >::run());
+            SA(container< std::list< S > >::run());
+        }
         SA(trivial                ::run());
         SA(trivially_copyable     ::run());
         SA(default_constructor    ::run());
@@ -1109,6 +1187,7 @@ struct is_explicitly_convertible // akrzemi1's answer http://stackoverflow.com/a
 using ::versatile::is_active;
 using ::versatile::forward_as;
 using ::versatile::get;
+using ::versatile::in_place;
 
 template< template< typename ... > class wrapper = ::versatile::identity,
           template< typename ... > class variant = ::versatile::versatile >
@@ -1945,72 +2024,6 @@ class check_common
     template< typename ...types >
     using V = variant< typename wrapper< types >::type... >;
 
-    template< typename C >
-    struct container
-    {
-
-        using U = V< C >;
-
-        SA(std::is_default_constructible_v< C >);
-        SA(std::is_default_constructible_v< U >);
-        SA(!std::is_trivially_default_constructible_v< C >);
-        SA(!std::is_trivially_default_constructible_v< U >);
-
-        SA(std::is_destructible_v< C >);
-        SA(std::is_destructible_v< U >);
-        SA(!std::is_trivially_destructible_v< C >);
-        SA(!std::is_trivially_destructible_v< U >);
-
-        SA(std::is_copy_constructible_v< C >);
-        SA(!std::is_copy_constructible_v< U >);
-        SA(is_vcopy_constructible_v< C >);
-        SA(!is_vcopy_constructible_v< U >);
-
-        SA(std::is_move_constructible_v< C >);
-        SA(std::is_move_constructible_v< U >); // ?
-        SA(is_cmove_constructible_v< C >);
-        SA(!is_cmove_constructible_v< U >);
-
-        SA(!std::is_trivially_copy_constructible_v< C >);
-        SA(!std::is_trivially_copy_constructible_v< U >);
-        SA(!is_trivially_vcopy_constructible_v< C >);
-        SA(!is_trivially_vcopy_constructible_v< U >);
-
-        SA(!std::is_trivially_move_constructible_v< C >);
-        SA(!std::is_trivially_move_constructible_v< U >);
-        SA(!is_trivially_cmove_constructible_v< C >);
-        SA(!is_trivially_cmove_constructible_v< U >);
-
-        SA(std::is_copy_assignable_v< C >);
-        SA(!std::is_copy_assignable_v< U >);
-        SA(is_vcopy_assignable_v< C >);
-        SA(!is_vcopy_assignable_v< U >);
-
-        SA(std::is_move_assignable_v< C >);
-        SA(!std::is_move_assignable_v< U >);
-        SA(is_cmove_assignable_v< C >);
-        SA(!is_cmove_assignable_v< U >);
-
-        SA(!std::is_trivially_copy_assignable_v< C >);
-        SA(!std::is_trivially_copy_assignable_v< U >);
-        SA(!is_trivially_vcopy_assignable_v< C >);
-        SA(!is_trivially_vcopy_assignable_v< U >);
-
-        SA(!std::is_trivially_move_assignable_v< C >);
-        SA(!std::is_trivially_move_assignable_v< U >);
-        SA(!is_trivially_cmove_assignable_v< C >);
-        SA(!is_trivially_cmove_assignable_v< U >);
-
-        constexpr
-        static
-        bool
-        run() noexcept
-        {
-            return true;
-        }
-
-    };
-
     enum class state
     {
         never_used = 0,
@@ -2031,39 +2044,72 @@ class check_common
 
     static
     bool
-    trivially_default_constructible() noexcept
+    destructible() noexcept
     {
         struct A
         {
-            A() = default;
             state s_;
+            A() : s_{state::default_constructed} { ; }
             A(A const &) { s_ = state::copy_constructed; }
             A(A &) { s_ = state::vcopy_constructed; }
             A(A && a) { s_ = state::move_constructed;  a.s_ = state::moved_from; }
             A & operator = (A const &) { s_ = state::copy_assigned; return *this; }
             A & operator = (A &) { s_ = state::vcopy_assigned; return *this; }
             A & operator = (A && a) { s_ = state::move_assigned;  a.s_ = state::moved_from; return *this; }
-            bool * d_;
-            void set(bool & _d) { assert(!_d); assert(!d_); d_ = &_d; }
-            ~A() { assert(!!d_); *d_ = true; }
+            std::type_info const * * d_;
+            void set(std::type_info const * & _d) { assert(!_d); d_ = &_d; }
+            ~A() { if (!!d_) *d_ = &typeid(A); }
         };
         struct B
         {
-            B() = default;
             state s_;
+            B() : s_{state::default_constructed} { ; }
             B(B const &) { s_ = state::copy_constructed; }
             B(B &) { s_ = state::vcopy_constructed; }
-            B(B && b) { s_ = state::move_constructed; b.s_ = state::moved_from; }
+            B(B && a) { s_ = state::move_constructed;  a.s_ = state::moved_from; }
             B & operator = (B const &) { s_ = state::copy_assigned; return *this; }
             B & operator = (B &) { s_ = state::vcopy_assigned; return *this; }
-            B & operator = (B && b) { s_ = state::move_assigned; b.s_ = state::moved_from; return *this; }
-            bool * d_;
-            void set(bool & _d) { assert(!_d); assert(!d_); d_ = &_d; }
-            ~B() { assert(!!d_); *d_ = true; }
+            B & operator = (B && a) { s_ = state::move_assigned;  a.s_ = state::moved_from; return *this; }
+            std::type_info const * * d_;
+            void set(std::type_info const * & _d) { assert(!_d); d_ = &_d; }
+            ~B() { if (!!d_) *d_ = &typeid(B); }
         };
-        SA(!std::is_trivially_default_constructible_v< A >); // ! false due to value-construction in type trait
-        SA(!std::is_trivially_default_constructible_v< B >); // ! false too
-        // can't really test destruction of default constructible due to broken type traits
+        {
+            using U = V< A, B >;
+            {
+                std::type_info const * d = nullptr;
+                {
+                    U u;
+                    CHECK (is_active< A >(u));
+                    CHECK (static_cast< A & >(u).s_ == state::default_constructed);
+                    static_cast< A & >(u).set(d);
+                }
+                CHECK (!!d);
+                CHECK (*d == typeid(A));
+            }
+            {
+                std::type_info const * d = nullptr;
+                {
+                    U u{in_place< 1 >{}};
+                    CHECK (is_active< B >(u));
+                    CHECK (static_cast< B & >(u).s_ == state::default_constructed);
+                    static_cast< B & >(u).set(d);
+                }
+                CHECK (!!d);
+                CHECK (*d == typeid(B));
+            }
+            {
+                std::type_info const * d = nullptr;
+                {
+                    U u{in_place< 2 >{}};
+                    CHECK (is_active< A >(u));
+                    CHECK (static_cast< A & >(u).s_ == state::default_constructed);
+                    static_cast< A & >(u).set(d);
+                }
+                CHECK (!!d);
+                CHECK (*d == typeid(A));
+            }
+        }
         return true;
     }
 
@@ -2073,26 +2119,7 @@ public :
     bool
     run() noexcept
     {
-        { // all std::containers are identical
-            struct S
-            {
-                S() { ; }
-                S(S const &) { ; }
-                S(S &) { ; }
-                S(S const &&) { ; }
-                S(S &&) { ; }
-                S & operator = (S const &)  { return *this; }
-                S & operator = (S &)  { return *this; }
-                S & operator = (S const &&) { return *this; }
-                S & operator = (S &&) { return *this; }
-                ~S() { ; }
-            };
-            ASSERT (container< std::string >::run());
-            ASSERT (container< std::vector< S > >::run());
-            ASSERT (container< std::deque< S > >::run());
-            ASSERT (container< std::list< S > >::run());
-        }
-        assert (trivially_default_constructible());
+        assert (destructible());
         return true;
     }
 

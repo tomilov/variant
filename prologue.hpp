@@ -13,42 +13,42 @@ forward_as(type && _value) noexcept
     return static_cast< add_type_qualifier_t< type_qual, std::decay_t< type > > >(_value);
 }
 
-template< typename type, typename ...types >
+template< typename type, typename V >
 constexpr
 bool
-is_active(versatile< types... > const & v) noexcept
+is_active(V const & v) noexcept
 {
     return v.template active< type >();
 }
 
-template< typename type, typename ...types >
+template< typename type, typename V >
 constexpr
 type const &
-get(versatile< types... > const & v) noexcept
+get(V const & v) noexcept
 {
     return static_cast< type const & >(v);
 }
 
-template< typename type, typename ...types >
+template< typename type, typename V >
 constexpr
 type &
-get(versatile< types... > & v) noexcept
+get(V & v) noexcept
 {
     return static_cast< type & >(v);
 }
 
-template< typename type, typename ...types >
+template< typename type, typename V >
 constexpr
 type const &&
-get(versatile< types... > const && v) noexcept
+get(V const && v) noexcept
 {
     return static_cast< type const && >(static_cast< type const & >(v));
 }
 
-template< typename type, typename ...types >
+template< typename type, typename V >
 constexpr
 type &&
-get(versatile< types... > && v) noexcept
+get(V && v) noexcept
 {
     return static_cast< type && >(static_cast< type & >(v));
 }
