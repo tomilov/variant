@@ -92,26 +92,24 @@ operator || (lhs && _lhs, rhs && _rhs) = delete;
 #endif
 #include <cassert>
 
-#define VERSATILE_RUNTIME
-
 #define STR(S) #S
 // double expansion of macro argument
 #define STRN(N) STR(N)
 #define LOCATION "file '" __FILE__ "', line: " STRN(__LINE__)
 #define SA(...) static_assert((__VA_ARGS__), LOCATION)
 #define CHECK(...) { assert((__VA_ARGS__)); }
-#ifdef VERSATILE_RUNTIME
-#define ASSERT(...) { assert((__VA_ARGS__)); }
-#define CONSTEXPR const
-#define CONSTEXPRF
-#define DESTRUCTOR { ; }
-//#define CBRA {
-//#define CKET }
-#else
+#if 1
 #define ASSERT(...) { SA(__VA_ARGS__); }
 #define CONSTEXPR constexpr
 #define CONSTEXPRF constexpr
 #define DESTRUCTOR = default;
 //#define CBRA { struct _ { static constexpr bool call() noexcept {
 //#define CKET return true; } }; SA(_::call()); }
+#else
+#define ASSERT(...) { assert((__VA_ARGS__)); }
+#define CONSTEXPR const
+#define CONSTEXPRF
+#define DESTRUCTOR { ; }
+//#define CBRA {
+//#define CKET }
 #endif

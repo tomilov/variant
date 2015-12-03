@@ -7,7 +7,6 @@
 #include <experimental/optional>
 
 #include <cstddef>
-#include <cassert>
 
 namespace versatile
 {
@@ -182,11 +181,11 @@ public :
 
 };
 
-template< bool is_trivially_destructible, bool is_trivially_constructible, typename ...types >
+template< bool is_trivially_destructible, typename ...types >
 class dispatcher;
 
 template< typename ...types >
-class dispatcher< true, true, types... >
+class dispatcher< true, types... >
 {
 
     using storage = destructor_dispatcher< true, types... >;
@@ -200,125 +199,6 @@ public :
     std::size_t
     which() const noexcept
     {
-        if (which_ == std::size_t{}) { // if value-initialized (<=> zero-initialized)
-            return sizeof...(types); // if so, then it always points to the first (leftmost) alternative type
-        }
-        return which_;
-    }
-
-    constexpr
-    dispatcher() = default;
-
-    template< typename index, typename ...arguments >
-    constexpr
-    dispatcher(index, arguments &&... _arguments) noexcept(noexcept(::new (std::declval< void * >()) storage(index{}, std::forward< arguments >(_arguments)...)))
-        : which_{index::value}
-        , storage_(index{}, std::forward< arguments >(_arguments)...)
-    { ; }
-
-    template< typename type >
-    constexpr
-    operator type const & () const noexcept
-    {
-        return storage_;
-    }
-
-    template< typename type >
-    constexpr
-    operator type & () noexcept
-    {
-        return storage_;
-    }
-
-};
-
-template< typename ...types >
-class dispatcher< false, true, types... >
-{
-
-    using storage = destructor_dispatcher< false, types... >;
-
-    std::size_t which_;
-    storage storage_;
-
-public :
-
-    constexpr
-    std::size_t
-    which() const noexcept
-    {
-        if (which_ == std::size_t{}) { // if value-initialized (<=> zero-initialized)
-            return sizeof...(types); // if so, then it always points to the first (leftmost) alternative type
-        }
-        return which_;
-    }
-
-    constexpr
-    dispatcher(dispatcher const &) = default;
-    constexpr
-    dispatcher(dispatcher &) = default;
-    constexpr
-    dispatcher(dispatcher &&) = default;
-
-    constexpr
-    dispatcher
-    & operator = (dispatcher const &) = default;
-    constexpr
-    dispatcher
-    & operator = (dispatcher &) = default;
-    constexpr
-    dispatcher
-    & operator = (dispatcher &&) = default;
-
-    ~dispatcher() noexcept(noexcept(storage_.destructor(which_)))
-    {
-        if (which_ != std::size_t{}) { // if not value-initialized (<=> zero-initialized)
-            storage_.destructor(which_);
-        }
-    }
-
-    constexpr
-    dispatcher() = default;
-
-    template< typename index, typename ...arguments >
-    constexpr
-    dispatcher(index, arguments &&... _arguments) noexcept(noexcept(::new (std::declval< void * >()) storage(index{}, std::forward< arguments >(_arguments)...)))
-        : which_{index::value}
-        , storage_(index{}, std::forward< arguments >(_arguments)...)
-    { ; }
-
-    template< typename type >
-    constexpr
-    operator type const & () const noexcept
-    {
-        return storage_;
-    }
-
-    template< typename type >
-    constexpr
-    operator type & () noexcept
-    {
-        return storage_;
-    }
-
-};
-
-template< typename ...types >
-class dispatcher< true, false, types... >
-{
-
-    using storage = destructor_dispatcher< true, types... >;
-
-    std::size_t which_;
-    storage storage_;
-
-public :
-
-    constexpr
-    std::size_t
-    which() const noexcept
-    {
-        assert(which_ != std::size_t{}); // can't be zero-initialized
         return which_;
     }
 
@@ -353,7 +233,7 @@ public :
 };
 
 template< typename ...types >
-class dispatcher< false, false, types... >
+class dispatcher< false, types... >
 {
 
     using storage = destructor_dispatcher< false, types... >;
@@ -367,7 +247,6 @@ public :
     std::size_t
     which() const noexcept
     {
-        assert(which_ != std::size_t{});
         return which_;
     }
 
@@ -390,7 +269,6 @@ public :
 
     ~dispatcher() noexcept(noexcept(storage_.destructor(which_)))
     {
-        assert(which_ != std::size_t{}); // can't be trivially default constructed
         storage_.destructor(which_);
     }
 
@@ -425,7 +303,7 @@ public :
 };
 
 template< typename ...types >
-using dispatcher_t = dispatcher< (std::is_trivially_destructible_v< types > && ...), (std::is_trivially_default_constructible_v< types > && ...), types... >;
+using dispatcher_t = dispatcher< (std::is_trivially_destructible_v< types > && ...), types... >;
 
 template< bool is_default_constructible >
 struct enable_default_constructor;
@@ -477,7 +355,7 @@ class versatile
 
 public :
 
-    using default_index = index_of_default_constructible< types..., void >;
+    using default_index = typename storage::default_index;
 
     constexpr
     std::size_t
@@ -548,7 +426,7 @@ public :
         *this = versatile(in_place< i >{}, std::forward< arguments >(_arguments)...);
     }
 
-    template< typename type, typename ...arguments, typename index = index_at_t< type > >
+    template< typename type, typename index = index_at_t< type >, typename ...arguments >
     constexpr
     void
     emplace(arguments &&... _arguments) noexcept

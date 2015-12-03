@@ -29,7 +29,7 @@ main()
                 assert ((check_common< identity,  versatile >::run()));
                 assert ((check_common< aggregate, versatile >::run()));
             }
-#if 0
+#if 1
             {
                 using ::test_variant::test_perferct_forwarding;
                 {
