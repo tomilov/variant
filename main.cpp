@@ -1,6 +1,6 @@
 #include "traits.hpp"
 #include "variant.hpp"
-#include "multivisitor.hpp"
+#include "visit.hpp"
 #include "boost_variant.hpp"
 
 #include <cstdlib>
@@ -10,7 +10,7 @@ main()
 {
 #if 1
     { // versatile
-#if 0
+#if 1
         using ::versatile::versatile;
         using ::versatile::identity;
         using ::test_variant::aggregate;
@@ -30,29 +30,38 @@ main()
             assert ((check_common< aggregate, versatile >::run()));
         }
         {
+#if 0
             using ::test_variant::test_perferct_forwarding;
             {
                 using ::test_variant::literal_type;
                 ASSERT ((test_perferct_forwarding< literal_type, versatile, identity,  2, 2 >::run()));
                 ASSERT ((test_perferct_forwarding< literal_type, versatile, aggregate, 2, 2 >::run()));
             }
-            {
-                using ::test_variant::common_type;
-                assert ((test_perferct_forwarding< common_type, versatile, identity,  2, 2 >::run()));
-                assert ((test_perferct_forwarding< common_type, versatile, aggregate, 2, 2 >::run()));
-            }
+#endif
         }
 #endif
     }
     { // variant
+#if 0
         using ::versatile::variant;
         using ::versatile::identity;
         using ::test_variant::aggregate;
+        using ::test_variant::recursive_wrapper;
         {
             using ::test_variant::check_common;
             assert ((check_common< identity,  variant >::run()));
             assert ((check_common< aggregate, variant >::run()));
         }
+        {
+            using ::test_variant::test_perferct_forwarding;
+            {
+                using ::test_variant::common_type;
+                assert ((test_perferct_forwarding< common_type, variant, identity,          2, 2 >::run()));
+                assert ((test_perferct_forwarding< common_type, variant, aggregate,         2, 2 >::run()));
+                assert ((test_perferct_forwarding< common_type, variant, recursive_wrapper, 2, 2 >::run()));
+            }
+        }
+#endif
     }
     { // boost::variant
         struct L {};

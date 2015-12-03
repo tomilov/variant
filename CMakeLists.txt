@@ -46,7 +46,7 @@ set( HEADERS
     "prologue.hpp"
     "traits.hpp"
     "variant.hpp"
-    "multivisitor.hpp"
+    "visit.hpp"
     "boost_variant.hpp"
 )
 

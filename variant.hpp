@@ -20,6 +20,13 @@ struct aggregate
 
 };
 
+template< typename type >
+struct recursive_wrapper
+        : ::versatile::identity< ::versatile::recursive_wrapper< type > >
+{
+
+};
+
 template< std::size_t I = 0 >
 struct literal_type
 {
@@ -58,7 +65,7 @@ struct common_type
     common_type & operator = (common_type const & c) { i = c.i; return *this; }
     common_type & operator = (common_type & c) { i = c.i; return *this; }
     common_type & operator = (common_type && c) { i = c.i; return *this; }
-    ~common_type() { i = ~0; }
+    ~common_type() { i = ~std::size_t{}; }
 
 };
 
@@ -1998,6 +2005,30 @@ class check_trivial
         return true;
     }
 
+    CONSTEXPRF
+    static
+    bool
+    in_place_constructible() noexcept
+    {
+        struct S
+        {
+            CONSTEXPR S(int) { ; }
+        };
+        struct N {};
+        {
+            using U = V< S, N >;
+            struct X {};
+            SA(std::is_constructible_v< U, in_place< 2 >, int >);
+            SA(!std::is_constructible_v< U, in_place< 2 >, X >);
+            //SA(!std::is_constructible_v< U, in_place< 2 >, void >);
+            SA(std::is_constructible_v< U, in_place< 2 >, S >);
+            SA(!std::is_constructible_v< U, in_place< 2 > >);
+            SA(std::is_constructible_v< U, in_place< 1 > >);
+            SA(std::is_constructible_v< U, in_place< 1 >, N >);
+        }
+        return true;
+    }
+
 public :
 
     CONSTEXPRF
@@ -2011,6 +2042,7 @@ public :
         ASSERT (convertible()); // conversion
         ASSERT (constructible()); // conversion
         ASSERT (assignable()); // conversion
+        ASSERT (in_place_constructible()); // conversion
         return true;
     }
 
