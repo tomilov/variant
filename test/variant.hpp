@@ -2021,10 +2021,10 @@ class check_trivial
             SA(std::is_constructible_v< U, in_place< 2 >, int >);
             SA(!std::is_constructible_v< U, in_place< 2 >, X >);
             //SA(!std::is_constructible_v< U, in_place< 2 >, void >);
-            SA(std::is_constructible_v< U, in_place< 2 >, S >);
+            /*SA(std::is_constructible_v< U, in_place< 2 >, S >);
             SA(!std::is_constructible_v< U, in_place< 2 > >);
             SA(std::is_constructible_v< U, in_place< 1 > >);
-            SA(std::is_constructible_v< U, in_place< 1 >, N >);
+            SA(std::is_constructible_v< U, in_place< 1 >, N >);*/
         }
         return true;
     }
