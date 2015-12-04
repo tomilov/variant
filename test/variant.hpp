@@ -1194,7 +1194,8 @@ struct is_explicitly_convertible // akrzemi1's answer http://stackoverflow.com/a
 using ::versatile::is_active;
 using ::versatile::forward_as;
 using ::versatile::get;
-using ::versatile::in_place;
+using ::versatile::in_place_index;
+using ::versatile::in_place_type;
 
 template< template< typename ... > class wrapper = ::versatile::identity,
           template< typename ... > class variant = ::versatile::versatile >
@@ -2010,21 +2011,108 @@ class check_trivial
     bool
     in_place_constructible() noexcept
     {
-        struct S
+        struct X {};
+        struct Y {};
         {
-            CONSTEXPR S(int) { ; }
-        };
-        struct N {};
+            struct A { CONSTEXPRF A(X) { ; } };
+            struct B { CONSTEXPRF B(Y) { ; } };
+            using U = V< A, B >;
+            CONSTEXPR U a{in_place_type< A >{}, X{}};
+            ASSERT (is_active< A >(a));
+            CONSTEXPR U b{in_place_type< B >{}, Y{}};
+            ASSERT (is_active< B >(b));
+        }
         {
-            using U = V< S, N >;
-            struct X {};
-            SA(std::is_constructible_v< U, in_place< 2 >, int >);
-            SA(!std::is_constructible_v< U, in_place< 2 >, X >);
-            //SA(!std::is_constructible_v< U, in_place< 2 >, void >);
-            /*SA(std::is_constructible_v< U, in_place< 2 >, S >);
-            SA(!std::is_constructible_v< U, in_place< 2 > >);
-            SA(std::is_constructible_v< U, in_place< 1 > >);
-            SA(std::is_constructible_v< U, in_place< 1 >, N >);*/
+            struct A { CONSTEXPRF A(X) { ; } };
+            struct B { CONSTEXPRF B(X) { ; } };
+            using U = V< A, B >;
+            CONSTEXPR U a{in_place_type< A >{}, X{}};
+            ASSERT (is_active< A >(a));
+            CONSTEXPR U b{in_place_type< B >{}, X{}};
+            ASSERT (is_active< B >(b));
+        }
+        {
+            struct B;
+            struct A { CONSTEXPRF A() = default; CONSTEXPRF A(B &&) { ; } };
+            struct B { CONSTEXPRF B() = default; CONSTEXPRF B(A) { ; } };
+            using U = V< A, B >;
+            CONSTEXPR U a{in_place_type< A >{}, B{}};
+            ASSERT (is_active< A >(a));
+            CONSTEXPR U b{in_place_type< B >{}, A{}};
+            ASSERT (is_active< B >(b));
+        }
+        {
+            struct A { CONSTEXPRF A(X, Y) { ; } };
+            struct B { CONSTEXPRF B(Y, X) { ; } };
+            using U = V< A, B >;
+            CONSTEXPR U a{in_place_type< A >{}, X{}, Y{}};
+            ASSERT (is_active< A >(a));
+            CONSTEXPR U b{in_place_type< B >{}, Y{}, X{}};
+            ASSERT (is_active< B >(b));
+        }
+        return true;
+    }
+
+    CONSTEXPRF
+    static
+    bool
+    emplace() noexcept
+    {
+        struct X {};
+        struct Y {};
+        struct Z {};
+        {
+            struct A { CONSTEXPRF A(X) { ; } };
+            struct B { CONSTEXPRF B(Y) { ; } };
+            using U = V< Z, A, B >;
+            U v;
+            CHECK (is_active< Z >(v));
+            v.template emplace< A >(X{});
+            CHECK (is_active< A >(v));
+            v.template emplace< B >(Y{});
+            CHECK (is_active< B >(v));
+            v.template emplace< Z >();
+            CHECK (is_active< Z >(v));
+        }
+        {
+            struct A { CONSTEXPRF A(X) { ; } };
+            struct B { CONSTEXPRF B(X) { ; } };
+            using U = V< Z, A, B >;
+            U v;
+            CHECK (is_active< Z >(v));
+            v.template emplace< A >(X{});
+            CHECK (is_active< A >(v));
+            v.template emplace< B >(X{});
+            CHECK (is_active< B >(v));
+            v.template emplace< Z >();
+            CHECK (is_active< Z >(v));
+        }
+        {
+            struct B;
+            struct A { CONSTEXPRF A() = default; CONSTEXPRF A(B &&) { ; } };
+            struct B { CONSTEXPRF B() = default; CONSTEXPRF B(A) { ; } };
+            using U = V< Z, A, B >;
+            U v;
+            CHECK (is_active< Z >(v));
+            v.template emplace< A >(B{});
+            CHECK (is_active< A >(v));
+            v.template emplace< B >(A{});
+            CHECK (is_active< B >(v));
+            v.template emplace< Z >();
+            CHECK (is_active< Z >(v));
+        }
+        {
+            struct A { CONSTEXPRF A(X, Y) { ; } };
+            struct B { CONSTEXPRF B(Y, X) { ; } };
+            using U = V< Z, A, B >;
+            U v;
+            CHECK (is_active< Z >(v));
+            v.template emplace< A >(X{}, Y{});
+            CHECK (is_active< A >(v));
+            v.template emplace< B >(Y{}, X{});
+            CHECK (is_active< B >(v));
+            v.template emplace< Z >();
+            CHECK (is_active< Z >(v));
         }
         return true;
     }
@@ -2042,7 +2130,8 @@ public :
         ASSERT (convertible()); // conversion
         ASSERT (constructible()); // conversion
         ASSERT (assignable()); // conversion
-        ASSERT (in_place_constructible()); // conversion
+        ASSERT (in_place_constructible());
+        ASSERT (emplace());
         return true;
     }
 
@@ -2122,7 +2211,7 @@ class check_common
             {
                 std::type_info const * d = nullptr;
                 {
-                    U u{in_place< 1 >{}};
+                    U u{in_place_type< B >{}};
                     CHECK (is_active< B >(u));
                     CHECK (static_cast< B & >(u).s_ == state::default_constructed);
                     static_cast< B & >(u).set(d);
@@ -2133,7 +2222,7 @@ class check_common
             {
                 std::type_info const * d = nullptr;
                 {
-                    U u{in_place< 2 >{}};
+                    U u{in_place_type< A >{}};
                     CHECK (is_active< A >(u));
                     CHECK (static_cast< A & >(u).s_ == state::default_constructed);
                     static_cast< A & >(u).set(d);

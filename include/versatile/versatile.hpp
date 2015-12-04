@@ -338,7 +338,13 @@ template< typename ...types >
 using enable_default_constructor_t = enable_default_constructor< (std::is_default_constructible_v< types > || ...) >;
 
 template< std::size_t _which >
-struct in_place
+struct in_place_index
+{
+
+};
+
+template< typename type >
+struct in_place_type
 {
 
 };
@@ -387,9 +393,16 @@ public :
 
     template< std::size_t i, typename ...arguments >
     constexpr
-    versatile(in_place< i >, arguments &&... _arguments) noexcept(noexcept(::new (std::declval< void * >()) storage(index_t< i >{}, std::forward< arguments >(_arguments)...)))
+    versatile(in_place_index< i >, arguments &&... _arguments) noexcept(noexcept(::new (std::declval< void * >()) storage(index_t< i >{}, std::forward< arguments >(_arguments)...)))
         : enabler({})
         , storage_(index_t< i >{}, std::forward< arguments >(_arguments)...)
+    { ; }
+
+    template< typename type, typename index = index_at_t< type >, typename ...arguments >
+    constexpr
+    versatile(in_place_type< type >, arguments &&... _arguments) noexcept(noexcept(::new (std::declval< void * >()) storage(index{}, std::forward< arguments >(_arguments)...)))
+        : enabler({})
+        , storage_(index{}, std::forward< arguments >(_arguments)...)
     { ; }
 
     template< typename type, typename index = index_at_t< type > >
@@ -423,7 +436,7 @@ public :
     emplace(arguments &&... _arguments) noexcept
     {
         static_assert(std::is_trivially_assignable_v< versatile, versatile >, "all alternative types should be trivially move assignable");
-        *this = versatile(in_place< i >{}, std::forward< arguments >(_arguments)...);
+        *this = versatile(in_place_index< i >{}, std::forward< arguments >(_arguments)...);
     }
 
     template< typename type, typename index = index_at_t< type >, typename ...arguments >
@@ -432,7 +445,7 @@ public :
     emplace(arguments &&... _arguments) noexcept
     {
         static_assert(std::is_trivially_assignable_v< versatile, versatile >, "all alternative types should be trivially move assignable");
-        *this = versatile(in_place< index::value >{}, std::forward< arguments >(_arguments)...);
+        *this = versatile(in_place_index< index::value >{}, std::forward< arguments >(_arguments)...);
     }
 
 };
