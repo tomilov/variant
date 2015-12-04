@@ -4,7 +4,7 @@
 
 #include <utility>
 
-namespace test_variant
+namespace test_visit
 {
 
 template< typename F, std::size_t ...indices >
@@ -245,12 +245,14 @@ struct fusor
             constexpr type_qualifier type_qual_m = static_cast< type_qualifier >(type_qual_begin + m);
             constexpr type_qualifier type_quals_v[sizeof...(v)] = {static_cast< type_qualifier >(type_qual_begin + v)...};
             pair< M > const rhs = {{type_qual_m, type_quals_v[i]...}, {M + 1, variants_[i].which()...}};
-            decltype(auto) lhs = ::versatile::multivisit(forward_as< type_qual_m >(multivisitor_),
-                                                         forward_as< type_quals_v[i] >(variants_[i])...);
-            if (M + 1 != lhs.size()) {
+            using ::versatile::forward_as;
+            using ::versatile::multivisit;
+            decltype(auto) lhs = multivisit(forward_as< type_qual_m >(multivisitor_),
+                                            forward_as< type_quals_v[i] >(variants_[i])...);
+            if (type_qualifier_of< decltype(lhs) > != multivisitor_.type_qual_) {
                 return false;
             }
-            if (type_qualifier_of< decltype(lhs) > != multivisitor_.type_qual_) {
+            if (M + 1 != lhs.size()) {
                 return false;
             }
             if (!(lhs == rhs)) {
@@ -291,7 +293,7 @@ struct multiarray< array_type >
 
 template< typename type, std::size_t first, std::size_t ...rest >
 struct multiarray< type, first, rest... >
-    : multiarray< type[first], rest... >
+        : multiarray< type[first], rest... >
 {
 
     using value_type = type;
@@ -304,12 +306,12 @@ using multiarray_t = typename multiarray< value_type, extents... >::type;
 constexpr std::size_t ref_count_ = (type_qual_end - type_qual_begin);
 
 // variant - variant
-// T - type generator
+// type - type generator
 // variant - variant template
 // wrapper - wrapper for alternative (bounded) types
 // M - multivisitor arity, N - number of alternative (bounded) types
 template< template< std::size_t I > class type,
-          template< typename ...types > class variant,
+          template< typename ...types > class variant = ::versatile::versatile,
           template< typename ...types > class wrapper = ::versatile::identity,
           std::size_t M = 2, std::size_t N = M >
 class test_perferct_forwarding
@@ -365,14 +367,14 @@ public :
     bool
     run() noexcept
     {
-        auto const i = std::make_index_sequence< M >{};
-        auto const j = std::make_index_sequence< N >{};
-        CHECK (run< type_qualifier::value       >(i, j));
-        CHECK (run< type_qualifier::const_value >(i, j));
-        CHECK (run< type_qualifier::lref        >(i, j));
-        CHECK (run< type_qualifier::rref        >(i, j));
-        CHECK (run< type_qualifier::const_lref  >(i, j));
-        CHECK (run< type_qualifier::const_rref  >(i, j));
+        constexpr auto i = std::make_index_sequence< M >{};
+        constexpr auto j = std::make_index_sequence< N >{};
+        ASSERT (run< type_qualifier::value       >(i, j));
+        ASSERT (run< type_qualifier::const_value >(i, j));
+        ASSERT (run< type_qualifier::lref        >(i, j));
+        ASSERT (run< type_qualifier::rref        >(i, j));
+        ASSERT (run< type_qualifier::const_lref  >(i, j));
+        ASSERT (run< type_qualifier::const_rref  >(i, j));
         return true;
     }
 

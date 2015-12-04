@@ -49,4 +49,4 @@ set(HEADERS
     "test/boost_variant.hpp"
 )
 
-add_executable( ${PROJECT_NAME} "test/main.cpp" ${HEADERS} )
+add_executable( ${PROJECT_NAME} "test/test.cpp" ${HEADERS} )

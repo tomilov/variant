@@ -16,11 +16,10 @@ main()
     using ::test_variant::check_invariants;
     using ::test_variant::check_trivial;
     using ::test_variant::check_common;
-    using ::test_variant::test_perferct_forwarding;
-#if 1
+    using ::test_visit::test_perferct_forwarding;
     { // versatile
-#if 1
         using ::versatile::versatile;
+#if 1
         {
             ASSERT ((check_invariants< identity,  versatile >::run()));
             ASSERT ((check_invariants< aggregate, versatile >::run()));
@@ -34,22 +33,21 @@ main()
             assert ((check_common< aggregate,         versatile >::run()));
             assert ((check_common< recursive_wrapper, versatile >::run()));
         }
-        {
-#if 1
-            {
-                ASSERT ((test_perferct_forwarding< literal_type, versatile, identity,  2, 2 >::run()));
-                ASSERT ((test_perferct_forwarding< literal_type, versatile, aggregate, 2, 2 >::run()));
-            }
 #endif
+#if 0
+        {
+            ASSERT ((test_perferct_forwarding< literal_type, versatile, identity,          2, 2 >::run()));
+            ASSERT ((test_perferct_forwarding< literal_type, versatile, aggregate,         2, 2 >::run()));
         }
 #endif
     }
     { // variant
-#if 1
+#if 0
         using ::versatile::variant;
         {
-            assert ((check_common< identity,  variant >::run()));
-            assert ((check_common< aggregate, variant >::run()));
+            assert ((check_common< identity,          variant >::run()));
+            assert ((check_common< aggregate,         variant >::run()));
+            assert ((check_common< recursive_wrapper, variant >::run()));
         }
         {
             assert ((test_perferct_forwarding< common_type, variant, identity,          2, 2 >::run()));
@@ -64,7 +62,7 @@ main()
             SA(std::is_literal_type< L >{});
             SA(!std::is_literal_type< ::boost::variant< L > >{});
         }
-#if 1
+#if 0
         using ::test_boost_variant::variant_i;
         using ::test_boost_variant::variant_c;
         using ::test_boost_variant::boost_recursive_wrapper;
@@ -95,7 +93,6 @@ main()
     { // eggs::variant
 
     }
-#endif
     return EXIT_SUCCESS;
 }
 
