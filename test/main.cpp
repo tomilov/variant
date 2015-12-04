@@ -8,32 +8,35 @@
 int
 main()
 {
+    using ::versatile::identity;
+    using ::test_variant::aggregate;
+    using ::test_variant::recursive_wrapper;
+    using ::test_variant::literal_type;
+    using ::test_variant::common_type;
+    using ::test_variant::check_invariants;
+    using ::test_variant::check_trivial;
+    using ::test_variant::check_common;
+    using ::test_variant::test_perferct_forwarding;
 #if 1
     { // versatile
 #if 1
         using ::versatile::versatile;
-        using ::versatile::identity;
-        using ::test_variant::aggregate;
         {
-            using ::test_variant::check_invariants;
             ASSERT ((check_invariants< identity,  versatile >::run()));
             ASSERT ((check_invariants< aggregate, versatile >::run()));
         }
         {
-            using ::test_variant::check_trivial;
             ASSERT ((check_trivial< identity,  versatile >::run()));
             ASSERT ((check_trivial< aggregate, versatile >::run()));
         }
         {
-            using ::test_variant::check_common;
-            assert ((check_common< identity,  versatile >::run()));
-            assert ((check_common< aggregate, versatile >::run()));
+            assert ((check_common< identity,          versatile >::run()));
+            assert ((check_common< aggregate,         versatile >::run()));
+            assert ((check_common< recursive_wrapper, versatile >::run()));
         }
         {
-#if 0
-            using ::test_variant::test_perferct_forwarding;
+#if 1
             {
-                using ::test_variant::literal_type;
                 ASSERT ((test_perferct_forwarding< literal_type, versatile, identity,  2, 2 >::run()));
                 ASSERT ((test_perferct_forwarding< literal_type, versatile, aggregate, 2, 2 >::run()));
             }
@@ -42,57 +45,47 @@ main()
 #endif
     }
     { // variant
-#if 0
+#if 1
         using ::versatile::variant;
-        using ::versatile::identity;
-        using ::test_variant::aggregate;
-        using ::test_variant::recursive_wrapper;
         {
-            using ::test_variant::check_common;
             assert ((check_common< identity,  variant >::run()));
             assert ((check_common< aggregate, variant >::run()));
         }
         {
-            using ::test_variant::test_perferct_forwarding;
-            {
-                using ::test_variant::common_type;
-                assert ((test_perferct_forwarding< common_type, variant, identity,          2, 2 >::run()));
-                assert ((test_perferct_forwarding< common_type, variant, aggregate,         2, 2 >::run()));
-                assert ((test_perferct_forwarding< common_type, variant, recursive_wrapper, 2, 2 >::run()));
-            }
+            assert ((test_perferct_forwarding< common_type, variant, identity,          2, 2 >::run()));
+            assert ((test_perferct_forwarding< common_type, variant, aggregate,         2, 2 >::run()));
+            assert ((test_perferct_forwarding< common_type, variant, recursive_wrapper, 2, 2 >::run()));
         }
 #endif
     }
     { // boost::variant
-        struct L {};
-        SA(std::is_literal_type< L >{});
-        SA(!std::is_literal_type< ::boost::variant< L > >{});
-#if 0
+        {
+            struct L {};
+            SA(std::is_literal_type< L >{});
+            SA(!std::is_literal_type< ::boost::variant< L > >{});
+        }
+#if 1
         using ::test_boost_variant::variant_i;
         using ::test_boost_variant::variant_c;
-        using ::versatile::identity;
         using ::test_boost_variant::boost_recursive_wrapper;
         {
-            using ::test_variant::test_perferct_forwarding;
             {
-                using ::test_variant::literal_type;
                 {
-                    assert ((test_perferct_forwarding< literal_type, variant_i, identity,  2, 2 >::run()));
+                    assert ((test_perferct_forwarding< literal_type, variant_i, identity,                2, 2 >::run()));
                     assert ((test_perferct_forwarding< literal_type, variant_c, boost_recursive_wrapper, 2, 2 >::run()));
                 }
                 {
-                    assert ((test_perferct_forwarding< literal_type, variant_i, identity,  2, 2 >::run()));
+                    assert ((test_perferct_forwarding< literal_type, variant_i, identity,                2, 2 >::run()));
                     assert ((test_perferct_forwarding< literal_type, variant_c, boost_recursive_wrapper, 2, 2 >::run()));
                 }
             }
             {
-                using ::test_variant::common_type;
                 {
-                    assert ((test_perferct_forwarding< common_type, variant_i, identity,  2, 2 >::run()));
+                    assert ((test_perferct_forwarding< common_type, variant_i, identity,                2, 2 >::run()));
                     assert ((test_perferct_forwarding< common_type, variant_c, boost_recursive_wrapper, 2, 2 >::run()));
                 }
                 {
-                    assert ((test_perferct_forwarding< common_type, variant_i, identity,  2, 2 >::run()));
+                    assert ((test_perferct_forwarding< common_type, variant_i, identity,                2, 2 >::run()));
                     assert ((test_perferct_forwarding< common_type, variant_c, boost_recursive_wrapper, 2, 2 >::run()));
                 }
             }
