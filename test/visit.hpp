@@ -215,8 +215,8 @@ subscript(array_type & _array, indices const &... _indices) noexcept
     return subscripter< array_type >{_array}(_indices...);
 }
 
-constexpr std::size_t type_qual_begin = static_cast< std::size_t >(type_qualifier_of< void * & >);
-constexpr std::size_t type_qual_end = static_cast< std::size_t >(type_qualifier_of< void * volatile & >);
+constexpr auto type_qual_begin = static_cast< std::size_t >(type_qualifier_of< void * & >);
+constexpr auto type_qual_end = static_cast< std::size_t >(type_qualifier_of< void * volatile & >);
 
 template< typename multivisitor, typename variants, typename result_type >
 struct fusor
