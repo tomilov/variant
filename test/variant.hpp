@@ -10,7 +10,7 @@
 #include <deque>
 #include <list>
 
-namespace test_variant
+namespace test
 {
 
 template< typename type >
@@ -2246,4 +2246,4 @@ public :
 
 };
 
-} // namespace test_variant
+} // namespace test

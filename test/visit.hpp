@@ -4,7 +4,7 @@
 
 #include <utility>
 
-namespace test_visit
+namespace test
 {
 
 template< typename F, std::size_t ...indices >
@@ -369,15 +369,15 @@ public :
     {
         constexpr auto i = std::make_index_sequence< M >{};
         constexpr auto j = std::make_index_sequence< N >{};
-        ASSERT (run< type_qualifier::value       >(i, j));
-        ASSERT (run< type_qualifier::const_value >(i, j));
-        ASSERT (run< type_qualifier::lref        >(i, j));
-        ASSERT (run< type_qualifier::rref        >(i, j));
-        ASSERT (run< type_qualifier::const_lref  >(i, j));
-        ASSERT (run< type_qualifier::const_rref  >(i, j));
+        CHECK (run< type_qualifier::value       >(i, j));
+        CHECK (run< type_qualifier::const_value >(i, j));
+        CHECK (run< type_qualifier::lref        >(i, j));
+        CHECK (run< type_qualifier::rref        >(i, j));
+        CHECK (run< type_qualifier::const_lref  >(i, j));
+        CHECK (run< type_qualifier::const_rref  >(i, j));
         return true;
     }
 
 };
 
-} // namespace test_variant
+} // namespace test

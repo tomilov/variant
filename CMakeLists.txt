@@ -1,20 +1,6 @@
 project(versatile)
 cmake_minimum_required(VERSION 2.8)
 
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    add_definitions(-DROWS=2 -DCOLS=2)
-elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
-    add_definitions(-DROWS=5 -DCOLS=5)
-elseif(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
-    add_definitions(-DROWS=5 -DCOLS=5)
-elseif(CMAKE_BUILD_TYPE STREQUAL "MinSizeRel")
-    add_definitions(-DROWS=5 -DCOLS=5)
-else()
-    message(STATUS "No build type selected, default to Debug")
-    set(CMAKE_BUILD_TYPE "Debug")
-    add_definitions(-DROWS=2 -DCOLS=2)
-endif()
-
 set(CMAKE_VERBOSE_MAKEFILE ON)
 set(CMAKE_COLOR_MAKEFILE   ON)
 
@@ -23,7 +9,7 @@ set(CMAKE_COLOR_MAKEFILE   ON)
 #set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
 
 set(CMAKE_CXX_COMPILER "clang++")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++1z -stdlib=libc++ -W -Weverything -Wmismatched-tags -pedantic -Wfatal-errors -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded -fconstexpr-steps=50000000 -ftemplate-backtrace-limit=0" )
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftime-report -std=gnu++1z -stdlib=libc++ -W -Weverything -Wmismatched-tags -pedantic -Wfatal-errors -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded -fconstexpr-steps=50000000 -ftemplate-backtrace-limit=0" )
 set(CMAKE_CXX_FLAGS_RELEASE        "-Ofast -DNDEBUG=1 -march=native")
 set(CMAKE_CXX_FLAGS_MINSIZEREL     "-Os -DNDEBUG=1 -march=native")
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -gline-tables-only -DNDEBUG=1 -march=native")
@@ -49,4 +35,7 @@ set(HEADERS
     "test/boost_variant.hpp"
 )
 
-add_executable( ${PROJECT_NAME} "test/test.cpp" ${HEADERS} )
+add_executable("versatile"     "test/versatile.cpp"     ${HEADERS})
+add_executable("variant"       "test/variant.cpp"       ${HEADERS})
+add_executable("boost_variant" "test/boost_variant.cpp" ${HEADERS})
+add_executable("eggs_variant"  "test/eggs_variant.cpp"  ${HEADERS})
