@@ -15,7 +15,7 @@ main()
     using ::test::common_type;
     using ::test::check_invariants;
     using ::test::check_trivial;
-    using ::test::check_common;
+    using ::test::check_destructible;
     using ::test::test_perferct_forwarding;
     { // versatile
         using ::versatile::versatile;
@@ -28,9 +28,9 @@ main()
             ASSERT ((check_trivial< aggregate, versatile >::run()));
         }
         {
-            assert ((check_common< identity,          versatile >::run()));
-            assert ((check_common< aggregate,         versatile >::run()));
-            assert ((check_common< recursive_wrapper, versatile >::run()));
+            assert ((check_destructible< identity,          versatile >::run()));
+            assert ((check_destructible< aggregate,         versatile >::run()));
+            assert ((check_destructible< recursive_wrapper, versatile >::run()));
         }
         {
             ASSERT ((test_perferct_forwarding< literal_type, versatile, identity,  2, 2 >::run()));

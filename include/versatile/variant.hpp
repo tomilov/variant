@@ -73,9 +73,21 @@ public :
         : storage_(visit(constructor{}, std::move(*_rhs.storage_)))
     { ; }
 
-    template< typename ...arguments >
-    variant(arguments &&... _arguments)
-        : storage_(std::make_unique< versatile >(std::forward< arguments >(_arguments)...))
+    variant() = default;
+
+    template< typename type >
+    variant(type && _value)
+        : storage_(std::make_unique< versatile >(std::forward< type >(_value)))
+    { ; }
+
+    template< std::size_t i, typename ...arguments >
+    variant(in_place_index< i >, arguments &&... _arguments)
+        : storage_(std::make_unique< versatile >(in_place_index< i >{}, std::forward< arguments >(_arguments)...))
+    { ; }
+
+    template< typename type, typename ...arguments >
+    variant(in_place_type< type >, arguments &&... _arguments)
+        : storage_(std::make_unique< versatile >(in_place_type< type >{}, std::forward< arguments >(_arguments)...))
     { ; }
 
     void
@@ -84,11 +96,18 @@ public :
         return storage_.swap(_other.storage_);
     }
 
-    template< typename ...arguments >
+    template< std::size_t i, typename ...arguments >
     void
     emplace(arguments &&... _arguments)
     {
-        return variant{std::forward< arguments >(_arguments)...}.swap(*this);
+        return variant{in_place_index< i >{}, std::forward< arguments >(_arguments)...}.swap(*this);
+    }
+
+    template< typename type, typename ...arguments >
+    void
+    emplace(arguments &&... _arguments)
+    {
+        return variant{in_place_type< type >{}, std::forward< arguments >(_arguments)...}.swap(*this);
     }
 
 private :
@@ -102,7 +121,7 @@ private :
         void
         operator () (type && _value) const
         {
-            static_cast< type & >(destination_) = std::forward< type >(_value);
+            static_cast< unwrap_type_t< type > & >(destination_) = std::forward< type >(_value);
         }
 
     };
@@ -117,7 +136,7 @@ public :
         if (which() == _rhs.which()) {
             visit(assigner{*storage_},  std::forward< type >(_rhs));
         } else {
-            emplace(std::forward< type >(_rhs));
+            variant(std::forward< type >(_rhs)).swap(*this);
         }
         return *this;
     }
@@ -154,7 +173,7 @@ public :
         if (active< decay_type >()) {
             static_cast< decay_type & >(*storage_) = std::forward< type >(_value);
         } else {
-            emplace(std::forward< type >(_value));
+            variant(std::forward< type >(_value)).swap(*this);
         }
         return *this;
     }

@@ -37,5 +37,5 @@ set(HEADERS
 
 add_executable("versatile"     "test/versatile.cpp"     ${HEADERS})
 add_executable("variant"       "test/variant.cpp"       ${HEADERS})
-add_executable("boost_variant" "test/boost_variant.cpp" ${HEADERS})
-add_executable("eggs_variant"  "test/eggs_variant.cpp"  ${HEADERS})
+#add_executable("boost_variant" "test/boost_variant.cpp" ${HEADERS})
+#add_executable("eggs_variant"  "test/eggs_variant.cpp"  ${HEADERS})
