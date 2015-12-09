@@ -1,5 +1,5 @@
 #include "versatile.hpp"
-#include "destructible.hpp"
+#include "utility.hpp"
 #include "wrappers.hpp"
 #include "visit.hpp"
 
@@ -14,6 +14,7 @@ main()
     using ::test::aggregate;
     using ::test::recursive_wrapper;
     using ::test::literal_type;
+    using ::test::check_indexing;
     using ::test::check_invariants;
     using ::test::check_triviality;
     using ::test::check_utility;
@@ -21,6 +22,11 @@ main()
     using ::test::perferct_forwarding;
     { // versatile
         using ::versatile::versatile;
+        {
+            ASSERT ((check_indexing< identity,          versatile >::run()));
+            ASSERT ((check_indexing< aggregate,         versatile >::run()));
+            assert ((check_indexing< recursive_wrapper, versatile >::run()));
+        }
         {
             ASSERT ((check_invariants< identity,  versatile >::run()));
             ASSERT ((check_invariants< aggregate, versatile >::run()));

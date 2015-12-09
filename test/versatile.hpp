@@ -2122,31 +2122,6 @@ class check_utility
         return true;
     }
 
-    template< std::size_t i >
-    struct I {};
-
-    template< typename >
-    struct check_indexing;
-
-    template< std::size_t ...i >
-    struct check_indexing< std::index_sequence< i... > >
-    {
-
-        using U = V< I< i >... >;
-
-        SA((is_active< I< i > >(U{I< i >{}}) && ...));
-        SA(((U{I< i >{}}.which() == (sizeof...(i) - 1 - i)) && ...));
-
-        constexpr
-        static
-        bool
-        run() noexcept
-        {
-            return true;
-        }
-
-    };
-
 public :
 
     CONSTEXPRF
@@ -2155,9 +2130,6 @@ public :
     run() noexcept
     {
         ASSERT (check_swap());
-        ASSERT (check_indexing< std::make_index_sequence< 1 > >::run());
-        ASSERT (check_indexing< std::make_index_sequence< 2 > >::run());
-        ASSERT (check_indexing< std::make_index_sequence< 5 > >::run());
         return true;
     }
 

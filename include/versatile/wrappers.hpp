@@ -51,8 +51,12 @@ struct unwrap_type< aggregate_wrapper< type > >
 };
 
 template< typename this_type >
-struct recursive_wrapper
+class recursive_wrapper
 {
+
+    std::unique_ptr< this_type > storage_;
+
+public :
 
     template< typename ...arguments,
               typename = decltype(::new (std::declval< void * >()) this_type(std::declval< arguments >()...)) >
@@ -77,10 +81,6 @@ struct recursive_wrapper
     {
         storage_.swap(_other.storage_);
     }
-
-private :
-
-    std::unique_ptr< this_type > storage_;
 
 };
 
