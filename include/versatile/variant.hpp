@@ -16,7 +16,10 @@ namespace versatile
 
 template< typename ...types >
 class variant
+        : enable_default_constructor_t< types... >
 {
+
+    using enabler = enable_default_constructor_t< types... >;
 
     using versatile = versatile< types... >;
     using storage_type = std::unique_ptr< versatile >; // `All problems in computer science can be solved by another level of indirection, except for the problem of too many layers of indirection.`
@@ -26,6 +29,7 @@ class variant
 public :
 
     using default_index = typename versatile::default_index;
+
     template< typename ...arguments >
     using index_of_constructible = typename versatile::template index_of_constructible< arguments... >;
 
@@ -62,40 +66,55 @@ private :
 public :
 
     variant(variant & _rhs)
-        : storage_(visit(constructor{}, *_rhs.storage_))
+        : enabler({})
+        , storage_(visit(constructor{}, *_rhs.storage_))
     { ; }
 
     variant(variant const & _rhs)
-        : storage_(visit(constructor{}, *_rhs.storage_))
+        : enabler({})
+        , storage_(visit(constructor{}, *_rhs.storage_))
     { ; }
 
     variant(variant && _rhs)
-        : storage_(visit(constructor{}, std::move(*_rhs.storage_)))
+        : enabler({})
+        , storage_(visit(constructor{}, std::move(*_rhs.storage_)))
     { ; }
 
     variant(variant const && _rhs)
-        : storage_(visit(constructor{}, std::move(*_rhs.storage_)))
+        : enabler({})
+        , storage_(visit(constructor{}, std::move(*_rhs.storage_)))
     { ; }
 
     variant()
-        : storage_(std::make_unique< versatile >())
+        : enabler({})
+        , storage_(std::make_unique< versatile >())
     { ; }
 
     template< typename type, typename index = index_at_t< type > >
     variant(type && _value)
-        : storage_(std::make_unique< versatile >(std::forward< type >(_value)))
+        : enabler({})
+        , storage_(std::make_unique< versatile >(std::forward< type >(_value)))
     { ; }
 
-    template< std::size_t i, typename ...arguments >
+    template< typename ...arguments, typename index = index_of_constructible< arguments... > >
     explicit
-    variant(in_place_t (&)(index_t< i >), arguments &&... _arguments)
-        : storage_(std::make_unique< versatile >(in_place< i >, std::forward< arguments >(_arguments)...))
+    variant(in_place_t (&)(), arguments &&... _arguments)
+        : enabler({})
+        , storage_(index{}, std::forward< arguments >(_arguments)...)
     { ; }
 
     template< typename type, typename ...arguments >
     explicit
     variant(in_place_t (&)(identity< type >), arguments &&... _arguments)
-        : storage_(std::make_unique< versatile >(in_place< type >, std::forward< arguments >(_arguments)...))
+        : enabler({})
+        , storage_(std::make_unique< versatile >(in_place< type >, std::forward< arguments >(_arguments)...))
+    { ; }
+
+    template< std::size_t i, typename ...arguments >
+    explicit
+    variant(in_place_t (&)(index_t< i >), arguments &&... _arguments)
+        : enabler({})
+        , storage_(std::make_unique< versatile >(in_place< i >, std::forward< arguments >(_arguments)...))
     { ; }
 
     void

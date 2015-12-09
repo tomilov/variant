@@ -40,4 +40,4 @@ add_executable("test_variant"       "test/variant.cpp"       ${HEADERS} "test/de
 add_executable("test_boost_variant" "test/boost_variant.cpp" ${HEADERS} "test/destructible.hpp" "test/visit.hpp" "test/boost_variant.hpp")
 add_executable("test_eggs_variant"  "test/eggs_variant.cpp"  ${HEADERS} "test/destructible.hpp" "test/visit.hpp" "test/eggs_variant.hpp")
 
-# for f in `ls build/test_*` ; do ls -lahF ./$f ; ./$f && echo -e "\e[1;32mSuccess! \e[0m $f" || echo -e "\e[1;31mFailure! \e[0m $f" ; done ;
+# for f in `ls build/test_*` ; do ls -lahF ./$f ; ./$f && echo -e "\e[1;32mSuccess! \e[0m$f" || echo -e "\e[1;31mFailure! \e[0m$f" ; done ;

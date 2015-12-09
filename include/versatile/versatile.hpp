@@ -503,12 +503,12 @@ public :
         , storage_(index{}, std::forward< type >(_value))
     { ; }
 
-    template< std::size_t i, typename ...arguments >
+    template< typename ...arguments, typename index = index_of_constructible< arguments... > >
     explicit
     constexpr
-    versatile(in_place_t (&)(index_t< i >), arguments &&... _arguments) noexcept(noexcept(::new (std::declval< void * >()) storage(index_t< i >{}, std::forward< arguments >(_arguments)...)))
+    versatile(in_place_t (&)(), arguments &&... _arguments) noexcept(noexcept(::new (std::declval< void * >()) storage(index{}, std::forward< arguments >(_arguments)...)))
         : enabler({})
-        , storage_(index_t< i >{}, std::forward< arguments >(_arguments)...)
+        , storage_(index{}, std::forward< arguments >(_arguments)...)
     { ; }
 
     template< typename type, typename index = index_at_t< type >, typename ...arguments >
@@ -517,6 +517,14 @@ public :
     versatile(in_place_t (&)(identity< type >), arguments &&... _arguments) noexcept(noexcept(::new (std::declval< void * >()) storage(index{}, std::forward< arguments >(_arguments)...)))
         : enabler({})
         , storage_(index{}, std::forward< arguments >(_arguments)...)
+    { ; }
+
+    template< std::size_t i, typename ...arguments >
+    explicit
+    constexpr
+    versatile(in_place_t (&)(index_t< i >), arguments &&... _arguments) noexcept(noexcept(::new (std::declval< void * >()) storage(index_t< i >{}, std::forward< arguments >(_arguments)...)))
+        : enabler({})
+        , storage_(index_t< i >{}, std::forward< arguments >(_arguments)...)
     { ; }
 
     template< typename type, typename index = index_at_t< type > >
