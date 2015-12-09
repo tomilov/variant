@@ -2,6 +2,7 @@
 
 #include "prologue.hpp"
 
+#include <type_traits>
 #include <utility>
 
 namespace test

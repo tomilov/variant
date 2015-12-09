@@ -2,6 +2,9 @@
 
 #include <versatile.hpp>
 
+#include <type_traits>
+#include <utility>
+
 namespace versatile
 { // little extension (candidates to include in library)
 
@@ -113,3 +116,117 @@ operator || (lhs && _lhs, rhs && _rhs) = delete;
 //#define CBRA {
 //#define CKET }
 #endif
+
+
+namespace test
+{
+
+template< typename type >
+struct aggregate
+        : ::versatile::identity< ::versatile::aggregate_wrapper< type > >
+{
+
+};
+
+template< typename type >
+struct recursive_wrapper
+        : ::versatile::identity< ::versatile::recursive_wrapper< type > >
+{
+
+};
+
+template< std::size_t I = 0 >
+struct literal_type
+{
+
+    std::size_t i = I;
+
+    CONSTEXPRF
+    operator std::size_t () const noexcept
+    {
+        return i;
+    }
+
+};
+
+SA(!std::is_trivially_default_constructible_v< literal_type<> >);
+SA(std::is_default_constructible_v< literal_type<> >);
+SA(std::is_literal_type_v< literal_type<> >);
+SA(std::is_trivially_copyable_v< literal_type<> >);
+
+template< std::size_t I = 0 >
+struct common_type
+{
+
+    std::size_t i = I;
+
+    CONSTEXPRF
+    operator std::size_t () const noexcept
+    {
+        return i;
+    }
+
+    common_type() { ; }
+    common_type(common_type const & c) : i(c.i) { ; }
+    common_type(common_type & c) : i(c.i) { ; }
+    common_type(common_type && c) : i(c.i) { ; }
+    common_type & operator = (common_type const & c) { i = c.i; return *this; }
+    common_type & operator = (common_type & c) { i = c.i; return *this; }
+    common_type & operator = (common_type && c) { i = c.i; return *this; }
+    ~common_type() { i = ~std::size_t{}; }
+
+};
+
+SA(!std::is_literal_type_v< common_type<> >);
+SA(!std::is_trivially_default_constructible_v< common_type<> >);
+SA(!std::is_trivially_destructible_v< common_type<> >);
+SA(!std::is_trivially_copy_constructible_v< common_type<> >);
+SA(!std::is_trivially_move_constructible_v< common_type<> >);
+SA(!std::is_trivially_copy_assignable_v< common_type<> >);
+SA(!std::is_trivially_move_assignable_v< common_type<> >);
+SA(std::is_default_constructible_v< common_type<> >);
+SA(std::is_destructible_v< common_type<> >);
+SA(std::is_copy_constructible_v< common_type<> >);
+SA(std::is_move_constructible_v< common_type<> >);
+SA(std::is_copy_assignable_v< common_type<> >);
+SA(std::is_move_assignable_v< common_type<> >);
+
+template< typename type >
+constexpr bool is_vcopy_constructible_v = std::is_constructible_v< type, type & >;
+
+template< typename type >
+constexpr bool is_cmove_constructible_v = std::is_constructible_v< type, type const && >;
+
+template< typename type >
+constexpr bool is_vcopy_assignable_v = std::is_assignable_v< type &, type & >;
+
+template< typename type >
+constexpr bool is_cmove_assignable_v = std::is_assignable_v< type &, type const && >;
+
+template< typename type >
+constexpr bool is_trivially_vcopy_constructible_v = std::is_trivially_constructible_v< type, type & >;
+
+template< typename type >
+constexpr bool is_trivially_cmove_constructible_v = std::is_trivially_constructible_v< type, type const && >;
+
+template< typename type >
+constexpr bool is_trivially_vcopy_assignable_v = std::is_trivially_assignable_v< type &, type & >;
+
+template< typename type >
+constexpr bool is_trivially_cmove_assignable_v = std::is_trivially_assignable_v< type &, type const && >;
+
+template< typename from, typename to >
+struct is_explicitly_convertible // akrzemi1's answer http://stackoverflow.com/a/16894048/1430927
+        : std::bool_constant< (std::is_constructible_v< to, from > && !std::is_convertible< from, to >::value) >
+{
+
+};
+
+using ::versatile::in_place_index;
+using ::versatile::in_place_type;
+
+using ::versatile::is_active;
+using ::versatile::forward_as;
+using ::versatile::get;
+
+} // namespace test

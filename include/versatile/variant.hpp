@@ -73,7 +73,9 @@ public :
         : storage_(visit(constructor{}, std::move(*_rhs.storage_)))
     { ; }
 
-    variant() = default;
+    variant()
+        : storage_(std::make_unique< versatile >())
+    { ; }
 
     template< typename type >
     variant(type && _value)

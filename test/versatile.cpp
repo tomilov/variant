@@ -1,7 +1,7 @@
 #include "traits.hpp"
-#include "variant.hpp"
+#include "destructible.hpp"
+#include "versatile.hpp"
 #include "visit.hpp"
-#include "boost_variant.hpp"
 
 #include <cstdlib>
 
@@ -12,7 +12,6 @@ main()
     using ::test::aggregate;
     using ::test::recursive_wrapper;
     using ::test::literal_type;
-    using ::test::common_type;
     using ::test::check_invariants;
     using ::test::check_trivial;
     using ::test::check_destructible;
@@ -843,10 +842,10 @@ main()
             int operator () (B, A) { return 2; }
             int operator () (B, B) { return 3; }
         } v;
-        using V = variant_i< boost::recursive_wrapper< A >, B >;
+        using V = variant_i< ::boost::recursive_wrapper< A >, B >;
         V a{A{}};
         assert(a.active< A >());
-        assert(a.active< boost::recursive_wrapper< A > >());
+        assert(a.active< ::boost::recursive_wrapper< A > >());
         V b{B{}};
         assert(b.active< B >());
         assert(multivisit(v, a, a) == 0);
@@ -864,12 +863,12 @@ main()
             int operator () (B, A) { return 2; }
             int operator () (B, B) { return 3; }
         } v;
-        using V = variant_c< A, boost::recursive_wrapper< B > >;
+        using V = variant_c< A, ::boost::recursive_wrapper< B > >;
         V a{A{}};
         assert(a.active< A >());
         V b{B{}};
         assert(b.active< B >());
-        assert(b.active< boost::recursive_wrapper< B > >());
+        assert(b.active< ::boost::recursive_wrapper< B > >());
         assert(multivisit(v, a, a) == 0);
         assert(multivisit(v, a, b) == 1);
         assert(multivisit(v, b, a) == 2);

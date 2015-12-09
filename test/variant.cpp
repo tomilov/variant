@@ -1,4 +1,4 @@
-#include "traits.hpp"
+#include "destructible.hpp"
 #include "variant.hpp"
 #include "visit.hpp"
 
@@ -10,12 +10,9 @@ main()
     using ::versatile::identity;
     using ::test::aggregate;
     using ::test::recursive_wrapper;
-    using ::test::literal_type;
     using ::test::common_type;
-    using ::test::check_invariants;
-    using ::test::check_trivial;
-    using ::test::check_destructible;
     using ::test::check_common;
+    using ::test::check_destructible;
     using ::test::test_perferct_forwarding;
     { // variant
         using ::versatile::variant;

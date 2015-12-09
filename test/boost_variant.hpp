@@ -4,6 +4,10 @@
 
 #include <boost/variant.hpp>
 
+#include <type_traits>
+#include <utility>
+#include <typeinfo>
+
 namespace test_boost_variant
 {
 
@@ -11,7 +15,7 @@ template< typename ...types >
 struct variant_c
 {
 
-    using variant = boost::variant< types... >;
+    using variant = ::boost::variant< types... >;
 
     template< typename type >
     using index_at_t = ::versatile::index_at_t< ::versatile::unwrap_type_t< type >, ::versatile::unwrap_type_t< types >..., void >;
@@ -67,7 +71,7 @@ struct variant_c
         if (!active< type >()) {
             throw std::bad_cast{};
         }
-        return boost::get< type >(member_);
+        return ::boost::get< type >(member_);
     }
 
     template< typename type, typename = index_at_t< type > >
@@ -78,7 +82,7 @@ struct variant_c
         if (!active< type >()) {
             throw std::bad_cast{};
         }
-        return boost::get< type >(member_);
+        return ::boost::get< type >(member_);
     }
 
 private :
@@ -113,10 +117,10 @@ get(variant_c< types... > & v) noexcept
 
 template< typename ...types >
 struct variant_i
-        : boost::variant< types... >
+        : ::boost::variant< types... >
 {
 
-    using base = boost::variant< types... >;
+    using base = ::boost::variant< types... >;
 
     template< typename type >
     using index_at_t = ::versatile::index_at_t< ::versatile::unwrap_type_t< type >, ::versatile::unwrap_type_t< types >..., void >;
@@ -175,7 +179,7 @@ struct variant_i
         if (!active< type >()) {
             throw std::bad_cast{};
         }
-        return boost::get< type >(static_cast< variant_i::base const & >(*this));
+        return ::boost::get< type >(static_cast< variant_i::base const & >(*this));
     }
 
     template< typename type, typename = index_at_t< type > >
@@ -186,7 +190,7 @@ struct variant_i
         if (!active< type >()) {
             throw std::bad_cast{};
         }
-        return boost::get< type >(static_cast< variant_i::base & >(*this));
+        return ::boost::get< type >(static_cast< variant_i::base & >(*this));
     }
 
 };
@@ -228,7 +232,7 @@ namespace versatile
 {
 
 template< typename type >
-struct unwrap_type< boost::recursive_wrapper< type > >
+struct unwrap_type< ::boost::recursive_wrapper< type > >
         : unwrap_type< type >
 {
 
@@ -245,15 +249,6 @@ template< typename first, typename ...rest >
 struct is_visitable< ::test_boost_variant::variant_c< first, rest... > >
         : std::true_type
 {
-
-};
-
-template< typename type >
-struct unwrap_type< std::reference_wrapper< type > >
-        : unwrap_type< type >
-{
-
-    SA(!std::is_const< type >{});
 
 };
 
