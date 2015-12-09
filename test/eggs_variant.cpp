@@ -1,4 +1,3 @@
-#include "destructible.hpp"
 #include "eggs_variant.hpp"
 #include "visit.hpp"
 
@@ -12,7 +11,6 @@ main()
     using ::test::recursive_wrapper;
     using ::test::literal_type;
     using ::test::common_type;
-    using ::test::check_destructible;
     using ::test::test_perferct_forwarding;
     { // eggs::variant
 

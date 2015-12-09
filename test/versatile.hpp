@@ -1909,18 +1909,18 @@ class check_trivial
             struct A { CONSTEXPRF A(X) { ; } };
             struct B { CONSTEXPRF B(Y) { ; } };
             using U = V< A, B >;
-            CONSTEXPR U a{in_place_type< A >{}, X{}};
+            CONSTEXPR U a{in_place< A >, X{}};
             ASSERT (is_active< A >(a));
-            CONSTEXPR U b{in_place_type< B >{}, Y{}};
+            CONSTEXPR U b{in_place< B >, Y{}};
             ASSERT (is_active< B >(b));
         }
         {
             struct A { CONSTEXPRF A(X) { ; } };
             struct B { CONSTEXPRF B(X) { ; } };
             using U = V< A, B >;
-            CONSTEXPR U a{in_place_type< A >{}, X{}};
+            CONSTEXPR U a{in_place< A >, X{}};
             ASSERT (is_active< A >(a));
-            CONSTEXPR U b{in_place_type< B >{}, X{}};
+            CONSTEXPR U b{in_place< B >, X{}};
             ASSERT (is_active< B >(b));
         }
         {
@@ -1928,18 +1928,18 @@ class check_trivial
             struct A { CONSTEXPRF A() = default; CONSTEXPRF A(B &&) { ; } };
             struct B { CONSTEXPRF B() = default; CONSTEXPRF B(A) { ; } };
             using U = V< A, B >;
-            CONSTEXPR U a{in_place_type< A >{}, B{}};
+            CONSTEXPR U a{in_place< A >, B{}};
             ASSERT (is_active< A >(a));
-            CONSTEXPR U b{in_place_type< B >{}, A{}};
+            CONSTEXPR U b{in_place< B >, A{}};
             ASSERT (is_active< B >(b));
         }
         {
             struct A { CONSTEXPRF A(X, Y) { ; } };
             struct B { CONSTEXPRF B(Y, X) { ; } };
             using U = V< A, B >;
-            CONSTEXPR U a{in_place_type< A >{}, X{}, Y{}};
+            CONSTEXPR U a{in_place< A >, X{}, Y{}};
             ASSERT (is_active< A >(a));
-            CONSTEXPR U b{in_place_type< B >{}, Y{}, X{}};
+            CONSTEXPR U b{in_place< B >, Y{}, X{}};
             ASSERT (is_active< B >(b));
         }
         return true;

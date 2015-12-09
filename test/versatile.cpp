@@ -1,6 +1,5 @@
-#include "traits.hpp"
-#include "destructible.hpp"
 #include "versatile.hpp"
+#include "destructible.hpp"
 #include "visit.hpp"
 
 #include <cstdlib>

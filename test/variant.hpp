@@ -706,18 +706,18 @@ class check_common
             struct A { A(X) { ; } };
             struct B { B(Y) { ; } };
             using U = V< A, B >;
-            U const a{in_place_type< A >{}, X{}};
+            U const a{in_place< A >, X{}};
             CHECK (is_active< A >(a));
-            U const b{in_place_type< B >{}, Y{}};
+            U const b{in_place< B >, Y{}};
             CHECK (is_active< B >(b));
         }
         {
             struct A { A(X) { ; } };
             struct B { B(X) { ; } };
             using U = V< A, B >;
-            U const a{in_place_type< A >{}, X{}};
+            U const a{in_place< A >, X{}};
             CHECK (is_active< A >(a));
-            U const b{in_place_type< B >{}, X{}};
+            U const b{in_place< B >, X{}};
             CHECK (is_active< B >(b));
         }
         {
@@ -725,18 +725,18 @@ class check_common
             struct A { A() = default; A(B &&) { ; } };
             struct B { B() = default; B(A) { ; } };
             using U = V< A, B >;
-            U const a{in_place_type< A >{}, B{}};
+            U const a{in_place< A >, B{}};
             CHECK (is_active< A >(a));
-            U const b{in_place_type< B >{}, A{}};
+            U const b{in_place< B >, A{}};
             CHECK (is_active< B >(b));
         }
         {
             struct A { A(X, Y) { ; } };
             struct B { B(Y, X) { ; } };
             using U = V< A, B >;
-            U const a{in_place_type< A >{}, X{}, Y{}};
+            U const a{in_place< A >, X{}, Y{}};
             CHECK (is_active< A >(a));
-            U const b{in_place_type< B >{}, Y{}, X{}};
+            U const b{in_place< B >, Y{}, X{}};
             CHECK (is_active< B >(b));
         }
         return true;

@@ -82,7 +82,7 @@ class check_destructible
             {
                 std::type_info const * d = nullptr;
                 {
-                    U u{in_place_type< B >{}};
+                    U u{in_place< B >};
                     CHECK (is_active< B >(u));
                     CHECK (static_cast< B & >(u).s_ == state::default_constructed);
                     static_cast< B & >(u).set(d);
@@ -94,7 +94,7 @@ class check_destructible
             {
                 std::type_info const * d = nullptr;
                 {
-                    U u{in_place_type< A >{}};
+                    U u{in_place< A >};
                     CHECK (is_active< A >(u));
                     CHECK (static_cast< A & >(u).s_ == state::default_constructed);
                     static_cast< A & >(u).set(d);

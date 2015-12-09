@@ -1,5 +1,5 @@
-#include "destructible.hpp"
 #include "variant.hpp"
+#include "destructible.hpp"
 #include "visit.hpp"
 
 #include <cstdlib>

@@ -222,8 +222,7 @@ struct is_explicitly_convertible // akrzemi1's answer http://stackoverflow.com/a
 
 };
 
-using ::versatile::in_place_index;
-using ::versatile::in_place_type;
+using ::versatile::in_place;
 
 using ::versatile::is_active;
 using ::versatile::forward_as;

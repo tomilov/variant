@@ -77,19 +77,19 @@ public :
         : storage_(std::make_unique< versatile >())
     { ; }
 
-    template< typename type >
+    template< typename type, typename index = index_at_t< type > >
     variant(type && _value)
         : storage_(std::make_unique< versatile >(std::forward< type >(_value)))
     { ; }
 
     template< std::size_t i, typename ...arguments >
-    variant(in_place_index< i >, arguments &&... _arguments)
-        : storage_(std::make_unique< versatile >(in_place_index< i >{}, std::forward< arguments >(_arguments)...))
+    variant(in_place_t (&)(index_t< i >), arguments &&... _arguments)
+        : storage_(std::make_unique< versatile >(in_place< i >, std::forward< arguments >(_arguments)...))
     { ; }
 
     template< typename type, typename ...arguments >
-    variant(in_place_type< type >, arguments &&... _arguments)
-        : storage_(std::make_unique< versatile >(in_place_type< type >{}, std::forward< arguments >(_arguments)...))
+    variant(in_place_t (&)(identity< type >), arguments &&... _arguments)
+        : storage_(std::make_unique< versatile >(in_place< type >, std::forward< arguments >(_arguments)...))
     { ; }
 
     void
@@ -102,14 +102,14 @@ public :
     void
     emplace(arguments &&... _arguments)
     {
-        return variant{in_place_index< i >{}, std::forward< arguments >(_arguments)...}.swap(*this);
+        return variant{in_place< i >, std::forward< arguments >(_arguments)...}.swap(*this);
     }
 
     template< typename type, typename ...arguments >
     void
     emplace(arguments &&... _arguments)
     {
-        return variant{in_place_type< type >{}, std::forward< arguments >(_arguments)...}.swap(*this);
+        return variant{in_place< type >, std::forward< arguments >(_arguments)...}.swap(*this);
     }
 
 private :
