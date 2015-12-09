@@ -95,7 +95,7 @@ public :
     explicit
     variant(in_place_t (&)(), arguments &&... _arguments)
         : enabler({})
-        , storage_(std::make_unique< versatile, in_place_t (&)() >(in_place, std::forward< arguments >(_arguments)...))
+        , storage_(std::make_unique< versatile >(static_cast< in_place_t (&)() >(in_place), std::forward< arguments >(_arguments)...))
     { ; }
 
     template< typename type, typename ...arguments >
