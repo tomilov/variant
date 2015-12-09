@@ -1095,7 +1095,7 @@ public :
 
 template< template< typename ... > class wrapper,
           template< typename ... > class variant >
-class check_trivial
+class check_triviality
 {
 
     template< typename ...types >

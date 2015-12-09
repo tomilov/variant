@@ -15,7 +15,7 @@ main()
     using ::test::recursive_wrapper;
     using ::test::literal_type;
     using ::test::check_invariants;
-    using ::test::check_trivial;
+    using ::test::check_triviality;
     using ::test::check_destructible;
     using ::test::test_perferct_forwarding;
     { // versatile
@@ -25,8 +25,8 @@ main()
             ASSERT ((check_invariants< aggregate, versatile >::run()));
         }
         {
-            ASSERT ((check_trivial< identity,  versatile >::run()));
-            ASSERT ((check_trivial< aggregate, versatile >::run()));
+            ASSERT ((check_triviality< identity,  versatile >::run()));
+            ASSERT ((check_triviality< aggregate, versatile >::run()));
         }
         {
             assert ((check_destructible< identity,          versatile >::run()));
@@ -42,8 +42,6 @@ main()
 }
 
 #if 0
-
-
 
 namespace versatile
 { // little extension (candidates to include in library)
@@ -89,7 +87,7 @@ operator || (lhs && _lhs, rhs && _rhs) = delete;
 namespace versatile
 {
 
-namespace testation
+namespace test
 {
 
 #pragma clang diagnostic push
