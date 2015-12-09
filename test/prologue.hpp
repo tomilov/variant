@@ -40,51 +40,6 @@
 namespace test
 {
 
-template< std::size_t = 0 >
-struct literal_type
-{
-
-    std::size_t state;
-
-};
-
-SA(std::is_trivially_default_constructible_v< literal_type<> >);
-SA(std::is_default_constructible_v< literal_type<> >);
-SA(std::is_literal_type_v< literal_type<> >);
-SA(std::is_trivially_copyable_v< literal_type<> >);
-
-template< std::size_t = 0 >
-struct common_type
-{
-
-    std::size_t state;
-
-    common_type(std::size_t const _state) : state(_state) { ; }
-    common_type() { ; }
-    common_type(common_type const & _rhs) : state(_rhs.state) { ; }
-    common_type(common_type & _rhs) : state(_rhs.state) { ; }
-    common_type(common_type && _rhs) : state(_rhs.state) { ; }
-    common_type & operator = (common_type const & _rhs) { state = _rhs.state; return *this; }
-    common_type & operator = (common_type & _rhs) { state = _rhs.state; return *this; }
-    common_type & operator = (common_type && _rhs) { state = _rhs.state; return *this; }
-    ~common_type() { state = ~std::size_t{}; }
-
-};
-
-SA(!std::is_literal_type_v< common_type<> >);
-SA(!std::is_trivially_default_constructible_v< common_type<> >);
-SA(!std::is_trivially_destructible_v< common_type<> >);
-SA(!std::is_trivially_copy_constructible_v< common_type<> >);
-SA(!std::is_trivially_move_constructible_v< common_type<> >);
-SA(!std::is_trivially_copy_assignable_v< common_type<> >);
-SA(!std::is_trivially_move_assignable_v< common_type<> >);
-SA(std::is_default_constructible_v< common_type<> >);
-SA(std::is_destructible_v< common_type<> >);
-SA(std::is_copy_constructible_v< common_type<> >);
-SA(std::is_move_constructible_v< common_type<> >);
-SA(std::is_copy_assignable_v< common_type<> >);
-SA(std::is_move_assignable_v< common_type<> >);
-
 template< typename type >
 constexpr bool is_vcopy_constructible_v = std::is_constructible_v< type, type & >;
 
@@ -118,5 +73,78 @@ struct is_explicitly_convertible // akrzemi1's answer http://stackoverflow.com/a
 
 template< typename from, typename to >
 constexpr bool is_explicitly_convertible_v = is_explicitly_convertible< from, to >::value;
+
+template< typename from, typename to >
+constexpr bool is_convertible_v = std::is_convertible< from, to >::value;
+
+template< std::size_t i = 0 >
+class literal_type
+{
+
+    std::size_t state;
+
+public :
+
+    CONSTEXPRF
+    std::size_t
+    get_state() const
+    {
+        assert(i == state);
+        return state;
+    }
+
+    CONSTEXPRF literal_type(std::size_t const _state) : state(_state) { assert(i == _state); }
+    literal_type() = default;
+
+};
+
+SA(std::is_literal_type_v< literal_type<> >);
+SA(std::is_trivial_v< literal_type<> >);
+
+template< std::size_t i = 0 >
+class common_type
+{
+
+    std::size_t state;
+
+public :
+
+    CONSTEXPRF
+    std::size_t
+    get_state() const
+    {
+        assert(i == state);
+        return state;
+    }
+
+    common_type(std::size_t const _state) : state(_state) { assert(i == _state); }
+    common_type() { ; }
+    common_type(common_type const & _rhs) : state(_rhs.state) { ; }
+    common_type(common_type & _rhs) : state(_rhs.state) { ; }
+    common_type(common_type && _rhs) : state(_rhs.state) { ; }
+    common_type & operator = (common_type const & _rhs) { state = _rhs.state; return *this; }
+    common_type & operator = (common_type & _rhs) { state = _rhs.state; return *this; }
+    common_type & operator = (common_type && _rhs) { state = _rhs.state; return *this; }
+    ~common_type() { state = ~std::size_t{}; }
+
+};
+
+SA(!std::is_literal_type_v< common_type<> >);
+SA(!std::is_trivially_default_constructible_v< common_type<> >);
+SA(!std::is_trivially_destructible_v< common_type<> >);
+SA(!std::is_trivially_copy_constructible_v< common_type<> >);
+SA(!is_trivially_vcopy_constructible_v< common_type<> >);
+SA(!std::is_trivially_move_constructible_v< common_type<> >);
+SA(!std::is_trivially_copy_assignable_v< common_type<> >);
+SA(!is_trivially_vcopy_assignable_v< common_type<> >);
+SA(!std::is_trivially_move_assignable_v< common_type<> >);
+SA(std::is_default_constructible_v< common_type<> >);
+SA(std::is_destructible_v< common_type<> >);
+SA(std::is_copy_constructible_v< common_type<> >);
+SA(is_vcopy_constructible_v< common_type<> >);
+SA(std::is_move_constructible_v< common_type<> >);
+SA(std::is_copy_assignable_v< common_type<> >);
+SA(is_vcopy_assignable_v< common_type<> >);
+SA(std::is_move_assignable_v< common_type<> >);
 
 } // namespace test

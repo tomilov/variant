@@ -155,7 +155,7 @@ struct multivisitor
     {
         //ASSERT (M == sizeof...(types));
         //ASSERT (!(is_visitable_v< types > || ...));
-        result_ = {{type_qualifier_of< multivisitor & >, type_qualifier_of< types && >...}, {which(), _values.state...}};
+        result_ = {{type_qualifier_of< multivisitor & >, type_qualifier_of< types && >...}, {which(), _values.get_state()...}};
         return static_cast< return_type >(result_);
     }
 
@@ -164,7 +164,7 @@ struct multivisitor
     return_type
     operator () (types &&... _values) const & noexcept
     {
-        result_ = {{type_qualifier_of< multivisitor const & >, type_qualifier_of< types && >...}, {which(), _values.state...}};
+        result_ = {{type_qualifier_of< multivisitor const & >, type_qualifier_of< types && >...}, {which(), _values.get_state()...}};
         return static_cast< return_type >(result_);
     }
 
@@ -173,7 +173,7 @@ struct multivisitor
     return_type
     operator () (types &&... _values) && noexcept
     {
-        result_ = {{type_qualifier_of< multivisitor && >, type_qualifier_of< types && >...}, {which(), _values.state...}};
+        result_ = {{type_qualifier_of< multivisitor && >, type_qualifier_of< types && >...}, {which(), _values.get_state()...}};
         return static_cast< return_type >(result_);
     }
 
@@ -182,7 +182,7 @@ struct multivisitor
     return_type
     operator () (types &&... _values) const && noexcept
     {
-        result_ = {{type_qualifier_of< multivisitor const && >, type_qualifier_of< types && >...}, {which(), _values.state...}};
+        result_ = {{type_qualifier_of< multivisitor const && >, type_qualifier_of< types && >...}, {which(), _values.get_state()...}};
         return static_cast< return_type >(result_);
     }
 
@@ -326,11 +326,11 @@ class perferct_forwarding
     {
         using multivisitor_type = multivisitor< M, type_qual >;
         typename multivisitor_type::result_type result_{};
-        using variant_type = variant< typename wrapper< type< j > >::type... >;
+        using variant_type = variant< typename wrapper< type< N - j > >::type... >;
         using result_type = multiarray_t< bool, qual_count_, (static_cast< void >(i), qual_count_)..., (static_cast< void >(i), N)... >;
         fusor< multivisitor_type, variant_type [M], result_type > fusor_{{{result_}, {}, 0, {}}};
         auto const enumerator_ = make_enumerator< qual_count_, (static_cast< void >(i), qual_count_)... >(fusor_.fuse_);
-        variant_type const variants_[N] = {type< j >{N - j}...};
+        variant_type const variants_[N] = {type< N - j >{N - j}...};
         CHECK (((variants_[j].which() == (N - j)) && ...));
         std::size_t indices[M] = {};
         for (;;) {

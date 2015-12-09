@@ -34,8 +34,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -W -Weverything -Wmismatched-tags -Wunin
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftemplate-backtrace-limit=0  -fconstexpr-backtrace-limit=0")
 
 #set(CMAKE_BUILD_TYPE "Debug")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -fno-inline -DDEBUG=1 -D_DEBUG=1 -D_GLIBCXX_DEBUG=1 -march=x86-64 -mtune=generic")
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set(CMAKE_CXX_FLAGS_DEBUG "-g -fno-inline -DDEBUG=1 -D_DEBUG=1 -D_GLIBCXX_DEBUG=1 -march=x86-64 -mtune=generic")
 elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
     set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -DNDEBUG=1 -march=native")
 elseif(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
@@ -69,7 +69,7 @@ set(HEADERS
 )
 
 #add_executable("test_traits"        "test/traits.cpp"        ${HEADERS} "test/traits.hpp")
-add_executable("test_versatile"     "test/versatile.cpp"     ${HEADERS} "test/utility.hpp" "test/visit.hpp" "test/wrappers.hpp" "test/versatile.hpp")
+#add_executable("test_versatile"     "test/versatile.cpp"     ${HEADERS} "test/utility.hpp" "test/visit.hpp" "test/wrappers.hpp" "test/versatile.hpp")
 add_executable("test_variant"       "test/variant.cpp"       ${HEADERS} "test/utility.hpp" "test/visit.hpp" "test/wrappers.hpp" "test/variant.hpp")
 #add_executable("test_boost_variant" "test/boost_variant.cpp" ${HEADERS} "test/utility.hpp" "test/visit.hpp" "test/boost_variant.hpp")
 #add_executable("test_eggs_variant"  "test/eggs_variant.cpp"  ${HEADERS} "test/utility.hpp" "test/visit.hpp" "test/eggs_variant.hpp")

@@ -1557,6 +1557,10 @@ class check_triviality
             SA(is_explicitly_convertible_v< U const, S >);
             SA(is_explicitly_convertible_v< U &, S >);
             SA(is_explicitly_convertible_v< U const &, S >);
+            SA(is_convertible_v< S, U >);
+            SA(is_convertible_v< S const, U >);
+            SA(is_convertible_v< S &, U >);
+            SA(is_convertible_v< S const &, U >);
             {
                 struct T {};
                 SA(!is_explicitly_convertible_v< U, T >); // SFINAE-disabled conversions
