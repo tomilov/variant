@@ -127,4 +127,7 @@ struct is_explicitly_convertible // akrzemi1's answer http://stackoverflow.com/a
 
 };
 
+template< typename from, typename to >
+constexpr bool is_explicitly_convertible_v = is_explicitly_convertible< from, to >::value;
+
 } // namespace test

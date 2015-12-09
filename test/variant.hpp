@@ -425,16 +425,16 @@ class check_common
             SA(is_vcopy_assignable_v< U >);
             SA(std::is_move_assignable_v< U >);
             SA(is_cmove_assignable_v< U >);
-            SA(is_explicitly_convertible< U, S >::value);
-            SA(is_explicitly_convertible< U const, S >::value);
-            SA(is_explicitly_convertible< U &, S >::value);
-            SA(is_explicitly_convertible< U const &, S >::value);
+            SA(is_explicitly_convertible_v< U, S >);
+            SA(is_explicitly_convertible_v< U const, S >);
+            SA(is_explicitly_convertible_v< U &, S >);
+            SA(is_explicitly_convertible_v< U const &, S >);
             {
                 struct T {};
-                SA(!is_explicitly_convertible< U, T >::value); // SFINAE-disabled conversions
-                SA(!is_explicitly_convertible< U const, T >::value); // SFINAE-disabled conversions
-                SA(!is_explicitly_convertible< U &, T >::value); // SFINAE-disabled conversions
-                SA(!is_explicitly_convertible< U const &, T >::value); // SFINAE-disabled conversions
+                SA(!is_explicitly_convertible_v< U, T >); // SFINAE-disabled conversions
+                SA(!is_explicitly_convertible_v< U const, T >); // SFINAE-disabled conversions
+                SA(!is_explicitly_convertible_v< U &, T >); // SFINAE-disabled conversions
+                SA(!is_explicitly_convertible_v< U const &, T >); // SFINAE-disabled conversions
             }
             {
                 U const v{};
