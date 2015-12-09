@@ -1,6 +1,6 @@
 #pragma once
 
-#include "utility.hpp"
+#include <versatile/type_traits.hpp>
 
 #include <type_traits>
 #include <utility>
@@ -10,16 +10,6 @@
 
 namespace versatile
 {
-
-template< typename type >
-struct is_visitable
-        : std::false_type
-{
-
-};
-
-template< typename type >
-constexpr bool is_visitable_v = is_visitable< type >::value;
 
 namespace details
 {
@@ -66,11 +56,11 @@ public :
     template< typename ...arguments >
     static
     constexpr
-    decltype(auto)
+    typename result_type< arguments... >::type
     caller(visitor & _visitor, visitable & _visitable, arguments &... _arguments)
     {
         assert(!(sizeof...(types) < _visitable.which()));
-        return callies_< arguments... >[sizeof...(types) - _visitable.which()](_visitor, _visitable, _arguments...);
+        return (0 < _visitable.which()) ? callies_< arguments... >[sizeof...(types) - _visitable.which()](_visitor, _visitable, _arguments...) : throw std::bad_cast{};
     }
 
 };

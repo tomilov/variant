@@ -147,40 +147,26 @@ struct get_index< false, rest... >
 
 };
 
+template< typename type >
+struct is_visitable
+        : std::false_type
+{
+
+};
+
+template< typename type >
+constexpr bool is_visitable_v = is_visitable< type >::value;
+
 template< bool ...values >
-using get_index_t = typename get_index< values... >::type;
-
-template< typename ...types >
-using index_of_default_constructible = get_index< std::is_default_constructible_v< types >... >;
-
-template< bool is_default_constructible >
-struct enable_default_constructor;
-
-template<>
-struct enable_default_constructor< true >
+using get_index_t = typename get_index< values... >::type;template< typename type >
+struct unwrap_type
+        : identity< type >
 {
-
-    enable_default_constructor() = default;
-
-    constexpr
-    enable_default_constructor(void *)
-    { ; }
 
 };
 
-template<>
-struct enable_default_constructor< false >
-{
+template< typename type >
+using unwrap_type_t = typename unwrap_type< std::decay_t< type > >::type;
 
-    enable_default_constructor() = delete;
-
-    constexpr
-    enable_default_constructor(void *)
-    { ; }
-
-};
-
-template< typename ...types >
-using enable_default_constructor_t = enable_default_constructor< (std::is_default_constructible_v< types > || ...) >;
 
 }

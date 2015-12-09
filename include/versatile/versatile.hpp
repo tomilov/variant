@@ -1,7 +1,6 @@
 #pragma once
 
-#include "visit.hpp"
-#include "in_place.hpp"
+#include <versatile/in_place.hpp>
 
 #include <type_traits>
 #include <utility>
@@ -192,13 +191,6 @@ public :
         return which_;
     }
 
-    using default_index = index_of_default_constructible< types... >;
-
-    constexpr
-    dispatcher()
-        : dispatcher(typename default_index::type{})
-    { ; }
-
     template< typename index, typename ...arguments >
     constexpr
     dispatcher(index, arguments &&... _arguments)
@@ -253,13 +245,6 @@ public :
         storage_.destructor(which_);
     }
 
-    using default_index = index_of_default_constructible< types... >;
-
-    constexpr
-    dispatcher()
-        : dispatcher(typename default_index::type{})
-    { ; }
-
     template< typename index, typename ...arguments >
     constexpr
     dispatcher(index, arguments &&... _arguments)
@@ -286,6 +271,36 @@ public :
 template< typename ...types >
 using dispatcher_t = dispatcher< (std::is_trivially_destructible_v< types > && ...), types... >;
 
+template< bool is_default_constructible >
+struct enable_default_constructor;
+
+template<>
+struct enable_default_constructor< true >
+{
+
+    enable_default_constructor() = default;
+
+    constexpr
+    enable_default_constructor(void *)
+    { ; }
+
+};
+
+template<>
+struct enable_default_constructor< false >
+{
+
+    enable_default_constructor() = delete;
+
+    constexpr
+    enable_default_constructor(void *)
+    { ; }
+
+};
+
+template< typename ...types >
+using enable_default_constructor_t = enable_default_constructor< (std::is_default_constructible_v< types > || ...) >;
+
 template< typename ...types >
 class versatile
         : enable_default_constructor_t< types... > // akrzemi1's technique
@@ -299,8 +314,6 @@ public :
 
     template< typename type >
     using index_at = index_at< unwrap_type_t< type >, unwrap_type_t< types >... >;
-
-    using default_index = typename storage::default_index;
 
     template< typename ...arguments >
     using index_of_constructible = get_index< std::is_constructible_v< types, arguments... >... >;
@@ -320,7 +333,10 @@ public :
         return (storage_.which() == index_at< type >::value);
     }
 
-    versatile() = default;
+    constexpr
+    versatile()
+        : versatile(in_place_v)
+    { ; }
 
     template< std::size_t i, typename ...arguments >
     explicit
@@ -356,30 +372,6 @@ public :
     operator = (type && _value) noexcept
     {
         return (*this = versatile(std::forward< type >(_value))); // http://stackoverflow.com/questions/33936295/
-    }
-
-    template< std::size_t i, typename ...arguments >
-    constexpr
-    void
-    emplace(arguments &&... _arguments)
-    {
-        *this = versatile(in_place< i >, std::forward< arguments >(_arguments)...);
-    }
-
-    template< typename type, typename ...arguments >
-    constexpr
-    void
-    emplace(arguments &&... _arguments)
-    {
-        *this = versatile(in_place< type >, std::forward< arguments >(_arguments)...);
-    }
-
-    template< typename ...arguments >
-    constexpr
-    void
-    emplace(arguments &&... _arguments)
-    {
-        *this = versatile(in_place_v, std::forward< arguments >(_arguments)...);
     }
 
     constexpr

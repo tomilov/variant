@@ -1,6 +1,6 @@
 #pragma once
 
-#include "type_traits.hpp"
+#include <versatile/type_traits.hpp>
 
 namespace versatile
 {

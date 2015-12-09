@@ -42,9 +42,9 @@ class check_indexing
         };
 
         template< std::size_t j >
-        using W = V< std::conditional_t< (i == j), S<>, N< i > >... >;
+        using W = V< std::conditional_t< (i < j), N< i >, S< i > >... >;
 
-        SA(((W< i >::default_index::value == (sizeof...(i) - i)) && ...));
+        SA(((W< i >::template index_of_constructible<>::value == (sizeof...(i) - i)) && ...));
 
         CONSTEXPRF
         static
@@ -53,6 +53,8 @@ class check_indexing
         {
             CHECK ((is_active< S< i > >(U{S< i >{}}) && ...));
             CHECK (((U{S< i >{}}.which() == (sizeof...(i) - i)) && ...));
+            CHECK ((is_active< S< i > >(W< i >{}) && ...));
+            CHECK (((W< i >{}.which() == (sizeof...(i) - i)) && ...));
             return true;
         }
 

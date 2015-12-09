@@ -1994,6 +1994,7 @@ class check_triviality
     bool
     emplace() noexcept
     {
+        using ::versatile::emplace;
         struct X {};
         struct Y {};
         struct Z {};
@@ -2003,11 +2004,11 @@ class check_triviality
             using U = V< Z, A, B >;
             U v{};
             CHECK (is_active< Z >(v));
-            v.template emplace< A >(X{});
+            emplace< A >(v, X{});
             CHECK (is_active< A >(v));
-            v.template emplace< B >(Y{});
+            emplace< B >(v, Y{});
             CHECK (is_active< B >(v));
-            v.template emplace< Z >();
+            emplace< Z >(v);
             CHECK (is_active< Z >(v));
         }
         {
@@ -2016,11 +2017,11 @@ class check_triviality
             using U = V< Z, A, B >;
             U v{};
             CHECK (is_active< Z >(v));
-            v.template emplace< A >(X{});
+            emplace< A >(v, X{});
             CHECK (is_active< A >(v));
-            v.template emplace< B >(X{});
+            emplace< B >(v, X{});
             CHECK (is_active< B >(v));
-            v.template emplace< Z >();
+            emplace< Z >(v);
             CHECK (is_active< Z >(v));
         }
         {
@@ -2030,11 +2031,11 @@ class check_triviality
             using U = V< Z, A, B >;
             U v{};
             CHECK (is_active< Z >(v));
-            v.template emplace< A >(B{});
+            emplace< A >(v, B{});
             CHECK (is_active< A >(v));
-            v.template emplace< B >(A{});
+            emplace< B >(v, A{});
             CHECK (is_active< B >(v));
-            v.template emplace< Z >();
+            emplace< Z >(v);
             CHECK (is_active< Z >(v));
         }
         {
@@ -2043,11 +2044,11 @@ class check_triviality
             using U = V< Z, A, B >;
             U v{};
             CHECK (is_active< Z >(v));
-            v.template emplace< A >(X{}, Y{});
+            emplace< A >(v, X{}, Y{});
             CHECK (is_active< A >(v));
-            v.template emplace< B >(Y{}, X{});
+            emplace< B >(v, Y{}, X{});
             CHECK (is_active< B >(v));
-            v.template emplace< Z >();
+            emplace< Z >(v);
             CHECK (is_active< Z >(v));
         }
         return true;

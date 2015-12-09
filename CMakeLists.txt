@@ -56,7 +56,8 @@ include_directories("include/")
 set(HEADERS
     "include/versatile/type_traits.hpp"
     "include/versatile/in_place.hpp"
-    "include/versatile/wrappers.hpp"
+    "include/versatile/recursive_wrapper.hpp"
+    "include/versatile/aggregate_wrapper.hpp"
     "include/versatile/versatile.hpp"
     "include/versatile/variant.hpp"
     "include/versatile/visit.hpp"
@@ -68,7 +69,7 @@ set(HEADERS
 )
 
 #add_executable("test_traits"        "test/traits.cpp"        ${HEADERS} "test/traits.hpp")
-#add_executable("test_versatile"     "test/versatile.cpp"     ${HEADERS} "test/utility.hpp" "test/visit.hpp" "test/wrappers.hpp" "test/versatile.hpp")
+add_executable("test_versatile"     "test/versatile.cpp"     ${HEADERS} "test/utility.hpp" "test/visit.hpp" "test/wrappers.hpp" "test/versatile.hpp")
 add_executable("test_variant"       "test/variant.cpp"       ${HEADERS} "test/utility.hpp" "test/visit.hpp" "test/wrappers.hpp" "test/variant.hpp")
 #add_executable("test_boost_variant" "test/boost_variant.cpp" ${HEADERS} "test/utility.hpp" "test/visit.hpp" "test/boost_variant.hpp")
 #add_executable("test_eggs_variant"  "test/eggs_variant.cpp"  ${HEADERS} "test/utility.hpp" "test/visit.hpp" "test/eggs_variant.hpp")

@@ -1,6 +1,7 @@
 #pragma once
 
-#include <versatile/wrappers.hpp>
+#include <versatile/recursive_wrapper.hpp>
+#include <versatile/aggregate_wrapper.hpp>
 
 namespace test
 {

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "versatile.hpp"
-#include "wrappers.hpp"
+#include <versatile/versatile.hpp>
+#include <versatile/recursive_wrapper.hpp>
 
 #include <type_traits>
 #include <utility>
@@ -38,8 +38,6 @@ public :
     template< typename type >
     using index_at = typename storage::template index_at< type >;
 
-    using default_index = typename storage::default_index;
-
     template< typename ...arguments >
     using index_of_constructible = typename storage::template index_of_constructible< arguments... >;
 
@@ -58,6 +56,12 @@ public :
 
 private :
 
+    explicit
+    variant(recursive_wrapper< storage > && _storage)
+        : enable_default_constructor_t< types... >({})
+        , storage_(std::move(_storage))
+    { ; }
+
     struct constructor
     {
 
@@ -69,12 +73,6 @@ private :
         }
 
     };
-
-    explicit
-    variant(recursive_wrapper< storage > && _storage)
-        : enable_default_constructor_t< types... >({})
-        , storage_(std::move(_storage))
-    { ; }
 
 public :
 
@@ -118,27 +116,6 @@ public :
     variant(in_place_t, arguments &&... _arguments)
         : variant(in_place< index >, std::forward< arguments >(_arguments)...)
     { ; }
-
-    template< std::size_t i, typename ...arguments >
-    void
-    emplace(arguments &&... _arguments)
-    {
-        variant{in_place< i >, std::forward< arguments >(_arguments)...}.swap(*this);
-    }
-
-    template< typename type, typename ...arguments >
-    void
-    emplace(arguments &&... _arguments)
-    {
-        variant{in_place< type >, std::forward< arguments >(_arguments)...}.swap(*this);
-    }
-
-    template< typename ...arguments >
-    void
-    emplace(arguments &&... _arguments)
-    {
-        variant{in_place_v, std::forward< arguments >(_arguments)...}.swap(*this);
-    }
 
     void
     swap(variant & _other) noexcept
