@@ -17,12 +17,12 @@ namespace test
 using ::versatile::is_active;
 
 template< template< typename ... > class wrapper,
-          template< typename ... > class variant >
+          template< typename ... > class versatile >
 class check_invariants
 {
 
     template< typename ...types >
-    using V = variant< typename wrapper< types >::type... >;
+    using V = versatile< typename wrapper< types >::type... >;
 
     struct trivial
     {
@@ -1094,12 +1094,12 @@ public :
 };
 
 template< template< typename ... > class wrapper,
-          template< typename ... > class variant >
+          template< typename ... > class versatile >
 class check_triviality
 {
 
     template< typename ...types >
-    using V = variant< typename wrapper< types >::type... >;
+    using V = versatile< typename wrapper< types >::type... >;
 
     CONSTEXPRF
     static
@@ -1182,7 +1182,7 @@ class check_triviality
         struct N {};
         SA(std::is_trivial_v< N >);
         {
-            using U = variant< S, N >;
+            using U = V< S, N >;
             SA(std::is_trivially_copy_constructible_v< U >);
             SA(is_trivially_vcopy_constructible_v< U >);
             SA(std::is_trivially_move_constructible_v< U >);
@@ -1241,7 +1241,7 @@ class check_triviality
             }
         }
         {
-            using U = variant< N, S >;
+            using U = V< N, S >;
             SA(std::is_trivially_copy_constructible_v< U >);
             SA(is_trivially_vcopy_constructible_v< U >);
             SA(std::is_trivially_move_constructible_v< U >);
@@ -1331,7 +1331,7 @@ class check_triviality
         struct N {};
         SA(std::is_trivial_v< N >);
         {
-            using U = variant< S, N >;
+            using U = V< S, N >;
             SA(std::is_trivially_copy_assignable_v< U >);
             SA(is_trivially_vcopy_assignable_v< U >);
             SA(std::is_trivially_move_assignable_v< U >);
@@ -1406,7 +1406,7 @@ class check_triviality
             }
         }
         {
-            using U = variant< N, S >;
+            using U = V< N, S >;
             SA(std::is_trivially_copy_assignable_v< U >);
             SA(is_trivially_vcopy_assignable_v< U >);
             SA(std::is_trivially_move_assignable_v< U >);
@@ -1536,7 +1536,7 @@ class check_triviality
         SA(std::is_move_assignable_v< S >              );
         SA(is_cmove_assignable_v< S >                  );
         {
-            using U = variant< S >;
+            using U = V< S >;
             SA(!std::is_trivially_copy_constructible_v< U >);
             SA(!is_trivially_vcopy_constructible_v< U >);
             SA(!std::is_trivially_move_constructible_v< U >);
@@ -1644,7 +1644,7 @@ class check_triviality
         struct N {};
         SA(std::is_trivial_v< N >);
         {
-            using U = variant< S, N >;
+            using U = V< S, N >;
             SA(!std::is_trivially_copy_constructible_v< U >);
             SA(!is_trivially_vcopy_constructible_v< U >); // ?
             SA(!std::is_trivially_move_constructible_v< U >);
@@ -1695,7 +1695,7 @@ class check_triviality
             }
         }
         {
-            using U = variant< N, S >;
+            using U = V< N, S >;
             SA(!std::is_trivially_copy_constructible_v< U >);
             SA(!is_trivially_vcopy_constructible_v< U >); // ?
             SA(!std::is_trivially_move_constructible_v< U >);
@@ -1786,7 +1786,7 @@ class check_triviality
         struct N {};
         SA(std::is_trivial_v< N >);
         {
-            using U = variant< S, N >;
+            using U = V< S, N >;
             SA(!std::is_trivially_copy_constructible_v< U >);
             SA(!is_trivially_vcopy_constructible_v< U >); // ?
             SA(!std::is_trivially_move_constructible_v< U >);
@@ -1845,7 +1845,7 @@ class check_triviality
             }
         }
         {
-            using U = variant< N, S >;
+            using U = V< N, S >;
             SA(!std::is_trivially_copy_constructible_v< U >);
             SA(!is_trivially_vcopy_constructible_v< U >);
             SA(!std::is_trivially_move_constructible_v< U >);
@@ -2073,15 +2073,13 @@ public :
 
 };
 
-
-
 template< template< typename ... > class wrapper,
-          template< typename ... > class variant >
+          template< typename ... > class versatile >
 class check_utility
 {
 
     template< typename ...types >
-    using V = variant< typename wrapper< types >::type... >;
+    using V = versatile< typename wrapper< types >::type... >;
 
     CONSTEXPRF
     static
@@ -2090,16 +2088,20 @@ class check_utility
     {
         using std::swap;
         {
-            struct A {};
-            struct B {};
+            struct A { int state; };
+            struct B { int state; };
             using U = V< A, B >;
-            U a = A{};
+            U a = A{1};
             CHECK (is_active< A >(a));
-            U b = B{};
+            U b = B{2};
             CHECK (is_active< B >(b));
+            CHECK (static_cast< A & >(a).state == 1);
+            CHECK (static_cast< B & >(b).state == 2);
             swap(a, b);
             CHECK (is_active< A >(b));
             CHECK (is_active< B >(a));
+            CHECK (static_cast< A & >(b).state == 1);
+            CHECK (static_cast< B & >(a).state == 2);
         }
         {
             struct A { int state; };
@@ -2120,6 +2122,31 @@ class check_utility
         return true;
     }
 
+    template< std::size_t i >
+    struct I {};
+
+    template< typename >
+    struct check_indexing;
+
+    template< std::size_t ...i >
+    struct check_indexing< std::index_sequence< i... > >
+    {
+
+        using U = V< I< i >... >;
+
+        SA((is_active< I< i > >(U{I< i >{}}) && ...));
+        SA(((U{I< i >{}}.which() == (sizeof...(i) - 1 - i)) && ...));
+
+        constexpr
+        static
+        bool
+        run() noexcept
+        {
+            return true;
+        }
+
+    };
+
 public :
 
     CONSTEXPRF
@@ -2128,6 +2155,9 @@ public :
     run() noexcept
     {
         ASSERT (check_swap());
+        ASSERT (check_indexing< std::make_index_sequence< 1 > >::run());
+        ASSERT (check_indexing< std::make_index_sequence< 2 > >::run());
+        ASSERT (check_indexing< std::make_index_sequence< 5 > >::run());
         return true;
     }
 

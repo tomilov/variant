@@ -40,32 +40,33 @@
 namespace test
 {
 
-template< std::size_t I = 0 >
+template< std::size_t = 0 >
 struct literal_type
 {
 
-    std::size_t state = I;
+    std::size_t state;
 
 };
 
-SA(!std::is_trivially_default_constructible_v< literal_type<> >);
+SA(std::is_trivially_default_constructible_v< literal_type<> >);
 SA(std::is_default_constructible_v< literal_type<> >);
 SA(std::is_literal_type_v< literal_type<> >);
 SA(std::is_trivially_copyable_v< literal_type<> >);
 
-template< std::size_t I = 0 >
+template< std::size_t = 0 >
 struct common_type
 {
 
-    std::size_t state = I;
+    std::size_t state;
 
+    common_type(std::size_t const _state) : state(_state) { ; }
     common_type() { ; }
-    common_type(common_type const & c) : state(c.state) { ; }
-    common_type(common_type & c) : state(c.state) { ; }
-    common_type(common_type && c) : state(c.state) { ; }
-    common_type & operator = (common_type const & c) { state = c.state; return *this; }
-    common_type & operator = (common_type & c) { state = c.state; return *this; }
-    common_type & operator = (common_type && c) { state = c.state; return *this; }
+    common_type(common_type const & _rhs) : state(_rhs.state) { ; }
+    common_type(common_type & _rhs) : state(_rhs.state) { ; }
+    common_type(common_type && _rhs) : state(_rhs.state) { ; }
+    common_type & operator = (common_type const & _rhs) { state = _rhs.state; return *this; }
+    common_type & operator = (common_type & _rhs) { state = _rhs.state; return *this; }
+    common_type & operator = (common_type && _rhs) { state = _rhs.state; return *this; }
     ~common_type() { state = ~std::size_t{}; }
 
 };

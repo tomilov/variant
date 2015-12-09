@@ -61,18 +61,17 @@ set(HEADERS
     "include/versatile/variant.hpp"
     "include/versatile/visit.hpp"
     "include/versatile/utility.hpp"
-    "include/versatile/compare.hpp"
     "include/versatile/io.hpp"
     "include/versatile.hpp"
 
     "test/prologue.hpp"
 )
 
-add_executable("test_traits"        "test/traits.cpp"        ${HEADERS} "test/traits.hpp")
-add_executable("test_versatile"     "test/versatile.cpp"     ${HEADERS} "test/destructible.hpp" "test/visit.hpp" "test/utility.hpp" "test/versatile.hpp")
-add_executable("test_variant"       "test/variant.cpp"       ${HEADERS} "test/destructible.hpp" "test/visit.hpp" "test/utility.hpp" "test/variant.hpp")
-add_executable("test_boost_variant" "test/boost_variant.cpp" ${HEADERS} "test/destructible.hpp" "test/visit.hpp" "test/boost_variant.hpp")
-add_executable("test_eggs_variant"  "test/eggs_variant.cpp"  ${HEADERS} "test/destructible.hpp" "test/visit.hpp" "test/eggs_variant.hpp")
+#add_executable("test_traits"        "test/traits.cpp"        ${HEADERS} "test/traits.hpp")
+add_executable("test_versatile"     "test/versatile.cpp"     ${HEADERS} "test/destructible.hpp" "test/visit.hpp" "test/wrappers.hpp" "test/versatile.hpp")
+#add_executable("test_variant"       "test/variant.cpp"       ${HEADERS} "test/destructible.hpp" "test/visit.hpp" "test/wrappers.hpp" "test/variant.hpp")
+#add_executable("test_boost_variant" "test/boost_variant.cpp" ${HEADERS} "test/destructible.hpp" "test/visit.hpp" "test/boost_variant.hpp")
+#add_executable("test_eggs_variant"  "test/eggs_variant.cpp"  ${HEADERS} "test/destructible.hpp" "test/visit.hpp" "test/eggs_variant.hpp")
 # for f in `ls build/test_*` ; do du -sh ./$f ; ./$f && echo -e "\e[1;32mSuccess! \e[0m$f" || echo -e "\e[1;31mFailure! \e[0m$f" ; done ;
 
 #[[

@@ -50,29 +50,37 @@ struct unwrap_type< aggregate_wrapper< type > >
 
 };
 
-template< typename type >
+template< typename this_type >
 struct recursive_wrapper
 {
 
     template< typename ...arguments,
-              typename = decltype(::new (std::declval< void * >()) type(std::declval< arguments >()...)) >
+              typename = decltype(::new (std::declval< void * >()) this_type(std::declval< arguments >()...)) >
     recursive_wrapper(arguments &&... _arguments)
-        : storage_(std::make_unique< type >(std::forward< arguments >(_arguments)...))
+        : storage_(std::make_unique< this_type >(std::forward< arguments >(_arguments)...))
     { ; }
 
+    template< typename type >
     operator type & () noexcept
     {
         return static_cast< type & >(*storage_);
     }
 
+    template< typename type >
     operator type const & () const noexcept
     {
         return static_cast< type const & >(*storage_);
     }
 
+    void
+    swap(recursive_wrapper & _other) noexcept
+    {
+        storage_.swap(_other.storage_);
+    }
+
 private :
 
-    std::unique_ptr< type > storage_;
+    std::unique_ptr< this_type > storage_;
 
 };
 

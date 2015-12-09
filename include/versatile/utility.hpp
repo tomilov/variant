@@ -26,28 +26,12 @@ is_active(visitable const & _visitable)
     return _visitable.template active< type >();
 }
 
-template< typename visitable, typename ...arguments >
-struct get_index_of_constructible;
-
-template< template< typename ...types > class visitable,
-          typename ...types,
-          typename ...arguments >
-struct get_index_of_constructible< visitable< types... >, arguments... >
-        : index_t< (sizeof...(types) - 1 - get_index< std::is_constructible_v< types, arguments... >... >::value) >
-{
-
-};
-
-template< typename visitable, typename ...arguments >
-using get_index_of_constructible_t = typename get_index_of_constructible< visitable, arguments... >::type;
-
 template< typename variant, typename ...arguments >
 constexpr
 variant
 make_variant(arguments &&... _arguments)
 {
-    using index = get_index_of_constructible< variant, arguments... >;
-    return variant{in_place< index::value >, std::forward< arguments >(_arguments)...};
+    return variant{in_place_v, std::forward< arguments >(_arguments)...};
 }
 
 namespace details

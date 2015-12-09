@@ -7,5 +7,4 @@
 #include "versatile/versatile.hpp"
 #include "versatile/variant.hpp"
 #include "versatile/utility.hpp"
-#include "versatile/compare.hpp"
 #include "versatile/io.hpp"

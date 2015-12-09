@@ -5,7 +5,7 @@
 
 #include <type_traits>
 #include <utility>
-#include <experimental/optional>
+#include <typeinfo>
 
 #include <cstddef>
 
@@ -311,21 +311,25 @@ class versatile
         : enable_default_constructor_t< types... > // akrzemi1's technique
 {
 
-    using enabler = enable_default_constructor_t< types... >;
     using storage = dispatcher_t< types... >;
 
     storage storage_;
 
-    template< typename type >
-    using index_at_t = index_at_t< unwrap_type_t< type >, unwrap_type_t< types >... >;
-
 public :
+
+    template< typename type >
+    using index_at = index_at< unwrap_type_t< type >, unwrap_type_t< types >... >;
+
+    using default_index = typename storage::default_index;
+
+    template< typename ...arguments >
+    using index_of_constructible = get_index< std::is_constructible_v< types, arguments... >... >;
 
     constexpr
     std::size_t
     which() const noexcept
     {
-        return (sizeof...(types) - 1 - storage_.which());
+        return storage_.which();
     }
 
     template< typename type >
@@ -333,76 +337,70 @@ public :
     bool
     active() const noexcept
     {
-        return (storage_.which() == index_at_t< type >::value);
+        return (storage_.which() == index_at< type >::value);
     }
 
     constexpr
     versatile() = default;
 
-    template< typename type, typename index = index_at_t< type > >
-    constexpr
-    versatile(type && _value)
-        : enabler({})
-        , storage_(index{}, std::forward< type >(_value))
-    { ; }
-
-    template< typename type, typename index = index_at_t< type >, typename ...arguments >
-    explicit
-    constexpr
-    versatile(in_place_t (&)(type), arguments &&... _arguments)
-        : enabler({})
-        , storage_(index{}, std::forward< arguments >(_arguments)...)
-    { ; }
-
     template< std::size_t i, typename ...arguments >
     explicit
     constexpr
     versatile(in_place_t (&)(index_t< i >), arguments &&... _arguments)
-        : enabler({})
-        , storage_(index_t< (sizeof...(types) - 1 - i) >{}, std::forward< arguments >(_arguments)...)
+        : enable_default_constructor_t< types... >({})
+        , storage_(index_t< i >{}, std::forward< arguments >(_arguments)...)
     { ; }
 
-    template< typename type, typename index = index_at_t< type > >
+    template< typename type, typename index = typename index_at< type >::type, typename ...arguments >
     explicit
     constexpr
-    operator type const & () const noexcept
-    {
-        return storage_;
-    }
+    versatile(in_place_t (&)(type), arguments &&... _arguments)
+        : versatile(in_place< index >, std::forward< arguments >(_arguments)...)
+    { ; }
 
-    template< typename type, typename index = index_at_t< type > >
+    template< typename type, typename index = typename index_at< type >::type >
+    constexpr
+    versatile(type && _value)
+        : versatile(in_place< index >, std::forward< type >(_value))
+    { ; }
+
+    template< typename ...arguments, typename index = typename index_of_constructible< arguments... >::type >
     explicit
     constexpr
-    operator type & () noexcept
-    {
-        return storage_;
-    }
+    versatile(in_place_t, arguments &&... _arguments)
+        : versatile(in_place< index >, std::forward< arguments >(_arguments)...)
+    { ; }
 
-    template< typename type, typename index = index_at_t< type > >
+    template< typename type, typename index = typename index_at< type >::type >
     constexpr
     versatile &
     operator = (type && _value) noexcept
     {
-        static_assert(std::is_trivially_assignable_v< versatile, versatile >, "all alternative types should be trivially move assignable");
         return (*this = versatile(std::forward< type >(_value))); // http://stackoverflow.com/questions/33936295/
     }
 
     template< std::size_t i, typename ...arguments >
     constexpr
     void
-    emplace(arguments &&... _arguments) noexcept
+    emplace(arguments &&... _arguments)
     {
-        static_assert(std::is_trivially_assignable_v< versatile, versatile >, "all alternative types should be trivially move assignable");
         *this = versatile(in_place< i >, std::forward< arguments >(_arguments)...);
     }
 
     template< typename type, typename ...arguments >
     constexpr
     void
-    emplace(arguments &&... _arguments) noexcept
+    emplace(arguments &&... _arguments)
     {
-        static_assert(std::is_trivially_assignable_v< versatile, versatile >, "all alternative types should be trivially move assignable");
         *this = versatile(in_place< type >, std::forward< arguments >(_arguments)...);
+    }
+
+    template< typename ...arguments >
+    constexpr
+    void
+    emplace(arguments &&... _arguments)
+    {
+        *this = versatile(in_place_v, std::forward< arguments >(_arguments)...);
     }
 
     constexpr
@@ -414,6 +412,22 @@ public :
         *this = std::move(other_);
     }
 
+    template< typename type, typename index = typename index_at< type >::type >
+    explicit
+    constexpr
+    operator type const & () const
+    {
+        return active< type >() ? storage_ : throw std::bad_cast{};
+    }
+
+    template< typename type, typename index = typename index_at< type >::type >
+    explicit
+    constexpr
+    operator type & ()
+    {
+        return active< type >() ? storage_ : throw std::bad_cast{};
+    }
+
 };
 
 template< typename first, typename ...rest >
@@ -423,10 +437,10 @@ struct is_visitable< versatile< first, rest... > >
 
 };
 
-template< typename ...types >
+template< typename first, typename ...rest >
 constexpr
 void
-swap(versatile< types... > & _lhs, versatile< types... > & _rhs) noexcept
+swap(versatile< first, rest... > & _lhs, versatile< first, rest... > & _rhs) noexcept
 {
     _lhs.swap(_rhs);
 }

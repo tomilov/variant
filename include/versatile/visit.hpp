@@ -63,7 +63,7 @@ public :
     caller(visitor & _visitor, visitable & _visitable, arguments &... _arguments)
     {
         assert(_visitable.which() < sizeof...(types));
-        return callies_< arguments... >[_visitable.which()](_visitor, _visitable, _arguments...);
+        return callies_< arguments... >[sizeof...(types) - 1 - _visitable.which()](_visitor, _visitable, _arguments...);
     }
 
 };
@@ -81,7 +81,7 @@ decltype(auto)
 visit(visitor && _visitor, visitable && _visitable, arguments &&... _arguments)
 {
     using decay_type = unwrap_type_t< visitable >;
-    static_assert(is_visitable_v< decay_type >, "second argument must be only visitable");
+    static_assert(is_visitable_v< decay_type >, "second argument should be visitable");
     return details::dispatcher< type_qualifier_of< visitable && >, visitor, decay_type >::template caller< arguments... >(_visitor, _visitable, _arguments...);
 }
 
@@ -229,7 +229,7 @@ visit(visitor && _visitor) noexcept(std::is_lvalue_reference_v< visitor > || std
 }
 
 template< typename visitable, typename ...arguments >
-constexpr // lambda not constexpr yet
+constexpr // lambda is not constexpr yet
 decltype(auto)
 invoke(visitable && _visitable, arguments &&... _arguments)
 {
