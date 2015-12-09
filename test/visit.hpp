@@ -2,6 +2,9 @@
 
 #include "prologue.hpp"
 
+#include <versatile/visit.hpp>
+#include <versatile/utility.hpp>
+
 #include <type_traits>
 #include <utility>
 
@@ -312,8 +315,8 @@ constexpr std::size_t ref_count_ = (type_qual_end - type_qual_begin);
 // wrapper - wrapper for alternative (bounded) types
 // M - multivisitor arity, N - number of alternative (bounded) types
 template< template< std::size_t I > class type,
-          template< typename ...types > class variant = ::versatile::versatile,
-          template< typename ...types > class wrapper = ::versatile::identity,
+          template< typename ...types > class variant,
+          template< typename ...types > class wrapper,
           std::size_t M = 2, std::size_t N = M >
 class test_perferct_forwarding
 {

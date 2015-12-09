@@ -2,6 +2,8 @@
 
 #include "prologue.hpp"
 
+#include <versatile/type_traits.hpp>
+
 #include <type_traits>
 
 namespace test_traits

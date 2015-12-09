@@ -1,6 +1,9 @@
 #include "versatile.hpp"
 #include "destructible.hpp"
+#include "utility.hpp"
 #include "visit.hpp"
+
+#include <versatile/versatile.hpp>
 
 #include <cstdlib>
 
@@ -39,6 +42,40 @@ main()
 }
 
 #if 0
+
+
+
+namespace versatile
+{ // little extension (candidates to include in library)
+
+// value_or
+template< typename lhs, typename rhs,
+          typename result_type = unwrap_type_t< rhs > >
+constexpr
+std::enable_if_t< (is_visitable_v< unwrap_type_t< lhs > > && !is_visitable_v< result_type >), result_type >
+operator || (lhs && _lhs, rhs && _rhs) noexcept
+{
+    if (_lhs.template active< result_type >()) {
+        return static_cast< result_type >(std::forward< lhs >(_lhs));
+    } else {
+        return std::forward< rhs >(_rhs);
+    }
+}
+
+template< typename lhs, typename rhs,
+          typename result_type = unwrap_type_t< lhs > >
+constexpr
+std::enable_if_t< (!is_visitable_v< result_type > && is_visitable_v< unwrap_type_t< rhs > >), result_type >
+operator || (lhs && _lhs, rhs && _rhs) noexcept
+{
+    return (std::forward< rhs >(_rhs) || std::forward< lhs >(_lhs));
+}
+
+template< typename lhs, typename rhs >
+std::enable_if_t< (is_visitable_v< unwrap_type_t< lhs > > && is_visitable_v< unwrap_type_t< rhs > >) >
+operator || (lhs && _lhs, rhs && _rhs) = delete;
+
+} // namespace versatile
 
 
 #ifndef COLS

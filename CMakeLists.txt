@@ -16,6 +16,8 @@ set(CMAKE_CXX_FLAGS_MINSIZEREL     "-Os -DNDEBUG=1 -march=native")
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -gline-tables-only -DNDEBUG=1 -march=native")
 set(CMAKE_CXX_FLAGS_DEBUG          "-g -fno-inline -DDEBUG=1 -D_DEBUG=1 -D_GLIBCXX_DEBUG=1 -march=x86-64 -mtune=generic")
 
+set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "") # suppress -rdynamic flag
+
 include_directories("include/")
 set(HEADERS
     "include/versatile/type_traits.hpp"
@@ -24,6 +26,7 @@ set(HEADERS
     "include/versatile/versatile.hpp"
     "include/versatile/variant.hpp"
     "include/versatile/visit.hpp"
+    "include/versatile/utility.hpp"
     "include/versatile/compare.hpp"
     "include/versatile/io.hpp"
     "include/versatile.hpp"
@@ -32,7 +35,9 @@ set(HEADERS
 )
 
 add_executable("test_traits"        "test/traits.cpp"        ${HEADERS} "test/traits.hpp")
-add_executable("test_versatile"     "test/versatile.cpp"     ${HEADERS} "test/destructible.hpp" "test/visit.hpp" "test/versatile.hpp")
-add_executable("test_variant"       "test/variant.cpp"       ${HEADERS} "test/destructible.hpp" "test/visit.hpp" "test/variant.hpp")
+add_executable("test_versatile"     "test/versatile.cpp"     ${HEADERS} "test/destructible.hpp" "test/visit.hpp" "test/utility.hpp" "test/versatile.hpp")
+add_executable("test_variant"       "test/variant.cpp"       ${HEADERS} "test/destructible.hpp" "test/visit.hpp" "test/utility.hpp" "test/variant.hpp")
 add_executable("test_boost_variant" "test/boost_variant.cpp" ${HEADERS} "test/destructible.hpp" "test/visit.hpp" "test/boost_variant.hpp")
 add_executable("test_eggs_variant"  "test/eggs_variant.cpp"  ${HEADERS} "test/destructible.hpp" "test/visit.hpp" "test/eggs_variant.hpp")
+
+# for f in `ls build/test_*` ; do ls -lahF ./$f ; ./$f && echo -e "\e[1;32mSuccess! \e[0m $f" || echo -e "\e[1;31mFailure! \e[0m $f" ; done ;

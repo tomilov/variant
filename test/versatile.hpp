@@ -2,6 +2,8 @@
 
 #include "prologue.hpp"
 
+#include <versatile/utility.hpp>
+
 #include <type_traits>
 #include <utility>
 #include <string>
@@ -12,8 +14,10 @@
 namespace test
 {
 
-template< template< typename ... > class wrapper = ::versatile::identity,
-          template< typename ... > class variant = ::versatile::versatile >
+using ::versatile::is_active;
+
+template< template< typename ... > class wrapper,
+          template< typename ... > class variant >
 class check_invariants
 {
 
@@ -1089,8 +1093,8 @@ public :
 
 };
 
-template< template< typename ... > class wrapper = ::versatile::identity,
-          template< typename ... > class variant = ::versatile::versatile >
+template< template< typename ... > class wrapper,
+          template< typename ... > class variant >
 class check_trivial
 {
 
@@ -1903,6 +1907,7 @@ class check_trivial
     bool
     in_place_constructible() noexcept
     {
+        using ::versatile::in_place;
         struct X {};
         struct Y {};
         {

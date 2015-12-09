@@ -27,22 +27,6 @@ struct identity< first, rest... >
 template< std::size_t i >
 using index_t = std::integral_constant< std::size_t, i >;
 
-struct in_place_t {};
-
-template< typename type >
-in_place_t
-in_place(identity< type > = {})
-{
-    return {};
-}
-
-template< std::size_t i >
-in_place_t
-in_place(index_t< i > = {})
-{
-    return {};
-}
-
 enum class type_qualifier
 {
     value,

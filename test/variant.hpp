@@ -2,14 +2,18 @@
 
 #include "prologue.hpp"
 
+#include <versatile/utility.hpp>
+
 #include <type_traits>
 #include <utility>
 
 namespace test
 {
 
-template< template< typename ... > class wrapper = ::versatile::identity,
-          template< typename ... > class variant = ::versatile::variant >
+using ::versatile::is_active;
+
+template< template< typename ... > class wrapper,
+          template< typename ... > class variant >
 class check_common
 {
 
@@ -700,6 +704,7 @@ class check_common
     bool
     in_place_constructible() noexcept
     {
+        using ::versatile::in_place;
         struct X {};
         struct Y {};
         {

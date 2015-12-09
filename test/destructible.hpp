@@ -7,8 +7,8 @@
 namespace test
 {
 
-template< template< typename ... > class wrapper = ::versatile::identity,
-          template< typename ... > class variant = ::versatile::versatile >
+template< template< typename ... > class wrapper,
+          template< typename ... > class variant >
 class check_destructible
 {
 
@@ -37,6 +37,7 @@ class check_destructible
     bool
     destructible() noexcept
     {
+        using ::versatile::in_place;
         struct A
         {
             state s_;

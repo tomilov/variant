@@ -25,6 +25,10 @@ class variant
 
 public :
 
+    using default_index = typename versatile::default_index;
+    template< typename ...arguments >
+    using index_of_constructible = typename versatile::template index_of_constructible< arguments... >;
+
     std::size_t
     which() const noexcept
     {
@@ -83,11 +87,13 @@ public :
     { ; }
 
     template< std::size_t i, typename ...arguments >
+    explicit
     variant(in_place_t (&)(index_t< i >), arguments &&... _arguments)
         : storage_(std::make_unique< versatile >(in_place< i >, std::forward< arguments >(_arguments)...))
     { ; }
 
     template< typename type, typename ...arguments >
+    explicit
     variant(in_place_t (&)(identity< type >), arguments &&... _arguments)
         : storage_(std::make_unique< versatile >(in_place< type >, std::forward< arguments >(_arguments)...))
     { ; }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "visit.hpp"
+#include "in_place.hpp"
 
 #include <type_traits>
 #include <utility>
@@ -471,6 +472,9 @@ public :
 
     using default_index = typename storage::default_index;
 
+    template< typename ...arguments >
+    using index_of_constructible = get_index< std::is_constructible_v< types, arguments... >... >;
+
     constexpr
     std::size_t
     which() const noexcept
@@ -500,6 +504,7 @@ public :
     { ; }
 
     template< std::size_t i, typename ...arguments >
+    explicit
     constexpr
     versatile(in_place_t (&)(index_t< i >), arguments &&... _arguments) noexcept(noexcept(::new (std::declval< void * >()) storage(index_t< i >{}, std::forward< arguments >(_arguments)...)))
         : enabler({})
@@ -507,6 +512,7 @@ public :
     { ; }
 
     template< typename type, typename index = index_at_t< type >, typename ...arguments >
+    explicit
     constexpr
     versatile(in_place_t (&)(identity< type >), arguments &&... _arguments) noexcept(noexcept(::new (std::declval< void * >()) storage(index{}, std::forward< arguments >(_arguments)...)))
         : enabler({})
