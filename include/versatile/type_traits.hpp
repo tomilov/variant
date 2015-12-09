@@ -79,14 +79,14 @@ template< typename from, typename to >
 using copy_cv_reference_t = add_type_qualifier_t< type_qualifier_of< from >, to >;
 
 template< typename type, typename ...types >
-struct index_at
+struct index_at // 1-based right-to-left index of leftmost matched type
 {
 
 };
 
 template< typename type, typename ...rest >
 struct index_at< type, type, rest... >
-        : index_t< sizeof...(rest) >
+        : index_t< (1 + sizeof...(rest)) >
 {
 
 };
@@ -102,13 +102,13 @@ template< typename type, typename ...types >
 using index_at_t = typename index_at< type, types... >::type;
 
 template< std::size_t i, typename ...types >
-struct at_index
+struct at_index // index interpreted as 1-based right-to-left
 {
 
 };
 
 template< typename first, typename ...rest >
-struct at_index< sizeof...(rest), first, rest... >
+struct at_index< (1 + sizeof...(rest)), first, rest... >
     : identity< first >
 {
 
@@ -125,7 +125,7 @@ template< std::size_t i, typename ...types >
 using at_index_t = typename at_index< i, types... >::type;
 
 template< bool ...values >
-struct get_index;
+struct get_index; // 1-based right-to-left index of leftmost true
 
 template<>
 struct get_index<>
@@ -135,7 +135,7 @@ struct get_index<>
 
 template< bool ...rest >
 struct get_index< true, rest... >
-        : index_t< sizeof...(rest) >
+        : index_t< (1 + sizeof...(rest)) >
 {
 
 };
@@ -160,11 +160,10 @@ template<>
 struct enable_default_constructor< true >
 {
 
-    constexpr
     enable_default_constructor() = default;
 
     constexpr
-    enable_default_constructor(void *) noexcept
+    enable_default_constructor(void *)
     { ; }
 
 };
@@ -173,11 +172,10 @@ template<>
 struct enable_default_constructor< false >
 {
 
-    constexpr
     enable_default_constructor() = delete;
 
     constexpr
-    enable_default_constructor(void *) noexcept
+    enable_default_constructor(void *)
     { ; }
 
 };

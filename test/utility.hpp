@@ -30,8 +30,8 @@ class check_indexing
 
         using U = V< S< i >... >;
 
-        SA(((U::template index_at< S< i > >::value == (sizeof...(i) - 1 - i)) && ...));
-        SA(((U::template index_of_constructible< S< i > >::value == (sizeof...(i) - 1 - i)) && ...));
+        SA(((U::template index_at< S< i > >::value == (sizeof...(i) - i)) && ...));
+        SA(((U::template index_of_constructible< S< i > >::value == (sizeof...(i) - i)) && ...));
 
         template< std::size_t = 0 >
         struct N
@@ -44,7 +44,7 @@ class check_indexing
         template< std::size_t j >
         using W = V< std::conditional_t< (i == j), S<>, N< i > >... >;
 
-        SA(((W< i >::default_index::value == (sizeof...(i) - 1 - i)) && ...));
+        SA(((W< i >::default_index::value == (sizeof...(i) - i)) && ...));
 
         CONSTEXPRF
         static
@@ -52,7 +52,7 @@ class check_indexing
         run() noexcept
         {
             CHECK ((is_active< S< i > >(U{S< i >{}}) && ...));
-            CHECK (((U{S< i >{}}.which() == (sizeof...(i) - 1 - i)) && ...));
+            CHECK (((U{S< i >{}}.which() == (sizeof...(i) - i)) && ...));
             return true;
         }
 
@@ -80,49 +80,6 @@ class check_destructible
 
     template< typename ...types >
     using V = visitable< typename wrapper< types >::type... >;
-
-    template< typename >
-    struct check_indexing;
-
-    template< std::size_t ...i >
-    struct check_indexing< std::index_sequence< i... > >
-    {
-
-        template< std::size_t = 0 >
-        struct S
-        {
-
-        };
-
-        using U = V< S< i >... >;
-
-        SA(((U::template index_at< S< i > >::value == (sizeof...(i) - 1 - i)) && ...));
-        SA(((U::template index_of_constructible< S< i > >::value == (sizeof...(i) - 1 - i)) && ...));
-
-        template< std::size_t = 0 >
-        struct N
-        {
-
-            N() = delete;
-
-        };
-
-        template< std::size_t j >
-        using W = V< std::conditional_t< (i == j), S<>, N< i > >... >;
-
-        SA(((W< i >::default_index::value == (sizeof...(i) - 1 - i)) && ...));
-
-        CONSTEXPR
-        static
-        bool
-        run() noexcept
-        {
-            CHECK ((is_active< S< i > >(U{S< i >{}}) && ...));
-            CHECK (((U{S< i >{}}.which() == (sizeof...(i) - 1 - i)) && ...));
-            return true;
-        }
-
-    };
 
     enum class state
     {

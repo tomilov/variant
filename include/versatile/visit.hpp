@@ -39,10 +39,17 @@ class dispatcher< type_qual, visitor, decay_type< types... > >
 
     using first = qualify_type_t< typename identity< types... >::type >;
 
+    template< typename ...arguments >
+    struct result_type // wrap to establish type-id to suppress re-deducing of result type when callee instantiated for all the types...
+            : identity< decltype(std::declval< visitor >()(std::declval< first >(), std::declval< arguments >()...)) >
+    {
+
+    };
+
     template< typename type, typename ...arguments >
     static
     constexpr
-    decltype(std::declval< visitor >()(std::declval< first >(), std::declval< arguments >()...))
+    typename result_type< arguments... >::type
     callee(visitor & _visitor, visitable & _visitable, arguments &... _arguments)
     {
         return std::forward< visitor >(_visitor)(static_cast< type >(static_cast< type & >(_visitable)), std::forward< arguments >(_arguments)...);
@@ -62,8 +69,8 @@ public :
     decltype(auto)
     caller(visitor & _visitor, visitable & _visitable, arguments &... _arguments)
     {
-        assert(_visitable.which() < sizeof...(types));
-        return callies_< arguments... >[sizeof...(types) - 1 - _visitable.which()](_visitor, _visitable, _arguments...);
+        assert(!(sizeof...(types) < _visitable.which()));
+        return callies_< arguments... >[sizeof...(types) - _visitable.which()](_visitor, _visitable, _arguments...);
     }
 
 };

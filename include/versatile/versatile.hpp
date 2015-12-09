@@ -42,12 +42,11 @@ class destructor_dispatcher< true, first, rest... >
 
 public :
 
-    constexpr
     destructor_dispatcher() = default;
 
     template< typename ...arguments >
     constexpr
-    destructor_dispatcher(index_t< sizeof...(rest) >, arguments &&... _arguments)
+    destructor_dispatcher(index_t< (1 + sizeof...(rest)) >, arguments &&... _arguments)
         : head_(std::forward< arguments >(_arguments)...)
     { ; }
 
@@ -105,22 +104,13 @@ class destructor_dispatcher< false, first, rest... >
 
 public :
 
-    constexpr
     destructor_dispatcher(destructor_dispatcher const &) = default;
-    constexpr
     destructor_dispatcher(destructor_dispatcher &) = default;
-    constexpr
     destructor_dispatcher(destructor_dispatcher &&) = default;
 
-    constexpr
-    destructor_dispatcher
-    & operator = (destructor_dispatcher const &) = default;
-    constexpr
-    destructor_dispatcher
-    & operator = (destructor_dispatcher &) = default;
-    constexpr
-    destructor_dispatcher
-    & operator = (destructor_dispatcher &&) = default;
+    destructor_dispatcher & operator = (destructor_dispatcher const &) = default;
+    destructor_dispatcher & operator = (destructor_dispatcher &) = default;
+    destructor_dispatcher & operator = (destructor_dispatcher &&) = default;
 
     ~destructor_dispatcher() noexcept
     {
@@ -130,19 +120,18 @@ public :
     void
     destructor(std::size_t const _which) const noexcept(noexcept(head_.~head()) && noexcept(tail_.destructor(_which)))
     {
-        if (_which == sizeof...(rest)) {
+        if (_which == (1 + sizeof...(rest))) {
             head_.~head();
         } else {
             tail_.destructor(_which);
         }
     }
 
-    constexpr
     destructor_dispatcher() = default;
 
     template< typename ...arguments >
     constexpr
-    destructor_dispatcher(index_t< sizeof...(rest) >, arguments &&... _arguments)
+    destructor_dispatcher(index_t< (1 + sizeof...(rest)) >, arguments &&... _arguments)
         : head_(std::forward< arguments >(_arguments)...)
     { ; }
 
@@ -251,22 +240,13 @@ public :
         return which_;
     }
 
-    constexpr
     dispatcher(dispatcher const &) = default;
-    constexpr
     dispatcher(dispatcher &) = default;
-    constexpr
     dispatcher(dispatcher &&) = default;
 
-    constexpr
-    dispatcher
-    & operator = (dispatcher const &) = default;
-    constexpr
-    dispatcher
-    & operator = (dispatcher &) = default;
-    constexpr
-    dispatcher
-    & operator = (dispatcher &&) = default;
+    dispatcher & operator = (dispatcher const &) = default;
+    dispatcher & operator = (dispatcher &) = default;
+    dispatcher & operator = (dispatcher &&) = default;
 
     ~dispatcher() noexcept(noexcept(storage_.destructor(which_)))
     {
@@ -340,7 +320,6 @@ public :
         return (storage_.which() == index_at< type >::value);
     }
 
-    constexpr
     versatile() = default;
 
     template< std::size_t i, typename ...arguments >

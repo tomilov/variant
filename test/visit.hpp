@@ -258,7 +258,7 @@ struct fusor
             if (!(lhs == rhs)) {
                 return false;
             }
-            bool & r = subscript(result_, m, v..., variants_[i].which()...);
+            bool & r = subscript(result_, m, v..., (variants_[i].which() - 1)...);
             if (r) {
                 return false;
             }
@@ -330,8 +330,8 @@ class perferct_forwarding
         using result_type = multiarray_t< bool, qual_count_, (static_cast< void >(i), qual_count_)..., (static_cast< void >(i), N)... >;
         fusor< multivisitor_type, variant_type [M], result_type > fusor_{{{result_}, {}, 0, {}}};
         auto const enumerator_ = make_enumerator< qual_count_, (static_cast< void >(i), qual_count_)... >(fusor_.fuse_);
-        variant_type const variants_[N] = {type< j >{N - 1 - j}...};
-        CHECK (((variants_[j].which() == (N - 1 - j)) && ...));
+        variant_type const variants_[N] = {type< j >{N - j}...};
+        CHECK (((variants_[j].which() == (N - j)) && ...));
         std::size_t indices[M] = {};
         for (;;) {
             ((fusor_[i] = variants_[indices[i]]), ...);
