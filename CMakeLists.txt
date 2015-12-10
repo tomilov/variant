@@ -78,7 +78,12 @@ add_executable("test_ct_versatile"     "test/test_ct_versatile.cpp"     ${HEADER
 add_executable("test_ct_variant"       "test/test_ct_variant.cpp"       ${HEADERS} "test/deep_and_hard.hpp")
 add_executable("test_ct_eggs_variant"  "test/test_ct_eggs_variant.cpp"  ${HEADERS} "test/deep_and_hard.hpp")
 add_executable("test_ct_boost_variant" "test/test_ct_boost_variant.cpp" ${HEADERS} "test/deep_and_hard.hpp")
-set(TEST_CT_TARGETS "test_ct_versatile" "test_ct_variant" "test_ct_eggs_variant" "test_ct_boost_variant")
+set(TEST_CT_TARGETS
+    "test_ct_versatile"
+    "test_ct_variant"
+    "test_ct_eggs_variant"
+    "test_ct_boost_variant"
+)
 foreach(t ${TEST_CT_TARGETS})
     target_compile_definitions(${t} PUBLIC "-DCOLS=5" "-DROWS=5")
 endforeach()
