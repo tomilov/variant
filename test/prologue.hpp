@@ -88,11 +88,11 @@ public :
     std::size_t
     get_state() const
     {
-        assert(i == state);
+        CHECK(i == state);
         return state;
     }
 
-    CONSTEXPRF literal_type(std::size_t const _state) : state(_state) { assert(i == _state); }
+    CONSTEXPRF literal_type(std::size_t const _state) : state(_state) { CHECK(i == _state); }
     literal_type() = default;
 
 };
@@ -112,11 +112,11 @@ public :
     std::size_t
     get_state() const
     {
-        assert(i == state);
+        CHECK(i == state);
         return state;
     }
 
-    common_type(std::size_t const _state) : state(_state) { assert(i == _state); }
+    common_type(std::size_t const _state) : state(_state) { CHECK(i == _state); }
     common_type() { ; }
     common_type(common_type const & _rhs) : state(_rhs.state) { ; }
     common_type(common_type & _rhs) : state(_rhs.state) { ; }

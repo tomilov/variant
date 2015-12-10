@@ -44,6 +44,6 @@ invoke(std::index_sequence< M... >, std::index_sequence< N... >) noexcept
 int
 main()
 {
-    assert ((test::hard< ROWS, COLS >()));
+    CHECK ((test::hard< ROWS, COLS >()));
     return EXIT_SUCCESS;
 }

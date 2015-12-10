@@ -17,8 +17,8 @@ class recursive_wrapper
 
 public :
 
-    template< typename ...arguments,
-              typename = decltype(::new (std::declval< void * >()) this_type(std::declval< arguments >()...)) >
+    template< typename ...arguments/*,
+              typename = decltype(::new (std::declval< void * >()) this_type(std::declval< arguments >()...))*/ >
     recursive_wrapper(arguments &&... _arguments)
         : storage_(std::make_unique< this_type >(std::forward< arguments >(_arguments)...))
     { ; }

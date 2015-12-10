@@ -121,7 +121,7 @@ class check_destructible
             A & operator = (A &) { s_ = state::vcopy_assigned; return *this; }
             A & operator = (A && a) { s_ = state::move_assigned;  a.s_ = state::moved_from; return *this; }
             std::type_info const * * d_;
-            void set(std::type_info const * & _d) { assert(!_d); d_ = &_d; }
+            void set(std::type_info const * & _d) { CHECK(!_d); d_ = &_d; }
             ~A() { if (!!d_) *d_ = &typeid(A); }
         };
         struct B
@@ -135,7 +135,7 @@ class check_destructible
             B & operator = (B &) { s_ = state::vcopy_assigned; return *this; }
             B & operator = (B && a) { s_ = state::move_assigned;  a.s_ = state::moved_from; return *this; }
             std::type_info const * * d_;
-            void set(std::type_info const * & _d) { assert(!_d); d_ = &_d; }
+            void set(std::type_info const * & _d) { CHECK(!_d); d_ = &_d; }
             ~B() { if (!!d_) *d_ = &typeid(B); }
         };
         {
@@ -187,6 +187,44 @@ public :
     run() noexcept
     {
         CHECK (destructible());
+        return true;
+    }
+
+};
+
+template< template< typename ... > class wrapper,
+          template< typename ... > class visitable >
+class check_runtime
+{
+
+    template< typename ...types >
+    using V = visitable< typename wrapper< types >::type... >;
+
+    static
+    bool
+    recursive() noexcept
+    {
+        using ::versatile::recursive_wrapper;
+        { // composition
+            struct R;
+            struct A {};
+            using V = visitable< A, recursive_wrapper< R > >;
+            V v; // R is incomplete
+            CHECK (is_active< A >(v));
+            struct R { V v; };
+            v = R{};
+            CHECK (is_active< R >(v));
+        }
+        return true;
+    }
+
+public :
+
+    static
+    bool
+    run() noexcept
+    {
+        CHECK (recursive());
         return true;
     }
 

@@ -68,12 +68,13 @@ set(HEADERS
     "test/prologue.hpp"
 )
 
-add_executable("test_traits"        "test/traits.cpp"        ${HEADERS} "test/traits.hpp")
-add_executable("test_versatile"     "test/versatile.cpp"     ${HEADERS} "test/utility.hpp" "test/visit.hpp" "test/wrappers.hpp" "test/versatile.hpp")
+#add_executable("test_traits"        "test/traits.cpp"        ${HEADERS} "test/traits.hpp")
+#add_executable("test_versatile"     "test/versatile.cpp"     ${HEADERS} "test/utility.hpp" "test/visit.hpp" "test/wrappers.hpp" "test/versatile.hpp")
 add_executable("test_variant"       "test/variant.cpp"       ${HEADERS} "test/utility.hpp" "test/visit.hpp" "test/wrappers.hpp" "test/variant.hpp")
-add_executable("test_boost_variant" "test/boost_variant.cpp" ${HEADERS} "test/utility.hpp" "test/visit.hpp" "test/boost_variant.hpp")
-add_executable("test_eggs_variant"  "test/eggs_variant.cpp"  ${HEADERS} "test/utility.hpp" "test/visit.hpp" "test/eggs_variant.hpp")
+#add_executable("test_boost_variant" "test/boost_variant.cpp" ${HEADERS} "test/utility.hpp" "test/visit.hpp" "test/boost_variant.hpp")
+#add_executable("test_eggs_variant"  "test/eggs_variant.cpp"  ${HEADERS} "test/utility.hpp" "test/visit.hpp" "test/eggs_variant.hpp")
 
+#[[
 add_executable("test_ct_versatile"     "test/test_ct_versatile.cpp"     ${HEADERS} "test/deep_and_hard.hpp")
 add_executable("test_ct_variant"       "test/test_ct_variant.cpp"       ${HEADERS} "test/deep_and_hard.hpp")
 add_executable("test_ct_eggs_variant"  "test/test_ct_eggs_variant.cpp"  ${HEADERS} "test/deep_and_hard.hpp")
@@ -87,6 +88,7 @@ set(TEST_CT_TARGETS
 foreach(t ${TEST_CT_TARGETS})
     target_compile_definitions(${t} PUBLIC "-DCOLS=5" "-DROWS=5")
 endforeach()
+]]
 
 # for f in `ls build/test_*` ; do du -sh ./$f ; ./$f && echo -e "\e[1;32mSuccess! \e[0m$f" || echo -e "\e[1;31mFailure! \e[0m$f" ; done ;
 
