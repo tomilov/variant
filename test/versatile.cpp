@@ -86,54 +86,8 @@ operator || (lhs && _lhs, rhs && _rhs) = delete;
 
 } // namespace versatile
 
-
-#ifndef COLS
-#define COLS 5
-#endif
-
-#ifndef ROWS
-#define ROWS COLS
-#endif
-
-namespace versatile
-{
-
 namespace test
 {
-
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wmissing-braces"
-
-struct visitor
-{
-
-    template< std::size_t ...I >
-    constexpr
-    std::array< std::size_t, sizeof...(I) >
-    operator () (T< I >...) const noexcept
-    {
-        return {I...};
-    }
-
-};
-
-template< std::size_t ...M, std::size_t ...N >
-constexpr
-bool
-invoke(std::index_sequence< M... >, std::index_sequence< N... >) noexcept
-{
-    return (std::array< std::size_t, sizeof...(N) >{(N % sizeof...(M))...} == multivisit(visitor{}, versatile::variant< T< M >... >{T< (N % sizeof...(M)) >{}}...));
-}
-
-#pragma clang diagnostic pop
-
-template< std::size_t M, std::size_t N = M >
-constexpr
-bool
-hard() noexcept
-{
-    return invoke(std::make_index_sequence< M >{}, std::make_index_sequence< N >{});
-}
 
 inline int f() { return 1; }
 inline int g() { return 2; }

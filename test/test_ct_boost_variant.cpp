@@ -24,6 +24,23 @@ invoke(std::index_sequence< M... >, std::index_sequence< N... >) noexcept
 
 }
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wpedantic"
+
+#if 4 < ROWS
+#undef ROWS
+#define ROWS 4
+#warning "ROWS is greater then 4, defaulted to 4"
+#endif
+
+#if 4 < COLS
+#undef COLS
+#define COLS 4
+#warning "COLS is greater then 4, defaulted to 4"
+#endif
+
+#pragma clang diagnostic pop
+
 int
 main()
 {
