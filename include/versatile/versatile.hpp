@@ -303,7 +303,7 @@ using enable_default_constructor_t = enable_default_constructor< (std::is_defaul
 
 template< typename ...types >
 class versatile
-        : enable_default_constructor_t< types... > // akrzemi1's technique
+        : enable_default_constructor_t< types... >
 {
 
     using storage = dispatcher_t< types... >;
@@ -313,10 +313,10 @@ class versatile
 public :
 
     template< typename type >
-    using index_at = index_at< unwrap_type_t< type >, unwrap_type_t< types >... >;
+    using index_at_t = index_at_t< unwrap_type_t< type >, unwrap_type_t< types >... >;
 
     template< typename ...arguments >
-    using index_of_constructible = get_index< std::is_constructible_v< types, arguments... >... >;
+    using index_of_constructible_t = get_index_t< std::is_constructible_v< types, arguments... >... >;
 
     constexpr
     std::size_t
@@ -330,7 +330,7 @@ public :
     bool
     active() const noexcept
     {
-        return (storage_.which() == index_at< type >::value);
+        return (storage_.which() == index_at_t< type >::value);
     }
 
     constexpr
@@ -346,27 +346,27 @@ public :
         , storage_(index_t< i >{}, std::forward< arguments >(_arguments)...)
     { ; }
 
-    template< typename type, typename index = typename index_at< type >::type, typename ...arguments >
+    template< typename type, typename index = index_at_t< type >, typename ...arguments >
     explicit
     constexpr
     versatile(in_place_t (&)(type), arguments &&... _arguments)
         : versatile(in_place< index >, std::forward< arguments >(_arguments)...)
     { ; }
 
-    template< typename type, typename index = typename index_at< type >::type >
+    template< typename type, typename index = index_at_t< type > >
     constexpr
     versatile(type && _value)
         : versatile(in_place< index >, std::forward< type >(_value))
     { ; }
 
-    template< typename ...arguments, typename index = typename index_of_constructible< arguments... >::type >
+    template< typename ...arguments, typename index = index_of_constructible_t< arguments... > >
     explicit
     constexpr
     versatile(in_place_t, arguments &&... _arguments)
         : versatile(in_place< index >, std::forward< arguments >(_arguments)...)
     { ; }
 
-    template< typename type, typename index = typename index_at< type >::type >
+    template< typename type, typename index = index_at_t< type > >
     constexpr
     versatile &
     operator = (type && _value) noexcept
@@ -383,7 +383,7 @@ public :
         *this = std::move(other_);
     }
 
-    template< typename type, typename index = typename index_at< type >::type >
+    template< typename type, typename index = index_at_t< type > >
     explicit
     constexpr
     operator type const & () const
@@ -391,7 +391,7 @@ public :
         return active< type >() ? storage_ : throw std::bad_cast{};
     }
 
-    template< typename type, typename index = typename index_at< type >::type >
+    template< typename type, typename index = index_at_t< type > >
     explicit
     constexpr
     operator type & ()

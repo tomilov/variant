@@ -3,16 +3,20 @@
 #include <eggs/variant.hpp>
 
 #include <versatile/type_traits.hpp>
+#include <versatile/in_place.hpp>
 
 #include "prologue.hpp"
 
 namespace test_eggs_variant
 {
 
-using ::eggs::variants::get;
+using ::versatile::index_t;
 using ::versatile::index_at_t;
-using ::versatile::get_index;
+using ::versatile::get_index_t;
 using ::versatile::unwrap_type_t;
+using ::versatile::in_place;
+using ::versatile::in_place_t;
+using ::versatile::in_place_v;
 
 template< typename ...types >
 struct eggs_variant_c // composition
@@ -24,32 +28,46 @@ struct eggs_variant_c // composition
     using index_at_t = index_at_t< unwrap_type_t< type >, unwrap_type_t< types >... >;
 
     template< typename ...arguments >
-    using index_of_constructible = get_index< std::is_constructible_v< types, arguments... >... >;
+    using index_of_constructible_t = get_index_t< std::is_constructible_v< types, arguments... >... >;
 
-    constexpr
-    eggs_variant_c() = default;
-
-    constexpr
     eggs_variant_c(eggs_variant_c const &) = default;
-    constexpr
     eggs_variant_c(eggs_variant_c &) = default;
-    constexpr
     eggs_variant_c(eggs_variant_c &&) = default;
 
-    constexpr
-    eggs_variant_c &
-    operator = (eggs_variant_c const &) = default;
-    constexpr
-    eggs_variant_c &
-    operator = (eggs_variant_c &) = default;
-    constexpr
-    eggs_variant_c &
-    operator = (eggs_variant_c &&) = default;
+    eggs_variant_c & operator = (eggs_variant_c const &) = default;
+    eggs_variant_c & operator = (eggs_variant_c &) = default;
+    eggs_variant_c & operator = (eggs_variant_c &&) = default;
 
-    template< typename type, typename = index_at_t< type > >
+    constexpr
+    eggs_variant_c()
+        : eggs_variant_c(in_place_v)
+    { ; }
+
+    template< std::size_t i, typename ...arguments >
+    explicit
+    constexpr
+    eggs_variant_c(in_place_t (&)(index_t< i >), arguments &&... _arguments)
+        : storage_(::eggs::variants::in_place< (sizeof...(types) - i) >, std::forward< arguments >(_arguments)...)
+    { ; }
+
+    template< typename type, typename index = index_at_t< type >, typename ...arguments >
+    explicit
+    constexpr
+    eggs_variant_c(in_place_t (&)(type), arguments &&... _arguments)
+        : eggs_variant_c(in_place< index >, std::forward< arguments >(_arguments)...)
+    { ; }
+
+    template< typename type, typename index = index_at_t< type > >
     constexpr
     eggs_variant_c(type && _value)
-        : member_(std::forward< type >(_value))
+        : eggs_variant_c(in_place< index >, std::forward< type >(_value))
+    { ; }
+
+    template< typename ...arguments, typename index = index_of_constructible_t< arguments... > >
+    explicit
+    constexpr
+    eggs_variant_c(in_place_t, arguments &&... _arguments)
+        : eggs_variant_c(in_place< index >, std::forward< arguments >(_arguments)...)
     { ; }
 
     template< typename type, typename = index_at_t< type > >
@@ -57,7 +75,7 @@ struct eggs_variant_c // composition
     eggs_variant_c &
     operator = (type && _value)
     {
-        member_ = std::forward< type >(_value);
+        storage_ = std::forward< type >(_value);
         return *this;
     }
 
@@ -65,10 +83,10 @@ struct eggs_variant_c // composition
     std::size_t
     which() const
     {
-        if (!member_) {
+        if (!storage_) {
             return 0;
         }
-        return sizeof...(types) - member_.which();
+        return sizeof...(types) - storage_.which();
     }
 
     template< typename type >
@@ -87,7 +105,7 @@ struct eggs_variant_c // composition
         if (!active< type >()) {
             throw std::bad_cast{};
         }
-        return get< type >(member_);
+        return *storage_.template target< type >();
     }
 
     template< typename type, typename = index_at_t< type > >
@@ -98,12 +116,12 @@ struct eggs_variant_c // composition
         if (!active< type >()) {
             throw std::bad_cast{};
         }
-        return get< type >(member_);
+        return *storage_.template target< type >();
     }
 
 private :
 
-    variant member_;
+    variant storage_;
 
 };
 

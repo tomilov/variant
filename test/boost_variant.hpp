@@ -19,10 +19,14 @@ using ::versatile::get_index;
 using ::versatile::unwrap_type_t;
 
 template< typename ...types >
-struct boost_variant_c // composition
+class boost_variant_c // composition
 {
 
     using variant = ::boost::variant< types... >;
+
+    variant storage_;
+
+public :
 
     template< typename type >
     using index_at_t = index_at_t< unwrap_type_t< type >, unwrap_type_t< types >... >;
@@ -36,30 +40,27 @@ struct boost_variant_c // composition
     boost_variant_c(boost_variant_c &) = default;
     boost_variant_c(boost_variant_c &&) = default;
 
-    boost_variant_c &
-    operator = (boost_variant_c const &) = default;
-    boost_variant_c &
-    operator = (boost_variant_c &) = default;
-    boost_variant_c &
-    operator = (boost_variant_c &&) = default;
+    boost_variant_c & operator = (boost_variant_c const &) = default;
+    boost_variant_c & operator = (boost_variant_c &) = default;
+    boost_variant_c & operator = (boost_variant_c &&) = default;
 
     template< typename type, typename = index_at_t< type > >
     boost_variant_c(type && _value)
-        : member_(std::forward< type >(_value))
+        : storage_(std::forward< type >(_value))
     { ; }
 
     template< typename type, typename = index_at_t< type > >
     boost_variant_c &
     operator = (type && _value)
     {
-        member_ = std::forward< type >(_value);
+        storage_ = std::forward< type >(_value);
         return *this;
     }
 
     std::size_t
     which() const
     {
-        return sizeof...(types) - static_cast< std::size_t >(member_.which());
+        return sizeof...(types) - static_cast< std::size_t >(storage_.which());
     }
 
     template< typename type >
@@ -76,7 +77,7 @@ struct boost_variant_c // composition
         if (!active< type >()) {
             throw std::bad_cast{};
         }
-        return get< type >(member_);
+        return get< type >(storage_);
     }
 
     template< typename type, typename = index_at_t< type > >
@@ -86,12 +87,8 @@ struct boost_variant_c // composition
         if (!active< type >()) {
             throw std::bad_cast{};
         }
-        return get< type >(member_);
+        return get< type >(storage_);
     }
-
-private :
-
-    variant member_;
 
 };
 
@@ -103,28 +100,14 @@ is_active(boost_variant_c< types... > const & v) noexcept
     return v.template active< type >();
 }
 
-template< typename type, typename ...types >
-CONSTEXPRF
-type
-get(boost_variant_c< types... > const & v) noexcept
-{
-    return static_cast< type >(static_cast< type & >(v));
-}
-
-template< typename type, typename ...types >
-CONSTEXPRF
-type
-get(boost_variant_c< types... > & v) noexcept
-{
-    return static_cast< type >(static_cast< type & >(v));
-}
-
 template< typename ...types >
-struct boost_variant_i // inheritance
-        : ::boost::variant< types... >
+class boost_variant_i // inheritance
+        : private ::boost::variant< types... >
 {
 
     using base = ::boost::variant< types... >;
+
+public :
 
     template< typename type >
     using index_at_t = index_at_t< unwrap_type_t< type >, unwrap_type_t< types >... >;
@@ -141,12 +124,9 @@ struct boost_variant_i // inheritance
     boost_variant_i(boost_variant_i &) = default;
     boost_variant_i(boost_variant_i &&) = default;
 
-    boost_variant_i &
-    operator = (boost_variant_i const &) = default;
-    boost_variant_i &
-    operator = (boost_variant_i &) = default;
-    boost_variant_i &
-    operator = (boost_variant_i &&) = default;
+    boost_variant_i & operator = (boost_variant_i const &) = default;
+    boost_variant_i & operator = (boost_variant_i &) = default;
+    boost_variant_i & operator = (boost_variant_i &&) = default;
 
     template< typename type, typename = index_at_t< type > >
     boost_variant_i(type && _value)
@@ -181,7 +161,7 @@ struct boost_variant_i // inheritance
         if (!active< type >()) {
             throw std::bad_cast{};
         }
-        return get< type >(static_cast< boost_variant_i::base const & >(*this));
+        return get< type >(static_cast< base const & >(*this));
     }
 
     template< typename type, typename = index_at_t< type > >
@@ -191,7 +171,7 @@ struct boost_variant_i // inheritance
         if (!active< type >()) {
             throw std::bad_cast{};
         }
-        return get< type >(static_cast< boost_variant_i::base & >(*this));
+        return get< type >(static_cast< base & >(*this));
     }
 
 };
@@ -202,22 +182,6 @@ bool
 is_active(boost_variant_i< types... > const & v) noexcept
 {
     return v.template active< type >();
-}
-
-template< typename type, typename ...types >
-CONSTEXPRF
-type
-get(boost_variant_i< types... > const & v) noexcept
-{
-    return static_cast< type >(static_cast< type & >(v));
-}
-
-template< typename type, typename ...types >
-CONSTEXPRF
-type
-get(boost_variant_i< types... > & v) noexcept
-{
-    return static_cast< type >(static_cast< type & >(v));
 }
 
 template< typename type >

@@ -36,10 +36,10 @@ class variant
 public :
 
     template< typename type >
-    using index_at = typename storage::template index_at< type >;
+    using index_at_t = typename storage::template index_at_t< type >;
 
     template< typename ...arguments >
-    using index_of_constructible = typename storage::template index_of_constructible< arguments... >;
+    using index_of_constructible_t = typename storage::template index_of_constructible_t< arguments... >;
 
     std::size_t
     which() const noexcept
@@ -100,18 +100,18 @@ public :
         : variant({in_place< i >, std::forward< arguments >(_arguments)...})
     { ; }
 
-    template< typename type, typename index = typename index_at< type >::type, typename ...arguments >
+    template< typename type, typename index = index_at_t< type >, typename ...arguments >
     explicit
     variant(in_place_t (&)(type), arguments &&... _arguments)
         : variant(in_place< index >, std::forward< arguments >(_arguments)...)
     { ; }
 
-    template< typename type, typename index = typename index_at< type >::type >
+    template< typename type, typename index = index_at_t< type > >
     variant(type && _value)
         : variant(in_place< index >, std::forward< type >(_value))
     { ; }
 
-    template< typename ...arguments, typename index = typename index_of_constructible< arguments... >::type >
+    template< typename ...arguments, typename index = index_of_constructible_t< arguments... > >
     explicit
     variant(in_place_t, arguments &&... _arguments)
         : variant(in_place< index >, std::forward< arguments >(_arguments)...)
@@ -178,7 +178,7 @@ public :
         return assign(std::move(_rhs));
     }
 
-    template< typename type, typename index = typename index_at< type >::type >
+    template< typename type, typename index = index_at_t< type > >
     variant &
     operator = (type && _value)
     {
@@ -190,7 +190,7 @@ public :
         return *this;
     }
 
-    template< typename type, typename index = typename index_at< type >::type >
+    template< typename type, typename index = index_at_t< type > >
     explicit
     operator type & ()
     {
@@ -200,7 +200,7 @@ public :
         return static_cast< type & >(storage_);
     }
 
-    template< typename type, typename index = typename index_at< type >::type >
+    template< typename type, typename index = index_at_t< type > >
     explicit
     operator type const & () const
     {

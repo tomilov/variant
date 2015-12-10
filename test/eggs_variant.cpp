@@ -1,4 +1,5 @@
 #include "eggs_variant.hpp"
+#include "utility.hpp"
 #include "visit.hpp"
 
 #include <versatile/type_traits.hpp>
@@ -11,9 +12,13 @@ main()
     using ::versatile::identity;
     using ::test::literal_type;
     using ::test::common_type;
+    using ::test::check_indexing;
     using ::test::perferct_forwarding;
     { // eggs::variant
         using ::test_eggs_variant::eggs_variant_c;
+        {
+            ASSERT ((check_indexing< identity, eggs_variant_c >::run()));
+        }
         {
             ASSERT ((perferct_forwarding< literal_type, eggs_variant_c, identity, 2, 2 >::run()));
             assert ((perferct_forwarding< common_type,  eggs_variant_c, identity, 2, 2 >::run()));

@@ -14,7 +14,8 @@ namespace versatile
 namespace details
 {
 
-template< type_qualifier type_qual, typename visitor, typename visitable >
+template< type_qualifier type_qual, typename visitor,
+          typename visitable >
 class dispatcher;
 
 template< type_qualifier type_qual, typename visitor,

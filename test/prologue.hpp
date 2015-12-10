@@ -36,7 +36,6 @@
 //#define CKET }
 #endif
 
-
 namespace test
 {
 
