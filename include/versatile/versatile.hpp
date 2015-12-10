@@ -413,6 +413,15 @@ public :
         *this = versatile(in_place< type >, std::forward< arguments >(_arguments)...);
     }
 
+    template< typename ...arguments >
+    constexpr
+    void
+    emplace(arguments &&... _arguments) noexcept
+    {
+        static_assert(std::is_trivially_assignable_v< versatile, versatile >, "all alternative types should be trivially move assignable");
+        *this = versatile(in_place, std::forward< arguments >(_arguments)...);
+    }
+
 };
 
 template< typename first, typename ...rest >

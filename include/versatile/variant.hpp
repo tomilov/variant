@@ -95,7 +95,7 @@ public :
     explicit
     variant(in_place_t (&)(), arguments &&... _arguments)
         : enabler({})
-        , storage_(in_place< index::value >, std::forward< arguments >(_arguments)...)
+        , storage_(std::make_unique< versatile, in_place_t (&)() >(in_place, std::forward< arguments >(_arguments)...))
     { ; }
 
     template< typename type, typename ...arguments >
@@ -130,6 +130,13 @@ public :
     emplace(arguments &&... _arguments)
     {
         return variant{in_place< type >, std::forward< arguments >(_arguments)...}.swap(*this);
+    }
+
+    template< typename ...arguments >
+    void
+    emplace(arguments &&... _arguments)
+    {
+        return variant{in_place, std::forward< arguments >(_arguments)...}.swap(*this);
     }
 
 private :

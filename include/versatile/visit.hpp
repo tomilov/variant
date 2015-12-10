@@ -1,6 +1,6 @@
 #pragma once
 
-#include "wrappers.hpp"
+#include "utility.hpp"
 
 #include <type_traits>
 #include <utility>
@@ -34,20 +34,22 @@ class dispatcher< type_qual, visitor, decay_type< types... > >
 
     using visitable = add_type_qualifier_t< type_qual, decay_type< types... > >;
 
+    template< typename type >
+    using qualify_type_t = add_type_qualifier_t< type_qual, unwrap_type_t< type > >;
+
+    using first = qualify_type_t< typename identity< types... >::type >;
+
     template< typename type, typename ...arguments >
     static
     constexpr
-    decltype(std::declval< visitor >()(std::declval< type >(), std::declval< arguments >()...))
+    decltype(std::declval< visitor >()(std::declval< first >(), std::declval< arguments >()...))
     callee(visitor & _visitor, visitable & _visitable, arguments &... _arguments)
     {
         return std::forward< visitor >(_visitor)(static_cast< type >(static_cast< type & >(_visitable)), std::forward< arguments >(_arguments)...);
     }
 
-    template< typename type >
-    using qualify_type_t = add_type_qualifier_t< type_qual, unwrap_type_t< type > >;
-
     template< typename ...arguments >
-    using callee_type = decltype(&dispatcher::template callee< qualify_type_t< typename identity< types... >::type >, arguments... >);
+    using callee_type = decltype(&dispatcher::template callee< first, arguments... >);
 
     template< typename ...arguments >
     static constexpr callee_type< arguments... > callies_[sizeof...(types)] = {dispatcher::template callee< qualify_type_t< types >, arguments... >...};
@@ -224,6 +226,17 @@ details::delayed_visitor< visitor >
 visit(visitor && _visitor) noexcept(std::is_lvalue_reference_v< visitor > || std::is_nothrow_move_constructible_v< visitor >)
 {
     return _visitor;
+}
+
+template< typename visitable, typename ...arguments >
+constexpr // lambda not constexpr yet
+decltype(auto)
+invoke(visitable && _visitable, arguments &&... _arguments)
+{
+    return visit([&] (auto && _value) -> decltype(auto)
+    {
+        return std::forward< decltype(_value) >(_value)(std::forward< arguments >(_arguments)...);
+    }, std::forward< visitable >(_visitable));
 }
 
 }
