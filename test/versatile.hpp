@@ -52,7 +52,7 @@ class check_invariants
         using U = V< S >;
 
         SA(std::is_trivial_v< S >);
-        SA(std::is_trivially_default_constructible_v< U >);
+        SA(!std::is_trivially_default_constructible_v< U >);
         SA(std::is_trivially_copyable_v< U >);
 
         SA(std::is_standard_layout_v< S >);
@@ -62,7 +62,7 @@ class check_invariants
         SA(std::is_literal_type_v< U >);
 
         SA(std::is_pod_v< S >);
-        SA(std::is_pod_v< U >);
+        SA(!std::is_pod_v< U >);
 
         constexpr
         static
@@ -330,7 +330,7 @@ class check_invariants
         SA(std::is_default_constructible_v< S >);
         SA(std::is_default_constructible_v< U >);
         SA(std::is_trivially_default_constructible_v< S >);
-        SA(std::is_trivially_default_constructible_v< U >);
+        SA(!std::is_trivially_default_constructible_v< U >);
 
         SA(std::is_destructible_v< S >);
         SA(std::is_destructible_v< U >);
@@ -417,7 +417,7 @@ class check_invariants
         SA(std::is_default_constructible_v< S >);
         SA(std::is_default_constructible_v< U >);
         SA(std::is_trivially_default_constructible_v< S >);
-        SA(std::is_trivially_default_constructible_v< U >);
+        SA(!std::is_trivially_default_constructible_v< U >);
 
         SA(std::is_destructible_v< S >);
         SA(std::is_destructible_v< U >);
@@ -504,7 +504,7 @@ class check_invariants
         SA(std::is_default_constructible_v< S >);
         SA(std::is_default_constructible_v< U >);
         SA(std::is_trivially_default_constructible_v< S >);
-        SA(std::is_trivially_default_constructible_v< U >);
+        SA(!std::is_trivially_default_constructible_v< U >);
 
         SA(std::is_destructible_v< S >);
         SA(std::is_destructible_v< U >);
@@ -591,7 +591,7 @@ class check_invariants
         SA(std::is_default_constructible_v< S >);
         SA(std::is_default_constructible_v< U >);
         SA(std::is_trivially_default_constructible_v< S >);
-        SA(std::is_trivially_default_constructible_v< U >);
+        SA(!std::is_trivially_default_constructible_v< U >);
 
         SA(std::is_destructible_v< S >);
         SA(std::is_destructible_v< U >);
@@ -678,7 +678,7 @@ class check_invariants
         SA(std::is_default_constructible_v< S >);
         SA(std::is_default_constructible_v< U >);
         SA(std::is_trivially_default_constructible_v< S >);
-        SA(std::is_trivially_default_constructible_v< U >);
+        SA(!std::is_trivially_default_constructible_v< U >);
 
         SA(std::is_destructible_v< S >);
         SA(std::is_destructible_v< U >);
@@ -765,7 +765,7 @@ class check_invariants
         SA(std::is_default_constructible_v< S >);
         SA(std::is_default_constructible_v< U >);
         SA(std::is_trivially_default_constructible_v< S >);
-        SA(std::is_trivially_default_constructible_v< U >);
+        SA(!std::is_trivially_default_constructible_v< U >);
 
         SA(std::is_destructible_v< S >);
         SA(std::is_destructible_v< U >);
@@ -852,7 +852,7 @@ class check_invariants
         SA(std::is_default_constructible_v< S >);
         SA(std::is_default_constructible_v< U >);
         SA(std::is_trivially_default_constructible_v< S >);
-        SA(std::is_trivially_default_constructible_v< U >);
+        SA(!std::is_trivially_default_constructible_v< U >);
 
         SA(std::is_destructible_v< S >);
         SA(std::is_destructible_v< U >);
@@ -939,7 +939,7 @@ class check_invariants
         SA(std::is_default_constructible_v< S >);
         SA(std::is_default_constructible_v< U >);
         SA(std::is_trivially_default_constructible_v< S >);
-        SA(std::is_trivially_default_constructible_v< U >);
+        SA(!std::is_trivially_default_constructible_v< U >);
 
         SA(std::is_destructible_v< S >);
         SA(std::is_destructible_v< U >);
@@ -1124,7 +1124,7 @@ class check_triviality
         SA(std::is_trivially_default_constructible_v< N >);
         {
             using U = V< S, N >;
-            SA(std::is_trivially_default_constructible_v< U >);
+            SA(!std::is_trivially_default_constructible_v< U >);
             {
                 CONSTEXPR U v{};
                 ASSERT (is_active< S >(v));
@@ -1136,7 +1136,7 @@ class check_triviality
         }
         {
             using U = V< N, S >;
-            SA(std::is_trivially_default_constructible_v< U >);
+            SA(!std::is_trivially_default_constructible_v< U >);
             {
                 CONSTEXPR U v{};
                 ASSERT (is_active< N >(v));
