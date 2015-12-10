@@ -10,6 +10,18 @@
 namespace versatile
 {
 
+template< typename visitable, typename type >
+struct index;
+
+template< template< typename ...types > class visitable,
+          typename ...types,
+          typename type >
+struct index< visitable< types... >, type >
+        : index_at< type, types... >
+{
+
+};
+
 template< type_qualifier type_qual, typename type,
           typename result_type = add_type_qualifier_t< type_qual, std::decay_t< type > > >
 constexpr

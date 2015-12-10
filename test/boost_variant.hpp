@@ -24,7 +24,7 @@ struct boost_variant_c // composition
     using variant = ::boost::variant< types... >;
 
     template< typename type >
-    using index_at_t = ::versatile::index_at_t< ::versatile::unwrap_type_t< type >, ::versatile::unwrap_type_t< types >..., void >;
+    using index_at_t = ::versatile::index_at_t< ::versatile::unwrap_type_t< type >, ::versatile::unwrap_type_t< types >... >;
 
     boost_variant_c() = default;
 
@@ -55,14 +55,14 @@ struct boost_variant_c // composition
     std::size_t
     which() const
     {
-        return (sizeof...(types) - static_cast< std::size_t >(member_.which()));
+        return static_cast< std::size_t >(member_.which());
     }
 
     template< typename type >
     bool
     active() const noexcept
     {
-        return (index_at_t< type >::value == which());
+        return ((sizeof...(types) - 1 - index_at_t< type >::value) == which());
     }
 
     template< typename type, typename = index_at_t< type > >
@@ -123,7 +123,7 @@ struct boost_variant_i // inheritance
     using base = ::boost::variant< types... >;
 
     template< typename type >
-    using index_at_t = ::versatile::index_at_t< ::versatile::unwrap_type_t< type >, ::versatile::unwrap_type_t< types >..., void >;
+    using index_at_t = ::versatile::index_at_t< ::versatile::unwrap_type_t< type >, ::versatile::unwrap_type_t< types >... >;
 
     //using base::base; // seems there is wrong design of boost::variant constructor
     //using base::operator =;
@@ -157,14 +157,14 @@ struct boost_variant_i // inheritance
     std::size_t
     which() const
     {
-        return (sizeof...(types) - static_cast< std::size_t >(base::which()));
+        return static_cast< std::size_t >(base::which());
     }
 
     template< typename type >
     bool
     active() const noexcept
     {
-        return (index_at_t< type >::value == which());
+        return ((sizeof...(types) - 1 - index_at_t< type >::value) == which());
     }
 
     template< typename type, typename = index_at_t< type > >
