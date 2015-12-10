@@ -20,7 +20,7 @@ struct eggs_variant_c // composition
     using variant = ::eggs::variant< types... >;
 
     template< typename type >
-    using index_at_t = ::versatile::index_at_t< ::versatile::unwrap_type_t< type >, ::versatile::unwrap_type_t< types >..., void >;
+    using index_at_t = ::versatile::index_at_t< ::versatile::unwrap_type_t< type >, ::versatile::unwrap_type_t< types >... >;
 
     constexpr
     eggs_variant_c() = default;
@@ -61,7 +61,7 @@ struct eggs_variant_c // composition
     std::size_t
     which() const
     {
-        return (sizeof...(types) - static_cast< std::size_t >(member_.which()));
+        return member_.which();
     }
 
     template< typename type >
@@ -69,7 +69,7 @@ struct eggs_variant_c // composition
     bool
     active() const noexcept
     {
-        return (index_at_t< type >::value == which());
+        return ((sizeof...(types) - 1 - index_at_t< type >::value) == which());
     }
 
     template< typename type, typename = index_at_t< type > >
