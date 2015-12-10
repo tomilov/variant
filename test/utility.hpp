@@ -192,13 +192,9 @@ public :
 
 };
 
-template< template< typename ... > class wrapper,
-          template< typename ... > class visitable >
+template< template< typename ... > class visitable >
 class check_runtime
 {
-
-    template< typename ...types >
-    using V = visitable< typename wrapper< types >::type... >;
 
     static
     bool
@@ -208,10 +204,20 @@ class check_runtime
         { // composition
             struct R;
             struct A {};
-            using V = visitable< A, recursive_wrapper< R > >;
-            V v; // R is incomplete
+            using U = visitable< A, recursive_wrapper< R > >;
+            struct R { U v; };
+            U v;
             CHECK (is_active< A >(v));
-            struct R { V v; };
+            v = R{};
+            CHECK (is_active< R >(v));
+        }
+        {  // recursive (inheritance)
+            struct R;
+            struct A {};
+            using U = visitable< A, recursive_wrapper< R > >;
+            struct R : U { using U::U; using U::operator =; };
+            U v;
+            CHECK (is_active< A >(v));
             v = R{};
             CHECK (is_active< R >(v));
         }

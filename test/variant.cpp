@@ -27,17 +27,17 @@ main()
             //CHECK ((check_indexing< recursive_wrapper, variant >::run()));
         }
         {
+            CHECK ((check_common< identity,          variant >::run()));
+            CHECK ((check_common< aggregate,         variant >::run()));
+            //CHECK ((check_common< recursive_wrapper, variant >::run()));
+        }
+        {
             CHECK ((check_destructible< identity,          variant >::run()));
             CHECK ((check_destructible< aggregate,         variant >::run()));
             //CHECK ((check_destructible< recursive_wrapper, variant >::run()));
         }
         {
-            CHECK ((check_runtime< identity, variant >::run())); // fatal error: unable to execute command: Segmentation fault (core dumped)
-        }
-        {
-            CHECK ((check_common< identity,          variant >::run()));
-            CHECK ((check_common< aggregate,         variant >::run()));
-            //CHECK ((check_common< recursive_wrapper, variant >::run()));
+            CHECK ((check_runtime< variant >::run()));
         }
         {
             CHECK ((perferct_forwarding< common_type, variant, identity,          2, 2 >::run()));
