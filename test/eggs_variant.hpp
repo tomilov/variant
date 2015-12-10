@@ -10,7 +10,7 @@ namespace test_eggs_variant
 {
 
 using ::eggs::variants::get;
-using ::versatile::index_at;
+using ::versatile::index_at_t;
 using ::versatile::get_index;
 using ::versatile::unwrap_type_t;
 
@@ -21,7 +21,7 @@ struct eggs_variant_c // composition
     using variant = ::eggs::variant< types... >;
 
     template< typename type >
-    using index_at = index_at< unwrap_type_t< type >, unwrap_type_t< types >... >;
+    using index_at_t = index_at_t< unwrap_type_t< type >, unwrap_type_t< types >... >;
 
     template< typename ...arguments >
     using index_of_constructible = get_index< std::is_constructible_v< types, arguments... >... >;
@@ -46,13 +46,13 @@ struct eggs_variant_c // composition
     eggs_variant_c &
     operator = (eggs_variant_c &&) = default;
 
-    template< typename type, typename = index_at< type > >
+    template< typename type, typename = index_at_t< type > >
     constexpr
     eggs_variant_c(type && _value)
         : member_(std::forward< type >(_value))
     { ; }
 
-    template< typename type, typename = index_at< type > >
+    template< typename type, typename = index_at_t< type > >
     constexpr
     eggs_variant_c &
     operator = (type && _value)
@@ -76,10 +76,10 @@ struct eggs_variant_c // composition
     bool
     active() const noexcept
     {
-        return (index_at< type >::value == which());
+        return (index_at_t< type >::value == which());
     }
 
-    template< typename type, typename = index_at< type > >
+    template< typename type, typename = index_at_t< type > >
     explicit
     constexpr
     operator type const & () const
@@ -90,7 +90,7 @@ struct eggs_variant_c // composition
         return get< type >(member_);
     }
 
-    template< typename type, typename = index_at< type > >
+    template< typename type, typename = index_at_t< type > >
     explicit
     constexpr
     operator type & ()

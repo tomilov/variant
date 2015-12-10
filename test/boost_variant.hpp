@@ -14,6 +14,9 @@ namespace test_boost_variant
 {
 
 using ::boost::get;
+using ::versatile::index_at_t;
+using ::versatile::get_index;
+using ::versatile::unwrap_type_t;
 
 template< typename ...types >
 struct boost_variant_c // composition
@@ -22,7 +25,10 @@ struct boost_variant_c // composition
     using variant = ::boost::variant< types... >;
 
     template< typename type >
-    using index_at_t = ::versatile::index_at_t< ::versatile::unwrap_type_t< type >, ::versatile::unwrap_type_t< types >... >;
+    using index_at_t = index_at_t< unwrap_type_t< type >, unwrap_type_t< types >... >;
+
+    template< typename ...arguments >
+    using index_of_constructible = get_index< std::is_constructible_v< types, arguments... >... >;
 
     boost_variant_c() = default;
 
@@ -53,14 +59,14 @@ struct boost_variant_c // composition
     std::size_t
     which() const
     {
-        return static_cast< std::size_t >(member_.which());
+        return sizeof...(types) - static_cast< std::size_t >(member_.which());
     }
 
     template< typename type >
     bool
     active() const noexcept
     {
-        return ((sizeof...(types) - 1 - index_at_t< type >::value) == which());
+        return (index_at_t< type >::value == which());
     }
 
     template< typename type, typename = index_at_t< type > >
@@ -121,7 +127,10 @@ struct boost_variant_i // inheritance
     using base = ::boost::variant< types... >;
 
     template< typename type >
-    using index_at_t = ::versatile::index_at_t< ::versatile::unwrap_type_t< type >, ::versatile::unwrap_type_t< types >... >;
+    using index_at_t = index_at_t< unwrap_type_t< type >, unwrap_type_t< types >... >;
+
+    template< typename ...arguments >
+    using index_of_constructible = get_index< std::is_constructible_v< types, arguments... >... >;
 
     //using base::base; // seems there is wrong design of boost::variant constructor
     //using base::operator =;
@@ -155,14 +164,14 @@ struct boost_variant_i // inheritance
     std::size_t
     which() const
     {
-        return static_cast< std::size_t >(base::which());
+        return sizeof...(types) - static_cast< std::size_t >(base::which());
     }
 
     template< typename type >
     bool
     active() const noexcept
     {
-        return ((sizeof...(types) - 1 - index_at_t< type >::value) == which());
+        return (index_at_t< type >::value == which());
     }
 
     template< typename type, typename = index_at_t< type > >
