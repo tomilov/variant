@@ -37,7 +37,6 @@ class dispatcher< type_qual, visitor, decay_type< types... > >
     template< typename type, typename ...arguments >
     static
     constexpr
-    // not just only `decltype(auto)` due to problems in `callee_type`'s `decltype(&callee< ... >)` for 'value' returning type of `callee`
     decltype(std::declval< visitor >()(std::declval< type >(), std::declval< arguments >()...))
     callee(visitor & _visitor, visitable & _visitable, arguments &... _arguments)
     {
@@ -80,7 +79,7 @@ decltype(auto)
 visit(visitor && _visitor, visitable && _visitable, arguments &&... _arguments)
 {
     using decay_type = unwrap_type_t< visitable >;
-    static_assert(is_visitable_v< decay_type >, "second argument can be only visitable type");
+    static_assert(is_visitable_v< decay_type >, "second argument must be only visitable");
     return details::dispatcher< type_qualifier_of< visitable && >, visitor, decay_type >::template caller< arguments... >(_visitor, _visitable, _arguments...);
 }
 

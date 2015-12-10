@@ -1,24 +1,44 @@
 project(versatile)
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
 set(CMAKE_COLOR_MAKEFILE   ON)
+
+include(CheckCXXCompilerFlag)
+CHECK_CXX_COMPILER_FLAG("-std=gnu++1z" COMPILER_SUPPORTS_CXX1Z)
+if(NOT COMPILER_SUPPORTS_CXX1Z)
+    message(FATAL_ERROR "Compiler does not supports C++1z standard")
+endif()
 
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer")
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
 #set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
 
-set(CMAKE_BUILD_TYPE "Debug")
-set(CMAKE_CXX_COMPILER "clang++")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftime-report -std=gnu++1z -stdlib=libc++ -W -Weverything -Wmismatched-tags -Wuninitialized -pedantic -Wfatal-errors -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded -fconstexpr-steps=50000000 -ftemplate-backtrace-limit=0" )
-set(CMAKE_CXX_FLAGS_RELEASE        "-Ofast -DNDEBUG=1 -march=native")
-set(CMAKE_CXX_FLAGS_MINSIZEREL     "-Os -DNDEBUG=1 -march=native")
-set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -gline-tables-only -DNDEBUG=1 -march=native")
-set(CMAKE_CXX_FLAGS_DEBUG          "-g -fno-inline -DDEBUG=1 -D_DEBUG=1 -D_GLIBCXX_DEBUG=1 -march=x86-64 -mtune=generic")
+#set(CXX_EXTENSIONS ON)
+#set_property(TARGET ${TARGETS} PROPERTY CXX_STANDARD 17)
+#set_property(TARGET ${TARGETS} PROPERTY CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++1z")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fconstexpr-steps=50000000 -ftemplate-depth=50")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -v -ftime-report")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -W -Weverything -Wmismatched-tags -Wuninitialized -pedantic -Wfatal-errors -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftemplate-backtrace-limit=0  -fconstexpr-backtrace-limit=0")
+
+#set(CMAKE_BUILD_TYPE "Debug")
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(CMAKE_CXX_FLAGS_DEBUG "-g -fno-inline -DDEBUG=1 -D_DEBUG=1 -D_GLIBCXX_DEBUG=1 -march=x86-64 -mtune=generic")
+elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
+    set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -DNDEBUG=1 -march=native")
+elseif(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -gline-tables-only -DNDEBUG=1 -march=native")
+elseif(CMAKE_BUILD_TYPE STREQUAL "MinSizeRel")
+    set(CMAKE_CXX_FLAGS_MINSIZEREL "-Os -DNDEBUG=1 -march=native")
+endif()
 
 set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "") # suppress -rdynamic flag
 
 include_directories("include/")
+
 set(HEADERS
     "include/versatile/type_traits.hpp"
     "include/versatile/in_place.hpp"
@@ -34,10 +54,18 @@ set(HEADERS
     "test/prologue.hpp"
 )
 
-add_executable("test_traits"        "test/traits.cpp"        ${HEADERS} "test/traits.hpp")
+#add_executable("test_traits"        "test/traits.cpp"        ${HEADERS} "test/traits.hpp")
 add_executable("test_versatile"     "test/versatile.cpp"     ${HEADERS} "test/destructible.hpp" "test/visit.hpp" "test/utility.hpp" "test/versatile.hpp")
-add_executable("test_variant"       "test/variant.cpp"       ${HEADERS} "test/destructible.hpp" "test/visit.hpp" "test/utility.hpp" "test/variant.hpp")
-add_executable("test_boost_variant" "test/boost_variant.cpp" ${HEADERS} "test/destructible.hpp" "test/visit.hpp" "test/boost_variant.hpp")
-add_executable("test_eggs_variant"  "test/eggs_variant.cpp"  ${HEADERS} "test/destructible.hpp" "test/visit.hpp" "test/eggs_variant.hpp")
+#add_executable("test_variant"       "test/variant.cpp"       ${HEADERS} "test/destructible.hpp" "test/visit.hpp" "test/utility.hpp" "test/variant.hpp")
+#add_executable("test_boost_variant" "test/boost_variant.cpp" ${HEADERS} "test/destructible.hpp" "test/visit.hpp" "test/boost_variant.hpp")
+#add_executable("test_eggs_variant"  "test/eggs_variant.cpp"  ${HEADERS} "test/destructible.hpp" "test/visit.hpp" "test/eggs_variant.hpp")
+# for f in `ls build/test_*` ; do du -sh ./$f ; ./$f && echo -e "\e[1;32mSuccess! \e[0m$f" || echo -e "\e[1;31mFailure! \e[0m$f" ; done ;
 
-# for f in `ls build/test_*` ; do ls -lahF ./$f ; ./$f && echo -e "\e[1;32mSuccess! \e[0m$f" || echo -e "\e[1;31mFailure! \e[0m$f" ; done ;
+#[[
+message("Your C++ compiler supports these C++ features:")
+foreach(i ${CMAKE_CXX_COMPILE_FEATURES})
+  message("${i}")
+endforeach()
+target_compile_features("test_versatile" PUBLIC ${CMAKE_CXX_COMPILE_FEATURES})
+]]
+

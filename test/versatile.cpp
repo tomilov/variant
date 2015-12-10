@@ -17,7 +17,7 @@ main()
     using ::test::check_invariants;
     using ::test::check_triviality;
     using ::test::check_destructible;
-    using ::test::test_perferct_forwarding;
+    using ::test::perferct_forwarding;
     { // versatile
         using ::versatile::versatile;
         {
@@ -34,8 +34,8 @@ main()
             assert ((check_destructible< recursive_wrapper, versatile >::run()));
         }
         {
-            ASSERT ((test_perferct_forwarding< literal_type, versatile, identity,  2, 2 >::run()));
-            ASSERT ((test_perferct_forwarding< literal_type, versatile, aggregate, 2, 2 >::run()));
+            ASSERT ((perferct_forwarding< literal_type, versatile, identity,  2, 2 >::run()));
+            ASSERT ((perferct_forwarding< literal_type, versatile, aggregate, 2, 2 >::run()));
         }
     }
     return EXIT_SUCCESS;
@@ -1081,7 +1081,7 @@ main()
         v = w;
     }
     {
-        assert((test_perferct_forwarding< variant, 2, 6 >{}()));
+        assert((perferct_forwarding< variant, 2, 6 >{}()));
     }
     { // -ftemplate-depth=40 for 5, 5
         assert((hard< ROWS, COLS >()));

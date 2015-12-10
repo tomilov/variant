@@ -16,7 +16,7 @@ main()
     using ::test::common_type;
     using ::test::check_common;
     using ::test::check_destructible;
-    using ::test::test_perferct_forwarding;
+    using ::test::perferct_forwarding;
     { // variant
         using ::versatile::variant;
         {
@@ -30,9 +30,9 @@ main()
             assert ((check_common< recursive_wrapper, variant >::run()));
         }
         {
-            assert ((test_perferct_forwarding< common_type, variant, identity,          2, 2 >::run()));
-            assert ((test_perferct_forwarding< common_type, variant, aggregate,         2, 2 >::run()));
-            assert ((test_perferct_forwarding< common_type, variant, recursive_wrapper, 2, 2 >::run()));
+            assert ((perferct_forwarding< common_type, variant, identity,          2, 2 >::run()));
+            assert ((perferct_forwarding< common_type, variant, aggregate,         2, 2 >::run()));
+            assert ((perferct_forwarding< common_type, variant, recursive_wrapper, 2, 2 >::run()));
         }
     }
     return EXIT_SUCCESS;

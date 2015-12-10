@@ -8,7 +8,7 @@ main()
 {
     using ::versatile::identity;
     using ::test::common_type;
-    using ::test::test_perferct_forwarding;
+    using ::test::perferct_forwarding;
     { // boost::variant
         {
             struct L {};
@@ -19,12 +19,12 @@ main()
         using ::test_boost_variant::boost_variant_c;
         using ::test_boost_variant::boost_recursive_wrapper;
         {
-            assert ((test_perferct_forwarding< common_type, boost_variant_i, identity,                2, 2 >::run()));
-            assert ((test_perferct_forwarding< common_type, boost_variant_i, boost_recursive_wrapper, 2, 2 >::run()));
+            assert ((perferct_forwarding< common_type, boost_variant_i, identity,                2, 2 >::run()));
+            assert ((perferct_forwarding< common_type, boost_variant_i, boost_recursive_wrapper, 2, 2 >::run()));
         }
         {
-            assert ((test_perferct_forwarding< common_type, boost_variant_c, identity,                2, 2 >::run()));
-            assert ((test_perferct_forwarding< common_type, boost_variant_c, boost_recursive_wrapper, 2, 2 >::run()));
+            assert ((perferct_forwarding< common_type, boost_variant_c, identity,                2, 2 >::run()));
+            assert ((perferct_forwarding< common_type, boost_variant_c, boost_recursive_wrapper, 2, 2 >::run()));
         }
     }
     return EXIT_SUCCESS;

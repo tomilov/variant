@@ -153,4 +153,36 @@ using get_index_t = typename get_index< values... >::type;
 template< typename ...types >
 using index_of_default_constructible = get_index< std::is_default_constructible_v< types >... >;
 
+template< bool is_default_constructible >
+struct enable_default_constructor;
+
+template<>
+struct enable_default_constructor< true >
+{
+
+    constexpr
+    enable_default_constructor() = default;
+
+    constexpr
+    enable_default_constructor(void *) noexcept
+    { ; }
+
+};
+
+template<>
+struct enable_default_constructor< false >
+{
+
+    constexpr
+    enable_default_constructor() = delete;
+
+    constexpr
+    enable_default_constructor(void *) noexcept
+    { ; }
+
+};
+
+template< typename ...types >
+using enable_default_constructor_t = enable_default_constructor< (std::is_default_constructible_v< types > || ...) >;
+
 }

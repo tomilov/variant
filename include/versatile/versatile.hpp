@@ -426,38 +426,6 @@ public :
 template< typename ...types >
 using dispatcher_t = dispatcher< (std::is_trivially_destructible_v< types > && ...), (std::is_trivially_constructible_v< types > && ...), types... >;
 
-template< bool is_default_constructible >
-struct enable_default_constructor;
-
-template<>
-struct enable_default_constructor< true >
-{
-
-    constexpr
-    enable_default_constructor() = default;
-
-    constexpr
-    enable_default_constructor(void *) noexcept
-    { ; }
-
-};
-
-template<>
-struct enable_default_constructor< false >
-{
-
-    constexpr
-    enable_default_constructor() = delete;
-
-    constexpr
-    enable_default_constructor(void *) noexcept
-    { ; }
-
-};
-
-template< typename ...types >
-using enable_default_constructor_t = enable_default_constructor< (std::is_default_constructible_v< types > || ...) >;
-
 template< typename ...types >
 class versatile
         : enable_default_constructor_t< types... > // akrzemi1's technique
