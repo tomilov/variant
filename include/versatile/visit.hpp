@@ -60,8 +60,8 @@ public :
     decltype(auto)
     caller(visitor & _visitor, visitable & _visitable, arguments &... _arguments)
     {
-        assert(!(sizeof...(types) < _visitable.which()));
-        return callies_< arguments... >[sizeof...(types) - _visitable.which()](_visitor, _visitable, _arguments...);
+        assert(_visitable.which() < sizeof...(types));
+        return callies_< arguments... >[_visitable.which()](_visitor, _visitable, _arguments...);
     }
 
 };

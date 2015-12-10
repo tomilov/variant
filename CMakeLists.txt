@@ -2,17 +2,26 @@ project(versatile)
 cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
-set(CMAKE_COLOR_MAKEFILE   ON)
+set(CMAKE_COLOR_MAKEFILE ON)
 
-include(CheckCXXCompilerFlag)
-CHECK_CXX_COMPILER_FLAG("-std=gnu++1z" COMPILER_SUPPORTS_CXX1Z)
-if(NOT COMPILER_SUPPORTS_CXX1Z)
-    message(FATAL_ERROR "Compiler does not supports C++1z standard")
+if(NOT DEFINED CMAKE_CXX_COMPILER)
+    message(STATUS "No compiler specified. Default to clang++.")
+    set(CMAKE_CXX_COMPILER "clang++")
 endif()
 
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer")
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
-#set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
+include(CheckCXXCompilerFlag)
+
+CHECK_CXX_COMPILER_FLAG("-std=gnu++1z" COMPILER_SUPPORTS_CXX1Z)
+if(NOT COMPILER_SUPPORTS_CXX1Z)
+    message(FATAL_ERROR "Compiler does not support C++1z standard")
+endif()
+
+CHECK_CXX_COMPILER_FLAG("-stdlib=libc++" COMPILER_SUPPORTS_LIBCXX)
+if(NOT COMPILER_SUPPORTS_LIBCXX)
+    message(FATAL_ERROR "libc++ does not installed or compiler does not support libc++")
+endif()
+
+set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "") # suppress -rdynamic flag
 
 #set(CXX_EXTENSIONS ON)
 #set_property(TARGET ${TARGETS} PROPERTY CXX_STANDARD 17)
@@ -33,9 +42,14 @@ elseif(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
     set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -gline-tables-only -DNDEBUG=1 -march=native")
 elseif(CMAKE_BUILD_TYPE STREQUAL "MinSizeRel")
     set(CMAKE_CXX_FLAGS_MINSIZEREL "-Os -DNDEBUG=1 -march=native")
+else()
+    message(STATUS "Wrong build type selected, default to Debug.")
+    set(CMAKE_BUILD_TYPE "Debug")
 endif()
 
-set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "") # suppress -rdynamic flag
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer")
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
+#set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
 
 include_directories("include/")
 
@@ -56,7 +70,7 @@ set(HEADERS
 
 #add_executable("test_traits"        "test/traits.cpp"        ${HEADERS} "test/traits.hpp")
 add_executable("test_versatile"     "test/versatile.cpp"     ${HEADERS} "test/destructible.hpp" "test/visit.hpp" "test/utility.hpp" "test/versatile.hpp")
-#add_executable("test_variant"       "test/variant.cpp"       ${HEADERS} "test/destructible.hpp" "test/visit.hpp" "test/utility.hpp" "test/variant.hpp")
+add_executable("test_variant"       "test/variant.cpp"       ${HEADERS} "test/destructible.hpp" "test/visit.hpp" "test/utility.hpp" "test/variant.hpp")
 #add_executable("test_boost_variant" "test/boost_variant.cpp" ${HEADERS} "test/destructible.hpp" "test/visit.hpp" "test/boost_variant.hpp")
 #add_executable("test_eggs_variant"  "test/eggs_variant.cpp"  ${HEADERS} "test/destructible.hpp" "test/visit.hpp" "test/eggs_variant.hpp")
 # for f in `ls build/test_*` ; do du -sh ./$f ; ./$f && echo -e "\e[1;32mSuccess! \e[0m$f" || echo -e "\e[1;31mFailure! \e[0m$f" ; done ;

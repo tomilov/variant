@@ -26,21 +26,16 @@ class variant
 
     storage_type storage_;
 
+    template< typename type >
+    using index_at_t = index_at_t< unwrap_type_t< type >, unwrap_type_t< types >... >;
+
 public :
-
-    using default_index = typename versatile::default_index;
-
-    template< typename ...arguments >
-    using index_of_constructible = typename versatile::template index_of_constructible< arguments... >;
 
     std::size_t
     which() const noexcept
     {
         return storage_->which();
     }
-
-    template< typename type >
-    using index_at_t = typename versatile::template index_at_t< type >;
 
     template< typename type >
     bool
@@ -96,11 +91,11 @@ public :
         , storage_(std::make_unique< versatile >(std::forward< type >(_value)))
     { ; }
 
-    template< typename ...arguments, typename index = index_of_constructible< arguments... > >
+    template< typename ...arguments, typename index = get_index_t< std::is_constructible_v< types, arguments... >... > >
     explicit
     variant(in_place_t (&)(), arguments &&... _arguments)
         : enabler({})
-        , storage_(index{}, std::forward< arguments >(_arguments)...)
+        , storage_(in_place< index::value >, std::forward< arguments >(_arguments)...)
     { ; }
 
     template< typename type, typename ...arguments >

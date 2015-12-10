@@ -47,7 +47,7 @@ public :
 
     template< typename ...arguments >
     constexpr
-    destructor_dispatcher(index_t< (sizeof...(rest) + 1) >, arguments &&... _arguments) noexcept(noexcept(::new (std::declval< void * >()) head(std::declval< arguments >()...)))
+    destructor_dispatcher(index_t< sizeof...(rest) >, arguments &&... _arguments) noexcept(noexcept(::new (std::declval< void * >()) head(std::declval< arguments >()...)))
         : head_(std::forward< arguments >(_arguments)...)
     { ; }
 
@@ -130,7 +130,7 @@ public :
     void
     destructor(std::size_t const _which) const noexcept(noexcept(head_.~head()) && noexcept(tail_.destructor(_which)))
     {
-        if (_which == (sizeof...(rest) + 1)) {
+        if (_which == sizeof...(rest)) {
             head_.~head();
         } else {
             tail_.destructor(_which);
@@ -142,7 +142,7 @@ public :
 
     template< typename ...arguments >
     constexpr
-    destructor_dispatcher(index_t< (sizeof...(rest) + 1) >, arguments &&... _arguments) noexcept(noexcept(::new (std::declval< void * >()) head(std::declval< arguments >()...)))
+    destructor_dispatcher(index_t< sizeof...(rest) >, arguments &&... _arguments) noexcept(noexcept(::new (std::declval< void * >()) head(std::declval< arguments >()...)))
         : head_(std::forward< arguments >(_arguments)...)
     { ; }
 
@@ -203,7 +203,7 @@ public :
         return which_;
     }
 
-    using default_index = index_of_default_constructible< types..., void >;
+    using default_index = index_of_default_constructible< types... >;
 
     constexpr
     dispatcher() noexcept(noexcept(::new (std::declval< void * >()) storage(typename default_index::type{})))
@@ -273,7 +273,7 @@ public :
         storage_.destructor(which_);
     }
 
-    using default_index = index_of_default_constructible< types..., void >;
+    using default_index = index_of_default_constructible< types... >;
 
     constexpr
     dispatcher() noexcept(noexcept(::new (std::declval< void * >()) storage(typename default_index::type{})))
@@ -316,29 +316,24 @@ class versatile
 
     storage storage_;
 
+    template< typename type >
+    using index_at_t = index_at_t< unwrap_type_t< type >, unwrap_type_t< types >... >;
+
 public :
-
-    using default_index = typename storage::default_index;
-
-    template< typename ...arguments >
-    using index_of_constructible = get_index< std::is_constructible_v< types, arguments... >... >;
 
     constexpr
     std::size_t
     which() const noexcept
     {
-        return storage_.which();
+        return (sizeof...(types) - 1 - storage_.which());
     }
-
-    template< typename type >
-    using index_at_t = index_at_t< unwrap_type_t< type >, unwrap_type_t< types >..., void >;
 
     template< typename type >
     constexpr
     bool
     active() const noexcept
     {
-        return (which() == index_at_t< type >::value);
+        return (storage_.which() == index_at_t< type >::value);
     }
 
     constexpr
@@ -351,7 +346,7 @@ public :
         , storage_(index{}, std::forward< type >(_value))
     { ; }
 
-    template< typename ...arguments, typename index = index_of_constructible< arguments... > >
+    template< typename ...arguments, typename index = get_index_t< std::is_constructible_v< types, arguments... >... > >
     explicit
     constexpr
     versatile(in_place_t (&)(), arguments &&... _arguments) noexcept(noexcept(::new (std::declval< void * >()) storage(index{}, std::forward< arguments >(_arguments)...)))
@@ -372,7 +367,7 @@ public :
     constexpr
     versatile(in_place_t (&)(index_t< i >), arguments &&... _arguments) noexcept(noexcept(::new (std::declval< void * >()) storage(index_t< i >{}, std::forward< arguments >(_arguments)...)))
         : enabler({})
-        , storage_(index_t< i >{}, std::forward< arguments >(_arguments)...)
+        , storage_(index_t< (sizeof...(types) - 1 - i) >{}, std::forward< arguments >(_arguments)...)
     { ; }
 
     template< typename type, typename index = index_at_t< type > >
@@ -400,7 +395,7 @@ public :
         return (*this = versatile(std::forward< type >(_value))); // http://stackoverflow.com/questions/33936295/
     }
 
-    template< std::size_t i = sizeof...(types), typename ...arguments >
+    template< std::size_t i, typename ...arguments >
     constexpr
     void
     emplace(arguments &&... _arguments) noexcept
