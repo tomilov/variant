@@ -10,7 +10,6 @@ namespace test
 {
 
 template< std::size_t ...M, std::size_t ...N >
-CONSTEXPRF
 bool
 invoke(std::index_sequence< M... >, std::index_sequence< N... >) noexcept
 {
@@ -27,6 +26,6 @@ invoke(std::index_sequence< M... >, std::index_sequence< N... >) noexcept
 int
 main()
 {
-    ASSERT ((test::hard< ROWS, COLS >()));
+    assert ((test::hard< ROWS, COLS >()));
     return EXIT_SUCCESS;
 }

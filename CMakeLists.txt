@@ -75,6 +75,7 @@ set(HEADERS
 #add_executable("test_eggs_variant"  "test/eggs_variant.cpp"  ${HEADERS} "test/utility.hpp" "test/visit.hpp" "test/eggs_variant.hpp")
 add_definitions(-DCOLS=4 -DROWS=4)
 add_executable("test_ct_versatile"     "test/test_ct_versatile.cpp"     ${HEADERS} "test/deep_and_hard.hpp")
+add_executable("test_ct_variant"       "test/test_ct_variant.cpp"       ${HEADERS} "test/deep_and_hard.hpp")
 add_executable("test_ct_eggs_variant"  "test/test_ct_eggs_variant.cpp"  ${HEADERS} "test/deep_and_hard.hpp")
 add_executable("test_ct_boost_variant" "test/test_ct_boost_variant.cpp" ${HEADERS} "test/deep_and_hard.hpp")
 # for f in `ls build/test_*` ; do du -sh ./$f ; ./$f && echo -e "\e[1;32mSuccess! \e[0m$f" || echo -e "\e[1;31mFailure! \e[0m$f" ; done ;

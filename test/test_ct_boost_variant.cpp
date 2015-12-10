@@ -11,7 +11,6 @@ namespace test
 {
 
 template< std::size_t ...M, std::size_t ...N >
-CONSTEXPRF
 bool
 invoke(std::index_sequence< M... >, std::index_sequence< N... >) noexcept
 {

@@ -29,7 +29,6 @@ struct visitor
 {
 
     template< std::size_t ...I >
-    CONSTEXPRF
     typename visitor::result_type
     operator () (T< I >...) const noexcept
     {
@@ -40,12 +39,10 @@ struct visitor
 
 
 template< std::size_t ...M, std::size_t ...N >
-CONSTEXPRF
 bool
 invoke(std::index_sequence< M... >, std::index_sequence< N... >) noexcept;
 
 template< std::size_t M, std::size_t N = M >
-CONSTEXPRF
 bool
 hard() noexcept
 {

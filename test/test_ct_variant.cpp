@@ -13,7 +13,7 @@ template< std::size_t ...M, std::size_t ...N >
 bool
 invoke(std::index_sequence< M... >, std::index_sequence< N... >) noexcept
 {
-    using V = ::versatile::versatile< T< M >... >;
+    using V = ::versatile::variant< T< M >... >;
     V variants_[sizeof...(N)] = {{T< (N % sizeof...(M)) >{}}...};
     visitor< sizeof...(N) > visitor_;
     auto const rhs_ = ::versatile::multivisit(visitor_, variants_[N]...);
