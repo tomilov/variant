@@ -18,7 +18,7 @@ in_place()
 template< typename type >
 constexpr
 in_place_t
-in_place(identity< type > = {})
+in_place(type)
 {
     return {};
 }
@@ -26,7 +26,7 @@ in_place(identity< type > = {})
 template< std::size_t i >
 constexpr
 in_place_t
-in_place(index_t< i > = {})
+in_place(index_t< i >)
 {
     return {};
 }

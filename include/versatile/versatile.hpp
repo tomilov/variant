@@ -357,7 +357,7 @@ public :
     template< typename type, typename index = index_at_t< type >, typename ...arguments >
     explicit
     constexpr
-    versatile(in_place_t (&)(identity< type >), arguments &&... _arguments) noexcept(noexcept(::new (std::declval< void * >()) storage(index{}, std::forward< arguments >(_arguments)...)))
+    versatile(in_place_t (&)(type), arguments &&... _arguments) noexcept(noexcept(::new (std::declval< void * >()) storage(index{}, std::forward< arguments >(_arguments)...)))
         : enabler({})
         , storage_(index{}, std::forward< arguments >(_arguments)...)
     { ; }

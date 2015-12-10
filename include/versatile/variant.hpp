@@ -100,7 +100,7 @@ public :
 
     template< typename type, typename ...arguments >
     explicit
-    variant(in_place_t (&)(identity< type >), arguments &&... _arguments)
+    variant(in_place_t (&)(type), arguments &&... _arguments)
         : enabler({})
         , storage_(std::make_unique< versatile >(in_place< type >, std::forward< arguments >(_arguments)...))
     { ; }
