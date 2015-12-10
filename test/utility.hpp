@@ -2,10 +2,14 @@
 
 #include "prologue.hpp"
 
+#include <versatile/utility.hpp>
+
 #include <typeinfo>
 
 namespace test
 {
+
+using ::versatile::is_active;
 
 template< template< typename ... > class wrapper,
           template< typename ... > class visitable >

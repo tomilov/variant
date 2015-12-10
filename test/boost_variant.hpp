@@ -2,9 +2,7 @@
 
 #include <boost/variant.hpp>
 
-#include <versatile/wrappers.hpp>
-#include <versatile/visit.hpp>
-#include <versatile/utility.hpp>
+#include <versatile/type_traits.hpp>
 
 #include "prologue.hpp"
 
