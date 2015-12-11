@@ -44,13 +44,7 @@ template< std::size_t I = 0 >
 struct literal_type
 {
 
-    std::size_t i = I;
-
-    CONSTEXPRF
-    operator std::size_t () const
-    {
-        return i;
-    }
+    std::size_t state = I;
 
 };
 
@@ -63,22 +57,16 @@ template< std::size_t I = 0 >
 struct common_type
 {
 
-    std::size_t i = I;
-
-    CONSTEXPRF
-    operator std::size_t () const
-    {
-        return i;
-    }
+    std::size_t state = I;
 
     common_type() { ; }
-    common_type(common_type const & c) : i(c.i) { ; }
-    common_type(common_type & c) : i(c.i) { ; }
-    common_type(common_type && c) : i(c.i) { ; }
-    common_type & operator = (common_type const & c) { i = c.i; return *this; }
-    common_type & operator = (common_type & c) { i = c.i; return *this; }
-    common_type & operator = (common_type && c) { i = c.i; return *this; }
-    ~common_type() { i = ~std::size_t{}; }
+    common_type(common_type const & c) : state(c.state) { ; }
+    common_type(common_type & c) : state(c.state) { ; }
+    common_type(common_type && c) : state(c.state) { ; }
+    common_type & operator = (common_type const & c) { state = c.state; return *this; }
+    common_type & operator = (common_type & c) { state = c.state; return *this; }
+    common_type & operator = (common_type && c) { state = c.state; return *this; }
+    ~common_type() { state = ~std::size_t{}; }
 
 };
 

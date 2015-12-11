@@ -47,13 +47,13 @@ public :
 
     template< typename ...arguments >
     constexpr
-    destructor_dispatcher(index_t< sizeof...(rest) >, arguments &&... _arguments) noexcept(noexcept(::new (std::declval< void * >()) head(std::declval< arguments >()...)))
+    destructor_dispatcher(index_t< sizeof...(rest) >, arguments &&... _arguments)
         : head_(std::forward< arguments >(_arguments)...)
     { ; }
 
     template< typename ...arguments >
     constexpr
-    destructor_dispatcher(arguments &&... _arguments) noexcept(noexcept(::new (std::declval< void * >()) tail(std::declval< arguments >()...)))
+    destructor_dispatcher(arguments &&... _arguments)
         : tail_(std::forward< arguments >(_arguments)...)
     { ; }
 
@@ -142,13 +142,13 @@ public :
 
     template< typename ...arguments >
     constexpr
-    destructor_dispatcher(index_t< sizeof...(rest) >, arguments &&... _arguments) noexcept(noexcept(::new (std::declval< void * >()) head(std::declval< arguments >()...)))
+    destructor_dispatcher(index_t< sizeof...(rest) >, arguments &&... _arguments)
         : head_(std::forward< arguments >(_arguments)...)
     { ; }
 
     template< typename ...arguments >
     constexpr
-    destructor_dispatcher(arguments &&... _arguments) noexcept(noexcept(::new (std::declval< void * >()) tail(std::declval< arguments >()...)))
+    destructor_dispatcher(arguments &&... _arguments)
         : tail_(std::forward< arguments >(_arguments)...)
     { ; }
 
@@ -206,13 +206,13 @@ public :
     using default_index = index_of_default_constructible< types... >;
 
     constexpr
-    dispatcher() noexcept(noexcept(::new (std::declval< void * >()) storage(typename default_index::type{})))
+    dispatcher()
         : dispatcher(typename default_index::type{})
     { ; }
 
     template< typename index, typename ...arguments >
     constexpr
-    dispatcher(index, arguments &&... _arguments) noexcept(noexcept(::new (std::declval< void * >()) storage(index{}, std::forward< arguments >(_arguments)...)))
+    dispatcher(index, arguments &&... _arguments)
         : which_{index::value}
         , storage_(index{}, std::forward< arguments >(_arguments)...)
     { ; }
@@ -276,13 +276,13 @@ public :
     using default_index = index_of_default_constructible< types... >;
 
     constexpr
-    dispatcher() noexcept(noexcept(::new (std::declval< void * >()) storage(typename default_index::type{})))
+    dispatcher()
         : dispatcher(typename default_index::type{})
     { ; }
 
     template< typename index, typename ...arguments >
     constexpr
-    dispatcher(index, arguments &&... _arguments) noexcept(noexcept(::new (std::declval< void * >()) storage(index{}, std::forward< arguments >(_arguments)...)))
+    dispatcher(index, arguments &&... _arguments)
         : which_{index::value}
         , storage_(index{}, std::forward< arguments >(_arguments)...)
     { ; }
@@ -341,23 +341,15 @@ public :
 
     template< typename type, typename index = index_at_t< type > >
     constexpr
-    versatile(type && _value) noexcept(noexcept(::new (std::declval< void * >()) storage(index{}, std::forward< type >(_value))))
+    versatile(type && _value)
         : enabler({})
         , storage_(index{}, std::forward< type >(_value))
-    { ; }
-
-    template< typename ...arguments, typename index = get_index_t< std::is_constructible_v< types, arguments... >... > >
-    explicit
-    constexpr
-    versatile(in_place_t (&)(), arguments &&... _arguments) noexcept(noexcept(::new (std::declval< void * >()) storage(index{}, std::forward< arguments >(_arguments)...)))
-        : enabler({})
-        , storage_(index{}, std::forward< arguments >(_arguments)...)
     { ; }
 
     template< typename type, typename index = index_at_t< type >, typename ...arguments >
     explicit
     constexpr
-    versatile(in_place_t (&)(type), arguments &&... _arguments) noexcept(noexcept(::new (std::declval< void * >()) storage(index{}, std::forward< arguments >(_arguments)...)))
+    versatile(in_place_t (&)(type), arguments &&... _arguments)
         : enabler({})
         , storage_(index{}, std::forward< arguments >(_arguments)...)
     { ; }
@@ -365,7 +357,7 @@ public :
     template< std::size_t i, typename ...arguments >
     explicit
     constexpr
-    versatile(in_place_t (&)(index_t< i >), arguments &&... _arguments) noexcept(noexcept(::new (std::declval< void * >()) storage(index_t< i >{}, std::forward< arguments >(_arguments)...)))
+    versatile(in_place_t (&)(index_t< i >), arguments &&... _arguments)
         : enabler({})
         , storage_(index_t< (sizeof...(types) - 1 - i) >{}, std::forward< arguments >(_arguments)...)
     { ; }
@@ -411,15 +403,6 @@ public :
     {
         static_assert(std::is_trivially_assignable_v< versatile, versatile >, "all alternative types should be trivially move assignable");
         *this = versatile(in_place< type >, std::forward< arguments >(_arguments)...);
-    }
-
-    template< typename ...arguments >
-    constexpr
-    void
-    emplace(arguments &&... _arguments) noexcept
-    {
-        static_assert(std::is_trivially_assignable_v< versatile, versatile >, "all alternative types should be trivially move assignable");
-        *this = versatile(in_place, std::forward< arguments >(_arguments)...);
     }
 
 };

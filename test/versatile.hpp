@@ -1912,6 +1912,7 @@ class check_triviality
     in_place_constructible() noexcept
     {
         using ::versatile::in_place;
+        using ::versatile::make_variant;
         struct X {};
         struct Y {};
         {
@@ -1922,8 +1923,8 @@ class check_triviality
             ASSERT (is_active< A >(a));
             CONSTEXPR U b{in_place< B >};
             ASSERT (is_active< B >(b));
-            CONSTEXPR U d{in_place};
-            ASSERT (is_active< A >(d));
+            //CONSTEXPR auto d = make_variant< U >();
+            //ASSERT (is_active< A >(d));
         }
         {
             struct A { A() = delete; };
@@ -1931,7 +1932,7 @@ class check_triviality
             using U = V< A, B >;
             CONSTEXPR U b{in_place< B >};
             ASSERT (is_active< B >(b));
-            CONSTEXPR U d{in_place};
+            CONSTEXPR auto d = make_variant< U >();
             ASSERT (is_active< B >(d));
         }
         {
@@ -1942,9 +1943,9 @@ class check_triviality
             ASSERT (is_active< A >(a));
             CONSTEXPR U b{in_place< B >, Y{}};
             ASSERT (is_active< B >(b));
-            CONSTEXPR U x{in_place, X{}};
+            CONSTEXPR auto x = make_variant< U >(X{});
             ASSERT (is_active< A >(x));
-            CONSTEXPR U y{in_place, Y{}};
+            CONSTEXPR auto y = make_variant< U >(Y{});
             ASSERT (is_active< B >(y));
         }
         {
@@ -1955,7 +1956,7 @@ class check_triviality
             ASSERT (is_active< A >(a));
             CONSTEXPR U b{in_place< B >, X{}};
             ASSERT (is_active< B >(b));
-            CONSTEXPR U x{in_place, X{}};
+            CONSTEXPR auto x = make_variant< U >(X{});
             ASSERT (is_active< A >(x));
         }
         {
@@ -1967,9 +1968,9 @@ class check_triviality
             ASSERT (is_active< A >(a));
             CONSTEXPR U b{in_place< B >, A{}};
             ASSERT (is_active< B >(b));
-            CONSTEXPR U x{in_place, B{}};
+            CONSTEXPR auto x = make_variant< U >(B{});
             ASSERT (is_active< A >(x));
-            CONSTEXPR U y{in_place, A{}};
+            CONSTEXPR auto y = make_variant< U >(A{});
             ASSERT (is_active< A >(y)); // move-constructed
         }
         {
@@ -1980,9 +1981,9 @@ class check_triviality
             ASSERT (is_active< A >(a));
             CONSTEXPR U b{in_place< B >, Y{}, X{}};
             ASSERT (is_active< B >(b));
-            CONSTEXPR U x{in_place, X{}, Y{}};
+            CONSTEXPR auto x = make_variant< U >(X{}, Y{});
             ASSERT (is_active< A >(x));
-            CONSTEXPR U y{in_place, Y{}, X{}};
+            CONSTEXPR auto y = make_variant< U >(Y{}, X{});
             ASSERT (is_active< B >(y));
         }
         return true;
@@ -2008,8 +2009,6 @@ class check_triviality
             CHECK (is_active< B >(v));
             v.template emplace< Z >();
             CHECK (is_active< Z >(v));
-            v.emplace();
-            CHECK (is_active< Z >(v));
         }
         {
             struct A { CONSTEXPRF A(X) { ; } };
@@ -2022,8 +2021,6 @@ class check_triviality
             v.template emplace< B >(X{});
             CHECK (is_active< B >(v));
             v.template emplace< Z >();
-            CHECK (is_active< Z >(v));
-            v.emplace();
             CHECK (is_active< Z >(v));
         }
         {
@@ -2039,8 +2036,6 @@ class check_triviality
             CHECK (is_active< B >(v));
             v.template emplace< Z >();
             CHECK (is_active< Z >(v));
-            v.emplace();
-            CHECK (is_active< Z >(v));
         }
         {
             struct A { CONSTEXPRF A(X, Y) { ; } };
@@ -2053,8 +2048,6 @@ class check_triviality
             v.template emplace< B >(Y{}, X{});
             CHECK (is_active< B >(v));
             v.template emplace< Z >();
-            CHECK (is_active< Z >(v));
-            v.emplace();
             CHECK (is_active< Z >(v));
         }
         return true;

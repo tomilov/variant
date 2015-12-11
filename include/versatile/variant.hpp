@@ -91,13 +91,6 @@ public :
         , storage_(std::make_unique< versatile >(std::forward< type >(_value)))
     { ; }
 
-    template< typename ...arguments, typename index = get_index_t< std::is_constructible_v< types, arguments... >... > >
-    explicit
-    variant(in_place_t (&)(), arguments &&... _arguments)
-        : enabler({})
-        , storage_(std::make_unique< versatile >(static_cast< in_place_t (&)() >(in_place), std::forward< arguments >(_arguments)...))
-    { ; }
-
     template< typename type, typename ...arguments >
     explicit
     variant(in_place_t (&)(type), arguments &&... _arguments)
@@ -130,13 +123,6 @@ public :
     emplace(arguments &&... _arguments)
     {
         return variant{in_place< type >, std::forward< arguments >(_arguments)...}.swap(*this);
-    }
-
-    template< typename ...arguments >
-    void
-    emplace(arguments &&... _arguments)
-    {
-        return variant{in_place, std::forward< arguments >(_arguments)...}.swap(*this);
     }
 
 private :

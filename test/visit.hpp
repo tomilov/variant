@@ -145,7 +145,7 @@ struct multivisitor
     std::size_t
     which() const noexcept
     {
-        return 1 + M;
+        return M;
     }
 
     template< typename ...types >
@@ -155,7 +155,7 @@ struct multivisitor
     {
         //ASSERT (M == sizeof...(types));
         //ASSERT (!(is_visitable_v< types > || ...));
-        result_ = {{type_qualifier_of< multivisitor & >, type_qualifier_of< types && >...}, {which(), _values...}};
+        result_ = {{type_qualifier_of< multivisitor & >, type_qualifier_of< types && >...}, {which(), _values.state...}};
         return static_cast< return_type >(result_);
     }
 
@@ -164,7 +164,7 @@ struct multivisitor
     return_type
     operator () (types &&... _values) const & noexcept
     {
-        result_ = {{type_qualifier_of< multivisitor const & >, type_qualifier_of< types && >...}, {which(), _values...}};
+        result_ = {{type_qualifier_of< multivisitor const & >, type_qualifier_of< types && >...}, {which(), _values.state...}};
         return static_cast< return_type >(result_);
     }
 
@@ -173,7 +173,7 @@ struct multivisitor
     return_type
     operator () (types &&... _values) && noexcept
     {
-        result_ = {{type_qualifier_of< multivisitor && >, type_qualifier_of< types && >...}, {which(), _values...}};
+        result_ = {{type_qualifier_of< multivisitor && >, type_qualifier_of< types && >...}, {which(), _values.state...}};
         return static_cast< return_type >(result_);
     }
 
@@ -182,7 +182,7 @@ struct multivisitor
     return_type
     operator () (types &&... _values) const && noexcept
     {
-        result_ = {{type_qualifier_of< multivisitor const && >, type_qualifier_of< types && >...}, {which(), _values...}};
+        result_ = {{type_qualifier_of< multivisitor const && >, type_qualifier_of< types && >...}, {which(), _values.state...}};
         return static_cast< return_type >(result_);
     }
 
@@ -248,17 +248,13 @@ struct fusor
             SA(M == sizeof...(v));
             constexpr type_qualifier type_qual_m = static_cast< type_qualifier >(type_qual_begin + m);
             constexpr type_qualifier type_quals_v[sizeof...(v)] = {static_cast< type_qualifier >(type_qual_begin + v)...};
-            pair< M > const rhs = {{type_qual_m, type_quals_v[i]...}, {M + 1, variants_[i].which()...}};
+            pair< M > const rhs = {{type_qual_m, type_quals_v[i]...}, {M, variants_[i].which()...}};
             using ::versatile::forward_as;
             using ::versatile::multivisit;
             decltype(auto) lhs = multivisit(forward_as< type_qual_m >(multivisitor_),
                                             forward_as< type_quals_v[i] >(variants_[i])...);
-            if (type_qualifier_of< decltype(lhs) > != multivisitor_.type_qual_) {
-                return false;
-            }
-            if (M + 1 != lhs.size()) {
-                return false;
-            }
+            CHECK (type_qualifier_of< decltype(lhs) > == multivisitor_.type_qual_);
+            CHECK (M + 1 == lhs.size());
             if (!(lhs == rhs)) {
                 return false;
             }
@@ -336,7 +332,6 @@ class perferct_forwarding
         auto const enumerator_ = make_enumerator< qual_count_, (static_cast< void >(i), qual_count_)... >(fusor_.fuse_);
         variant_type const variants_[N] = {type< j >{}...};
         CHECK (((variants_[j].which() == j) && ...));
-        CHECK (((static_cast< std::size_t >(static_cast< type< j > const & >(variants_[j])) == j) && ...));
         std::size_t indices[M] = {};
         for (;;) {
             ((fusor_[i] = variants_[indices[i]]), ...);

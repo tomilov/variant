@@ -705,6 +705,7 @@ class check_common
     in_place_constructible() noexcept
     {
         using ::versatile::in_place;
+        using ::versatile::make_variant;
         struct X {};
         struct Y {};
         {
@@ -715,7 +716,7 @@ class check_common
             CHECK (is_active< A >(a));
             U const b{in_place< B >};
             CHECK (is_active< B >(b));
-            U const d{in_place};
+            auto const d = make_variant< U >();
             CHECK (is_active< A >(d));
         }
         {
@@ -724,7 +725,7 @@ class check_common
             using U = V< A, B >;
             U const b{in_place< B >};
             CHECK (is_active< B >(b));
-            U const d{in_place};
+            auto const d = make_variant< U >();
             CHECK (is_active< B >(d));
         }
         {
@@ -735,9 +736,9 @@ class check_common
             CHECK (is_active< A >(a));
             U const b{in_place< B >, Y{}};
             CHECK (is_active< B >(b));
-            U const x{in_place, X{}};
+            auto const x = make_variant< U >(X{});
             CHECK (is_active< A >(x));
-            U const y{in_place, Y{}};
+            auto const y = make_variant< U >(Y{});
             CHECK (is_active< B >(y));
         }
         {
@@ -748,7 +749,7 @@ class check_common
             CHECK (is_active< A >(a));
             U const b{in_place< B >, X{}};
             CHECK (is_active< B >(b));
-            U const x{in_place, X{}};
+            auto const x = make_variant< U >(X{});
             CHECK (is_active< A >(x));
         }
         {
@@ -760,9 +761,9 @@ class check_common
             CHECK (is_active< A >(a));
             U const b{in_place< B >, A{}};
             CHECK (is_active< B >(b));
-            U const x{in_place, B{}};
+            auto const x = make_variant< U >(B{});
             CHECK (is_active< A >(x));
-            U const y{in_place, A{}};
+            auto const y = make_variant< U >(A{});
             CHECK (is_active< A >(y)); // move-constructed
         }
         {
@@ -773,9 +774,9 @@ class check_common
             CHECK (is_active< A >(a));
             U const b{in_place< B >, Y{}, X{}};
             CHECK (is_active< B >(b));
-            U const x{in_place, X{}, Y{}};
+            auto const x = make_variant< U >(X{}, Y{});
             CHECK (is_active< A >(x));
-            U const y{in_place, Y{}, X{}};
+            auto const y = make_variant< U >(Y{}, X{});
             CHECK (is_active< B >(y));
         }
         return true;
@@ -800,8 +801,6 @@ class check_common
             CHECK (is_active< B >(v));
             v.template emplace< Z >();
             CHECK (is_active< Z >(v));
-            v.emplace();
-            CHECK (is_active< Z >(v));
         }
         {
             struct A { A(X) { ; } };
@@ -814,8 +813,6 @@ class check_common
             v.template emplace< B >(X{});
             CHECK (is_active< B >(v));
             v.template emplace< Z >();
-            CHECK (is_active< Z >(v));
-            v.emplace();
             CHECK (is_active< Z >(v));
         }
         {
@@ -831,8 +828,6 @@ class check_common
             CHECK (is_active< B >(v));
             v.template emplace< Z >();
             CHECK (is_active< Z >(v));
-            v.emplace();
-            CHECK (is_active< Z >(v));
         }
         {
             struct A { A(X, Y) { ; } };
@@ -845,8 +840,6 @@ class check_common
             v.template emplace< B >(Y{}, X{});
             CHECK (is_active< B >(v));
             v.template emplace< Z >();
-            CHECK (is_active< Z >(v));
-            v.emplace();
             CHECK (is_active< Z >(v));
         }
         return true;
