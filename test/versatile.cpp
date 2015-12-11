@@ -16,6 +16,7 @@ main()
     using ::test::literal_type;
     using ::test::check_invariants;
     using ::test::check_triviality;
+    using ::test::check_utility;
     using ::test::check_destructible;
     using ::test::perferct_forwarding;
     { // versatile
@@ -27,6 +28,10 @@ main()
         {
             ASSERT ((check_triviality< identity,  versatile >::run()));
             ASSERT ((check_triviality< aggregate, versatile >::run()));
+        }
+        {
+            ASSERT ((check_utility< identity,  versatile >::run()));
+            ASSERT ((check_utility< aggregate, versatile >::run()));
         }
         {
             assert ((check_destructible< identity,          versatile >::run()));

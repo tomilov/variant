@@ -405,6 +405,15 @@ public :
         *this = versatile(in_place< type >, std::forward< arguments >(_arguments)...);
     }
 
+    constexpr
+    void
+    swap(versatile & _other) noexcept
+    {
+        versatile other_ = std::move(_other);
+        _other = std::move(*this);
+        *this = std::move(other_);
+    }
+
 };
 
 template< typename first, typename ...rest >
@@ -413,5 +422,13 @@ struct is_visitable< versatile< first, rest... > >
 {
 
 };
+
+template< typename ...types >
+constexpr
+void
+swap(versatile< types... > & _lhs, versatile< types... > & _rhs) noexcept
+{
+    _lhs.swap(_rhs);
+}
 
 }

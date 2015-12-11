@@ -2073,4 +2073,64 @@ public :
 
 };
 
+
+
+template< template< typename ... > class wrapper,
+          template< typename ... > class variant >
+class check_utility
+{
+
+    template< typename ...types >
+    using V = variant< typename wrapper< types >::type... >;
+
+    CONSTEXPRF
+    static
+    bool
+    check_swap() noexcept
+    {
+        using std::swap;
+        {
+            struct A {};
+            struct B {};
+            using U = V< A, B >;
+            U a = A{};
+            CHECK (is_active< A >(a));
+            U b = B{};
+            CHECK (is_active< B >(b));
+            swap(a, b);
+            CHECK (is_active< A >(b));
+            CHECK (is_active< B >(a));
+        }
+        {
+            struct A { int state; };
+            struct B {};
+            using U = V< A, B >;
+            U x = A{1};
+            CHECK (is_active< A >(x));
+            U y = A{2};
+            CHECK (is_active< A >(y));
+            CHECK (static_cast< A & >(x).state == 1);
+            CHECK (static_cast< A & >(y).state == 2);
+            swap(x, y);
+            CHECK (is_active< A >(x));
+            CHECK (is_active< A >(y));
+            CHECK (static_cast< A & >(x).state == 2);
+            CHECK (static_cast< A & >(y).state == 1);
+        }
+        return true;
+    }
+
+public :
+
+    CONSTEXPRF
+    static
+    bool
+    run() noexcept
+    {
+        ASSERT (check_swap());
+        return true;
+    }
+
+};
+
 } // namespace test
