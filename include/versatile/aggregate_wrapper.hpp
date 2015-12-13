@@ -10,11 +10,10 @@ namespace versatile
 {
 
 template< typename type >
-struct aggregate_wrapper
+struct aggregate_wrapper // enables direct-initialization for aggregates
     : type
 {
 
-    constexpr
     aggregate_wrapper() = default;
 
     template< typename argument,

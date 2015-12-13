@@ -196,29 +196,51 @@ template< template< typename ... > class visitable >
 class check_runtime
 {
 
+    template< typename incomplete_type >
+    using W = ::versatile::recursive_wrapper< incomplete_type >;
+
     static
     bool
     recursive() noexcept
     {
-        using ::versatile::recursive_wrapper;
         { // composition
             struct R;
             struct A {};
-            using U = visitable< A, recursive_wrapper< R > >;
+            using U = visitable< A, W< R > >;
             struct R { U v; };
-            U v;
+            U v{};
             CHECK (is_active< A >(v));
             v = R{};
             CHECK (is_active< R >(v));
         }
-        {  // recursive (inheritance)
+        { // composition
             struct R;
             struct A {};
-            using U = visitable< A, recursive_wrapper< R > >;
+            using U = visitable< W< R >, A >;
+            struct R { U v; };
+            U v{A{}};
+            CHECK (is_active< A >(v));
+            v = R{{A{}}};
+            CHECK (is_active< R >(v));
+        }
+        {  // inheritance
+            struct R;
+            struct A {};
+            using U = visitable< A, W< R > >;
             struct R : U { using U::U; using U::operator =; };
-            U v;
+            U v{};
             CHECK (is_active< A >(v));
             v = R{};
+            CHECK (is_active< R >(v));
+        }
+        {  // inheritance
+            struct R;
+            struct A {};
+            using U = visitable< W< R >, A >;
+            struct R : U { using U::U; using U::operator =; };
+            U v{A{}};
+            CHECK (is_active< A >(v));
+            v = R{A{}};
             CHECK (is_active< R >(v));
         }
         return true;

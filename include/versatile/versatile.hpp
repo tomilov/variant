@@ -41,8 +41,6 @@ class destructor_dispatcher< true, first, rest... >
 
 public :
 
-    destructor_dispatcher() = default;
-
     template< typename ...arguments >
     constexpr
     destructor_dispatcher(index_t< (1 + sizeof...(rest)) >, arguments &&... _arguments)
@@ -60,13 +58,13 @@ public :
     constexpr
     operator this_type const & () const noexcept
     {
-        return static_cast< this_type const & >(head_);
+        return head_;
     }
 
     constexpr
     operator this_type & () noexcept
     {
-        return static_cast< this_type & >(head_);
+        return head_;
     }
 
     template< typename type >
@@ -125,8 +123,6 @@ public :
             tail_.destructor(_which);
         }
     }
-
-    destructor_dispatcher() = default;
 
     template< typename ...arguments >
     constexpr

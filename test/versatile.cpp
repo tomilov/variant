@@ -1,5 +1,5 @@
 #include "versatile.hpp"
-#include "utility.hpp"
+#include "common.hpp"
 #include "wrappers.hpp"
 #include "visit.hpp"
 
@@ -25,7 +25,7 @@ main()
         {
             ASSERT ((check_indexing< identity,          versatile >::run()));
             ASSERT ((check_indexing< aggregate,         versatile >::run()));
-            CHECK ((check_indexing< recursive_wrapper, versatile >::run()));
+            //CHECK ((check_indexing< recursive_wrapper, versatile >::run()));
         }
         {
             ASSERT ((check_invariants< identity,  versatile >::run()));

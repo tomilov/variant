@@ -1,5 +1,5 @@
 #include "eggs_variant.hpp"
-#include "utility.hpp"
+#include "common.hpp"
 #include "visit.hpp"
 
 #include <versatile/type_traits.hpp>
