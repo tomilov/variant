@@ -1,5 +1,6 @@
 #pragma once
 
+#include <versatile/type_traits.hpp>
 #include <versatile/in_place.hpp>
 
 #include <type_traits>
@@ -7,15 +8,6 @@
 
 namespace versatile
 {
-
-template< type_qualifier type_qual, typename type,
-          typename result_type = add_type_qualifier_t< type_qual, std::decay_t< type > > >
-constexpr
-result_type
-forward_as(type && _value)
-{
-    return static_cast< result_type >(_value);
-}
 
 template< typename type, typename visitable >
 constexpr
