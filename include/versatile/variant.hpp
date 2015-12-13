@@ -5,10 +5,7 @@
 
 #include <type_traits>
 #include <utility>
-#include <experimental/optional>
-#include <memory>
 
-#include <cstddef>
 #include <cassert>
 
 namespace versatile
