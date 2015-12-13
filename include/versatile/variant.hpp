@@ -184,14 +184,14 @@ public :
     explicit
     operator type & ()
     {
-        return static_cast< type & >(storage_);
+        return storage_;
     }
 
     template< typename type, typename index = index_at_t< type > >
     explicit
     operator type const & () const
     {
-        return static_cast< type const & >(storage_);
+        return storage_;
     }
 
 };
