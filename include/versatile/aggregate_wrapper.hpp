@@ -2,15 +2,13 @@
 
 #include <versatile/type_traits.hpp>
 
-#include <type_traits>
 #include <utility>
-#include <memory>
 
 namespace versatile
 {
 
 template< typename type >
-struct aggregate_wrapper // enables direct-initialization for aggregates
+struct aggregate_wrapper
     : type
 {
 

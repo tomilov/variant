@@ -11,16 +11,15 @@
 namespace versatile
 {
 
-template< bool is_trivially_destructible, typename ...types >
+template< bool trivially_destructible, typename ...types >
 class destructor_dispatcher;
 
-template< bool is_trivially_destructible >
-struct destructor_dispatcher< is_trivially_destructible >
+template< bool trivially_destructible >
+struct destructor_dispatcher< trivially_destructible >
 {
 
-    constexpr
     void
-    destructor(std::size_t const) const
+    destructor(std::size_t const _which) const
     { ; }
 
 };
@@ -158,7 +157,7 @@ public :
 
 };
 
-template< bool is_trivially_destructible, typename ...types >
+template< bool trivially_destructible, typename ...types >
 class dispatcher;
 
 template< typename ...types >
@@ -255,12 +254,14 @@ public :
 template< typename ...types >
 using dispatcher_t = dispatcher< (std::is_trivially_destructible_v< types > && ...), types... >;
 
-template< bool is_default_constructible >
+template< bool idefault_constructible >
 struct enable_default_constructor;
 
 template<>
 struct enable_default_constructor< true >
 {
+
+    using enabler = enable_default_constructor;
 
     enable_default_constructor() = default;
 
@@ -274,6 +275,8 @@ template<>
 struct enable_default_constructor< false >
 {
 
+    using enabler = enable_default_constructor;
+
     enable_default_constructor() = delete;
 
     constexpr
@@ -283,11 +286,8 @@ struct enable_default_constructor< false >
 };
 
 template< typename ...types >
-using enable_default_constructor_t = enable_default_constructor< (std::is_default_constructible_v< types > || ...) >;
-
-template< typename ...types >
 class versatile
-        : enable_default_constructor_t< types... >
+        : enable_default_constructor< (std::is_default_constructible_v< types > || ...) >
 {
 
     dispatcher_t< types... > storage_;
@@ -324,7 +324,7 @@ public :
     explicit
     constexpr
     versatile(in_place_t (&)(index_t< i >), arguments &&... _arguments)
-        : enable_default_constructor_t< types... >({})
+        : versatile::enabler({})
         , storage_(index_t< i >{}, std::forward< arguments >(_arguments)...)
     { ; }
 
@@ -380,6 +380,12 @@ public :
     {
         return active< type >() ? storage_ : throw std::bad_cast{};
     }
+
+};
+
+template<>
+class versatile<>
+{
 
 };
 

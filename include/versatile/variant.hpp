@@ -15,17 +15,8 @@ namespace versatile
 {
 
 template< typename ...types >
-class variant;
-
-template<>
-class variant<>
-{
-
-};
-
-template< typename ...types >
 class variant
-        : enable_default_constructor_t< types... >
+        : enable_default_constructor< (std::is_default_constructible_v< types > || ...) >
 {
 
     using storage = versatile< types... >;
@@ -57,7 +48,7 @@ private :
 
     explicit
     variant(recursive_wrapper< storage > && _storage)
-        : enable_default_constructor_t< types... >({})
+        : variant::enabler({})
         , storage_(std::move(_storage))
     { ; }
 
@@ -202,6 +193,12 @@ public :
     {
         return static_cast< type const & >(storage_);
     }
+
+};
+
+template<>
+class variant<>
+{
 
 };
 
