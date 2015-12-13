@@ -18,10 +18,6 @@ template< bool trivially_destructible >
 struct destructor_dispatcher< trivially_destructible >
 {
 
-    void
-    destructor(std::size_t const _which) const
-    { ; }
-
 };
 
 template< typename first, typename ...rest >
@@ -105,16 +101,6 @@ public :
     ~destructor_dispatcher() noexcept
     { ; }
 
-    void
-    destructor(std::size_t const _which) const noexcept(noexcept(head_.~first()) && noexcept(tail_.destructor(_which)))
-    {
-        if (_which == (1 + sizeof...(rest))) {
-            head_.~first();
-        } else {
-            tail_.destructor(_which);
-        }
-    }
-
     template< typename ...arguments >
     constexpr
     destructor_dispatcher(index_t< (1 + sizeof...(rest)) >, arguments &&... _arguments)
@@ -126,6 +112,19 @@ public :
     destructor_dispatcher(arguments &&... _arguments)
         : tail_(std::forward< arguments >(_arguments)...)
     { ; }
+
+    void
+    destruct(in_place_t (&)(first)) noexcept
+    {
+        head_.~first();
+    }
+
+    template< typename type >
+    void
+    destruct(in_place_t (&)(type)) noexcept
+    {
+        tail_.destruct(in_place< type >);
+    }
 
     using this_type = unwrap_type_t< first >;
 
@@ -203,8 +202,22 @@ template< typename ...types >
 class dispatcher< false, types... >
 {
 
+    using storage = destructor_dispatcher< false, types... >;
+
     std::size_t which_;
-    destructor_dispatcher< false, types... > storage_;
+    storage storage_;
+
+    template< typename type >
+    static
+    void
+    destruct(storage & _storage) noexcept
+    {
+        _storage.destruct(in_place< type >);
+    }
+
+    using destructor = decltype(&dispatcher::template destruct< typename identity< types... >::type >);
+
+    static constexpr destructor destructors_[sizeof...(types)] = {dispatcher::template destruct< types >...};
 
 public :
 
@@ -223,9 +236,9 @@ public :
     dispatcher & operator = (dispatcher &) = default;
     dispatcher & operator = (dispatcher &&) = default;
 
-    ~dispatcher() noexcept(noexcept(storage_.destructor(which_)))
+    ~dispatcher() noexcept
     {
-        storage_.destructor(which_);
+        destructors_[sizeof...(types) - which()](storage_);
     }
 
     template< typename index, typename ...arguments >
@@ -252,9 +265,9 @@ public :
 };
 
 template< typename ...types >
-using dispatcher_t = dispatcher< (std::is_trivially_destructible_v< types > && ...), types... >;
+constexpr typename dispatcher< false, types... >::destructor dispatcher< false, types... >::destructors_[sizeof...(types)];
 
-template< bool idefault_constructible >
+template< bool default_constructible >
 struct enable_default_constructor;
 
 template<>
@@ -290,7 +303,7 @@ class versatile
         : enable_default_constructor< (std::is_default_constructible_v< types > || ...) >
 {
 
-    dispatcher_t< types... > storage_;
+    dispatcher< (std::is_trivially_destructible_v< types > && ...), types... > storage_;
 
 public :
 
