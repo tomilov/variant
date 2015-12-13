@@ -115,6 +115,19 @@ public :
 
 private :
 
+    template< typename type >
+    variant &
+    assign(type && _rhs)
+    {
+        assert(&_rhs != this);
+        if (which() == _rhs.which()) {
+            visit(assigner{storage_},  std::forward< type >(_rhs));
+        } else {
+            variant(std::forward< type >(_rhs)).swap(*this);
+        }
+        return *this;
+    }
+
     struct assigner
     {
 
@@ -130,19 +143,6 @@ private :
     };
 
 public :
-
-    template< typename type >
-    variant &
-    assign(type && _rhs)
-    {
-        assert(&_rhs != this);
-        if (which() == _rhs.which()) {
-            visit(assigner{storage_},  std::forward< type >(_rhs));
-        } else {
-            variant(std::forward< type >(_rhs)).swap(*this);
-        }
-        return *this;
-    }
 
     variant &
     operator = (variant & _rhs)
