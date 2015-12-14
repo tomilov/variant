@@ -19,10 +19,12 @@ using ::versatile::in_place_t;
 using ::versatile::in_place_v;
 
 template< typename ...types >
-struct eggs_variant_c // composition
+class eggs_variant_c // composition
 {
 
-    using variant = ::eggs::variant< types... >;
+    ::eggs::variant< types... > storage_;
+
+public :
 
     template< typename type >
     using index_at_t = index_at_t< unwrap_type_t< type >, unwrap_type_t< types >... >;
@@ -118,10 +120,6 @@ struct eggs_variant_c // composition
         }
         return *storage_.template target< type >();
     }
-
-private :
-
-    variant storage_;
 
 };
 
