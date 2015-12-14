@@ -141,13 +141,13 @@ public :
     constexpr
     operator this_type const & () const noexcept
     {
-        return static_cast< this_type const & >(head_);
+        return head_;
     }
 
     constexpr
     operator this_type & () noexcept
     {
-        return static_cast< this_type & >(head_);
+        return head_;
     }
 
     template< typename type >
