@@ -18,8 +18,9 @@ template< bool is_trivially_destructible >
 struct destructor_dispatcher< is_trivially_destructible >
 {
 
+    constexpr
     void
-    destructor(std::size_t const) const noexcept
+    destructor(std::size_t const) const
     { ; }
 
 };

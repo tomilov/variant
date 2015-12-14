@@ -40,13 +40,13 @@ struct visitor
 
 template< std::size_t ...M, std::size_t ...N >
 bool
-invoke(std::index_sequence< M... >, std::index_sequence< N... >) noexcept;
+hard(std::index_sequence< M... >, std::index_sequence< N... >) noexcept;
 
 template< std::size_t M, std::size_t N = M >
 bool
-hard() noexcept
+run() noexcept
 {
-    return invoke(std::make_index_sequence< M >{}, std::make_index_sequence< N >{});
+    return hard(std::make_index_sequence< M >{}, std::make_index_sequence< N >{});
 }
 
 }

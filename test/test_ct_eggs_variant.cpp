@@ -11,7 +11,7 @@ namespace test
 
 template< std::size_t ...M, std::size_t ...N >
 bool
-invoke(std::index_sequence< M... >, std::index_sequence< N... >) noexcept
+hard(std::index_sequence< M... >, std::index_sequence< N... >) noexcept
 {
     using V = ::eggs::variant< T< M >... >;
     V variants_[sizeof...(N)] = {{T< (N % sizeof...(M)) >{}}...};
@@ -26,6 +26,6 @@ invoke(std::index_sequence< M... >, std::index_sequence< N... >) noexcept
 int
 main()
 {
-    CHECK ((test::hard< ROWS, COLS >()));
+    CHECK ((test::run< ROWS, COLS >()));
     return EXIT_SUCCESS;
 }
