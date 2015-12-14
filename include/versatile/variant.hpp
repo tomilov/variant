@@ -7,7 +7,6 @@
 #include <utility>
 #include <experimental/optional>
 #include <memory>
-#include <typeinfo>
 
 #include <cstddef>
 #include <cassert>
@@ -194,9 +193,6 @@ public :
     explicit
     operator type & ()
     {
-        if (!active< type >()) {
-            throw std::bad_cast{};
-        }
         return static_cast< type & >(storage_);
     }
 
@@ -204,9 +200,6 @@ public :
     explicit
     operator type const & () const
     {
-        if (!active< type >()) {
-            throw std::bad_cast{};
-        }
         return static_cast< type const & >(storage_);
     }
 

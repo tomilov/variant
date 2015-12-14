@@ -29,14 +29,11 @@ template< typename first, typename ...rest >
 class destructor_dispatcher< true, first, rest... >
 {
 
-    using head = first;
-    using tail = destructor_dispatcher< true, rest... >;
-
     union
     {
 
-        head head_;
-        tail tail_;
+        first head_;
+        destructor_dispatcher< true, rest... > tail_;
 
     };
 
@@ -88,15 +85,11 @@ template< typename first, typename ...rest >
 class destructor_dispatcher< false, first, rest... >
 {
 
-    using head = first;
-    //using tail = destructor_dispatcher< (std::is_trivially_destructible_v< rest > && ...), rest... >; // redundant overengeneering
-    using tail = destructor_dispatcher< false, rest... >;
-
     union
     {
 
-        head head_;
-        tail tail_;
+        first head_;
+        destructor_dispatcher< false, rest... > tail_;
 
     };
 
@@ -111,15 +104,13 @@ public :
     destructor_dispatcher & operator = (destructor_dispatcher &&) = default;
 
     ~destructor_dispatcher() noexcept
-    {
-        //tail_.~tail();
-    }
+    { ; }
 
     void
-    destructor(std::size_t const _which) const noexcept(noexcept(head_.~head()) && noexcept(tail_.destructor(_which)))
+    destructor(std::size_t const _which) const noexcept(noexcept(head_.~first()) && noexcept(tail_.destructor(_which)))
     {
         if (_which == (1 + sizeof...(rest))) {
-            head_.~head();
+            head_.~first();
         } else {
             tail_.destructor(_which);
         }
@@ -174,10 +165,8 @@ template< typename ...types >
 class dispatcher< true, types... >
 {
 
-    using storage = destructor_dispatcher< true, types... >;
-
     std::size_t which_;
-    storage storage_;
+    destructor_dispatcher< true, types... > storage_;
 
 public :
 
@@ -215,10 +204,8 @@ template< typename ...types >
 class dispatcher< false, types... >
 {
 
-    using storage = destructor_dispatcher< false, types... >;
-
     std::size_t which_;
-    storage storage_;
+    destructor_dispatcher< false, types... > storage_;
 
 public :
 
@@ -303,9 +290,7 @@ class versatile
         : enable_default_constructor_t< types... >
 {
 
-    using storage = dispatcher_t< types... >;
-
-    storage storage_;
+    dispatcher_t< types... > storage_;
 
 public :
 
