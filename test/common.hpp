@@ -3,6 +3,7 @@
 #include "prologue.hpp"
 
 #include <versatile/utility.hpp>
+#include <versatile/recursive_wrapper.hpp>
 
 #include <typeinfo>
 

@@ -3,8 +3,6 @@
 #include "wrappers.hpp"
 #include "visit.hpp"
 
-#include <versatile/variant.hpp>
-
 #include <cstdlib>
 
 int

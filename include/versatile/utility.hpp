@@ -1,6 +1,6 @@
 #pragma once
 
-#include <versatile/variant.hpp>
+#include <versatile/in_place.hpp>
 
 #include <type_traits>
 #include <utility>
@@ -23,51 +23,6 @@ bool
 is_active(visitable const & _visitable)
 {
     return _visitable.template active< type >();
-}
-
-template< std::size_t i, typename ...arguments, typename first, typename ...rest >
-constexpr
-void
-emplace(versatile< first, rest... > & _versatile, arguments &&... _arguments)
-{
-    _versatile = versatile< first, rest... >(in_place< i >, std::forward< arguments >(_arguments)...);
-}
-
-template< typename type, typename ...arguments, typename first, typename ...rest >
-constexpr
-void
-emplace(versatile< first, rest... > & _versatile, arguments &&... _arguments)
-{
-    _versatile = versatile< first, rest... >(in_place< type >, std::forward< arguments >(_arguments)...);
-}
-
-template< typename ...arguments, typename first, typename ...rest >
-constexpr
-void
-emplace(versatile< first, rest... > & _versatile, arguments &&... _arguments)
-{
-    _versatile = versatile< first, rest... >(in_place_v, std::forward< arguments >(_arguments)...);
-}
-
-template< std::size_t i, typename ...arguments, typename first, typename ...rest >
-void
-emplace(variant< first, rest... > & _variant, arguments &&... _arguments)
-{
-    variant< first, rest... >{in_place< i >, std::forward< arguments >(_arguments)...}.swap(_variant);
-}
-
-template< typename type, typename ...arguments, typename first, typename ...rest >
-void
-emplace(variant< first, rest... > & _variant, arguments &&... _arguments)
-{
-    variant< first, rest... >{in_place< type >, std::forward< arguments >(_arguments)...}.swap(_variant);
-}
-
-template< typename ...arguments, typename first, typename ...rest >
-void
-emplace(variant< first, rest... > & _variant, arguments &&... _arguments)
-{
-    variant< first, rest... >{in_place_v, std::forward< arguments >(_arguments)...}.swap(_variant);
 }
 
 template< typename variant, typename ...arguments >
@@ -94,7 +49,7 @@ struct composite_visitor
     using tail::operator ();
 
     constexpr
-    composite_visitor(visitor & _visitor, visitors &... _visitors) noexcept(noexcept(::new (std::declval< void * >()) head(std::declval< visitor >())) && noexcept(tail(_visitors...)))
+    composite_visitor(visitor & _visitor, visitors &... _visitors) noexcept(noexcept(::new (std::declval< void * >()) head(std::declval< visitor >())) && noexcept(tail{_visitors...}))
         : head(std::forward< visitor >(_visitor))
         , tail{_visitors...}
     { ; }

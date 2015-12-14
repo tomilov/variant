@@ -226,4 +226,25 @@ swap(variant< first, rest... > & _lhs, variant< first, rest... > & _rhs) noexcep
     _lhs.swap(_rhs);
 }
 
+template< std::size_t i, typename ...arguments, typename first, typename ...rest >
+void
+emplace(variant< first, rest... > & _variant, arguments &&... _arguments)
+{
+    variant< first, rest... >{in_place< i >, std::forward< arguments >(_arguments)...}.swap(_variant);
+}
+
+template< typename type, typename ...arguments, typename first, typename ...rest >
+void
+emplace(variant< first, rest... > & _variant, arguments &&... _arguments)
+{
+    variant< first, rest... >{in_place< type >, std::forward< arguments >(_arguments)...}.swap(_variant);
+}
+
+template< typename ...arguments, typename first, typename ...rest >
+void
+emplace(variant< first, rest... > & _variant, arguments &&... _arguments)
+{
+    variant< first, rest... >{in_place_v, std::forward< arguments >(_arguments)...}.swap(_variant);
+}
+
 }

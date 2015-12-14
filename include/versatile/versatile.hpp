@@ -413,4 +413,28 @@ swap(versatile< first, rest... > & _lhs, versatile< first, rest... > & _rhs) noe
     _lhs.swap(_rhs);
 }
 
+template< std::size_t i, typename ...arguments, typename first, typename ...rest >
+constexpr
+void
+emplace(versatile< first, rest... > & _versatile, arguments &&... _arguments)
+{
+    _versatile = versatile< first, rest... >(in_place< i >, std::forward< arguments >(_arguments)...);
+}
+
+template< typename type, typename ...arguments, typename first, typename ...rest >
+constexpr
+void
+emplace(versatile< first, rest... > & _versatile, arguments &&... _arguments)
+{
+    _versatile = versatile< first, rest... >(in_place< type >, std::forward< arguments >(_arguments)...);
+}
+
+template< typename ...arguments, typename first, typename ...rest >
+constexpr
+void
+emplace(versatile< first, rest... > & _versatile, arguments &&... _arguments)
+{
+    _versatile = versatile< first, rest... >(in_place_v, std::forward< arguments >(_arguments)...);
+}
+
 }

@@ -3,6 +3,7 @@
 #include "prologue.hpp"
 
 #include <versatile/utility.hpp>
+#include <versatile/variant.hpp>
 
 #include <type_traits>
 #include <utility>

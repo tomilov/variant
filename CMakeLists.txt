@@ -60,8 +60,8 @@ set(HEADERS
     "include/versatile/aggregate_wrapper.hpp"
     "include/versatile/versatile.hpp"
     "include/versatile/variant.hpp"
-    "include/versatile/visit.hpp"
     "include/versatile/utility.hpp"
+    "include/versatile/visit.hpp"
     "include/versatile/io.hpp"
     "include/versatile.hpp"
 
@@ -89,7 +89,7 @@ foreach(t ${TEST_CT_TARGETS})
     target_compile_options(${t} PUBLIC "-ftime-report")
 endforeach()
 
-# for f in `ls build/test_*` ; do du -sh ./$f ; ./$f && echo -e '\e[1;32mSuccess! \e[0m$f' || echo -e '\e[1;31mFailure! \e[0m$f' ; done ;
+# for f in `ls build/test_*` ; do du -sh ./$f ; ./$f && echo -e "\e[1;32mSuccess! \e[0m$f" || echo -e "\e[1;31mFailure! \e[0m$f" ; done ;
 
 #[[
 message("Your C++ compiler supports these C++ features:")
