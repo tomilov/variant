@@ -2,7 +2,6 @@
 
 #include <eggs/variant.hpp>
 
-#include <versatile/type_traits.hpp>
 #include <versatile/in_place.hpp>
 
 #include "prologue.hpp"

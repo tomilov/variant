@@ -31,6 +31,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fconstexpr-steps=50000000 -ftemplate-depth=150")
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftime-report")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -W -Weverything -Wmismatched-tags -Wuninitialized -pedantic -Wfatal-errors -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-gnu-anonymous-struct -Wno-nested-anon-types")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftemplate-backtrace-limit=0  -fconstexpr-backtrace-limit=0")
 
 #set(CMAKE_BUILD_TYPE "Debug")

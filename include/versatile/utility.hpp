@@ -1,6 +1,5 @@
 #pragma once
 
-#include <versatile/type_traits.hpp>
 #include <versatile/in_place.hpp>
 
 #include <type_traits>

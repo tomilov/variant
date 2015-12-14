@@ -16,7 +16,7 @@ hard(std::index_sequence< M... >, std::index_sequence< N... >) noexcept
     using V = ::eggs::variant< T< M >... >;
     V variants_[sizeof...(N)] = {{T< (N % sizeof...(M)) >{}}...};
     visitor< sizeof...(N) > visitor_;
-    auto const rhs_ = ::eggs::variants::apply(visitor_, variants_[N]...);
+    auto const rhs_ = apply(visitor_, variants_[N]...);
     decltype(rhs_) lhs_ = {{{N % sizeof...(M)}...}};
     return ((lhs_[N] == rhs_[N]) && ...);
 }

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <versatile/type_traits.hpp>
 #include <versatile/in_place.hpp>
 
 #include <type_traits>
@@ -13,23 +12,23 @@ namespace versatile
 {
 
 template< bool trivially_destructible, typename ...types >
-class destructor_dispatcher;
+class constructor_dispatcher;
 
 template< bool trivially_destructible >
-struct destructor_dispatcher< trivially_destructible >
+class constructor_dispatcher< trivially_destructible >
 {
 
 };
 
 template< typename first, typename ...rest >
-class destructor_dispatcher< true, first, rest... >
+class constructor_dispatcher< true, first, rest... >
 {
 
     union
     {
 
         first head_;
-        destructor_dispatcher< true, rest... > tail_;
+        constructor_dispatcher< true, rest... > tail_;
 
     };
 
@@ -37,13 +36,13 @@ public :
 
     template< typename ...arguments >
     constexpr
-    destructor_dispatcher(index_t< (1 + sizeof...(rest)) >, arguments &&... _arguments)
+    constructor_dispatcher(index_t< (1 + sizeof...(rest)) >, arguments &&... _arguments)
         : head_(std::forward< arguments >(_arguments)...)
     { ; }
 
     template< typename ...arguments >
     constexpr
-    destructor_dispatcher(arguments &&... _arguments)
+    constructor_dispatcher(arguments &&... _arguments)
         : tail_(std::forward< arguments >(_arguments)...)
     { ; }
 
@@ -78,39 +77,39 @@ public :
 };
 
 template< typename first, typename ...rest >
-class destructor_dispatcher< false, first, rest... >
+class constructor_dispatcher< false, first, rest... >
 {
 
     union
     {
 
         first head_;
-        destructor_dispatcher< false, rest... > tail_;
+        constructor_dispatcher< false, rest... > tail_;
 
     };
 
 public :
 
-    destructor_dispatcher(destructor_dispatcher const &) = default;
-    destructor_dispatcher(destructor_dispatcher &) = default;
-    destructor_dispatcher(destructor_dispatcher &&) = default;
+    constructor_dispatcher(constructor_dispatcher const &) = default;
+    constructor_dispatcher(constructor_dispatcher &) = default;
+    constructor_dispatcher(constructor_dispatcher &&) = default;
 
-    destructor_dispatcher & operator = (destructor_dispatcher const &) = default;
-    destructor_dispatcher & operator = (destructor_dispatcher &) = default;
-    destructor_dispatcher & operator = (destructor_dispatcher &&) = default;
+    constructor_dispatcher & operator = (constructor_dispatcher const &) = default;
+    constructor_dispatcher & operator = (constructor_dispatcher &) = default;
+    constructor_dispatcher & operator = (constructor_dispatcher &&) = default;
 
-    ~destructor_dispatcher() noexcept
+    ~constructor_dispatcher() noexcept
     { ; }
 
     template< typename ...arguments >
     constexpr
-    destructor_dispatcher(index_t< (1 + sizeof...(rest)) >, arguments &&... _arguments)
+    constructor_dispatcher(index_t< (1 + sizeof...(rest)) >, arguments &&... _arguments)
         : head_(std::forward< arguments >(_arguments)...)
     { ; }
 
     template< typename ...arguments >
     constexpr
-    destructor_dispatcher(arguments &&... _arguments)
+    constructor_dispatcher(arguments &&... _arguments)
         : tail_(std::forward< arguments >(_arguments)...)
     { ; }
 
@@ -158,14 +157,14 @@ public :
 };
 
 template< bool trivially_destructible, typename ...types >
-class dispatcher;
+class destructor_dispatcher;
 
 template< typename ...types >
-class dispatcher< true, types... >
+class destructor_dispatcher< true, types... >
 {
 
     std::size_t which_;
-    destructor_dispatcher< true, types... > storage_;
+    constructor_dispatcher< true, types... > storage_;
 
 public :
 
@@ -178,7 +177,7 @@ public :
 
     template< typename index, typename ...arguments >
     constexpr
-    dispatcher(index, arguments &&... _arguments)
+    destructor_dispatcher(index, arguments &&... _arguments)
         : which_{index::value}
         , storage_(index{}, std::forward< arguments >(_arguments)...)
     { ; }
@@ -200,10 +199,10 @@ public :
 };
 
 template< typename ...types >
-class dispatcher< false, types... >
+class destructor_dispatcher< false, types... >
 {
 
-    using storage = destructor_dispatcher< false, types... >;
+    using storage = constructor_dispatcher< false, types... >;
 
     std::size_t which_;
     storage storage_;
@@ -216,9 +215,9 @@ class dispatcher< false, types... >
         _storage.destruct(in_place< type >);
     }
 
-    using destructor = decltype(&dispatcher::template destruct< typename identity< types... >::type >);
+    using destructor = decltype(&destructor_dispatcher::template destruct< typename identity< types... >::type >);
 
-    static constexpr destructor destructors_[sizeof...(types)] = {dispatcher::template destruct< types >...};
+    static constexpr destructor destructors_[sizeof...(types)] = {destructor_dispatcher::template destruct< types >...};
 
 public :
 
@@ -229,22 +228,22 @@ public :
         return which_;
     }
 
-    dispatcher(dispatcher const &) = default;
-    dispatcher(dispatcher &) = default;
-    dispatcher(dispatcher &&) = default;
+    destructor_dispatcher(destructor_dispatcher const &) = default;
+    destructor_dispatcher(destructor_dispatcher &) = default;
+    destructor_dispatcher(destructor_dispatcher &&) = default;
 
-    dispatcher & operator = (dispatcher const &) = default;
-    dispatcher & operator = (dispatcher &) = default;
-    dispatcher & operator = (dispatcher &&) = default;
+    destructor_dispatcher & operator = (destructor_dispatcher const &) = default;
+    destructor_dispatcher & operator = (destructor_dispatcher &) = default;
+    destructor_dispatcher & operator = (destructor_dispatcher &&) = default;
 
-    ~dispatcher() noexcept
+    ~destructor_dispatcher() noexcept
     {
         destructors_[sizeof...(types) - which()](storage_);
     }
 
     template< typename index, typename ...arguments >
     constexpr
-    dispatcher(index, arguments &&... _arguments)
+    destructor_dispatcher(index, arguments &&... _arguments)
         : which_{index::value}
         , storage_(index{}, std::forward< arguments >(_arguments)...)
     { ; }
@@ -266,7 +265,7 @@ public :
 };
 
 template< typename ...types >
-constexpr typename dispatcher< false, types... >::destructor dispatcher< false, types... >::destructors_[sizeof...(types)];
+constexpr typename destructor_dispatcher< false, types... >::destructor destructor_dispatcher< false, types... >::destructors_[sizeof...(types)];
 
 template< bool default_constructible >
 struct enable_default_constructor;
@@ -304,7 +303,7 @@ class versatile
         : enable_default_constructor< (std::is_default_constructible_v< types > || ...) >
 {
 
-    dispatcher< (std::is_trivially_destructible_v< types > && ...), types... > storage_;
+    destructor_dispatcher< (std::is_trivially_destructible_v< types > && ...), types... > storage_;
 
 public :
 
@@ -372,7 +371,7 @@ public :
 
     constexpr
     void
-    swap(versatile & _other) noexcept
+    swap(versatile & _other)
     {
         versatile other_ = std::move(_other);
         _other = std::move(*this);

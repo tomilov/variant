@@ -88,7 +88,7 @@ forward_as(type && _value) noexcept(noexcept(static_cast< result_type >(_value))
 }
 
 template< typename type, typename ...types >
-struct index_at // 1-based right-to-left index of leftmost matched type
+struct index_at // characteristic is 1-based right-to-left index of leftmost matched type
 {
 
 };
@@ -111,7 +111,7 @@ template< typename type, typename ...types >
 using index_at_t = typename index_at< type, types... >::type;
 
 template< std::size_t i, typename ...types >
-struct at_index // i interpreted as 1-based right-to-left index
+struct at_index // i treated as 1-based right-to-left index
 {
 
 };
@@ -156,6 +156,9 @@ struct get_index< false, rest... >
 
 };
 
+template< bool ...values >
+using get_index_t = typename get_index< values... >::type;
+
 template< typename type >
 struct is_visitable
         : std::false_type
@@ -165,9 +168,6 @@ struct is_visitable
 
 template< typename type >
 constexpr bool is_visitable_v = is_visitable< type >::value;
-
-template< bool ...values >
-using get_index_t = typename get_index< values... >::type;
 
 template< typename type >
 struct unwrap_type
