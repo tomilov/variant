@@ -1554,6 +1554,10 @@ class check_triviality
             SA(!is_vcopy_assignable_v< U >);
             SA(!std::is_move_assignable_v< U >);
             SA(!is_cmove_assignable_v< U >);
+            SA(!is_convertible_v< U, S >);
+            SA(!is_convertible_v< U const, S >);
+            SA(!is_convertible_v< U &, S >);
+            SA(!is_convertible_v< U const &, S >);
             SA(is_explicitly_convertible_v< U, S >);
             SA(is_explicitly_convertible_v< U const, S >);
             SA(is_explicitly_convertible_v< U &, S >);
