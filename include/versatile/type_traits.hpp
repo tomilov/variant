@@ -167,7 +167,9 @@ template< typename type >
 constexpr bool is_visitable_v = is_visitable< type >::value;
 
 template< bool ...values >
-using get_index_t = typename get_index< values... >::type;template< typename type >
+using get_index_t = typename get_index< values... >::type;
+
+template< typename type >
 struct unwrap_type
         : identity< type >
 {

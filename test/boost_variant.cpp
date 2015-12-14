@@ -12,8 +12,8 @@ main()
     { // boost::variant
         {
             struct L {};
-            SA(std::is_literal_type< L >{});
-            SA(!std::is_literal_type< ::boost::variant< L > >{});
+            SA(std::is_literal_type_v< L >);
+            SA(!std::is_literal_type_v< ::boost::variant< L > >);
         }
         using ::test_boost_variant::boost_variant_i;
         using ::test_boost_variant::boost_variant_c;
