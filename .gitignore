@@ -1,6 +1,3 @@
-Makefile
-*.o
-versatile.pro.*
-build/
+CMakeLists/
 CMakeLists.txt.user
-CMakeLists.txt.user.*
+CMakeFiles/
