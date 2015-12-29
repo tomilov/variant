@@ -76,23 +76,35 @@ add_executable("test_versatile"     "test/src/versatile.cpp"     ${HEADERS} "tes
 add_executable("test_variant"       "test/src/variant.cpp"       ${HEADERS} "test/include/test/common.hpp" "test/include/test/visit.hpp" "test/include/test/wrappers.hpp" "test/include/test/variant.hpp")
 add_executable("test_boost_variant" "test/src/boost_variant.cpp" ${HEADERS} "test/include/test/common.hpp" "test/include/test/visit.hpp" "test/include/test/boost_variant.hpp")
 add_executable("test_eggs_variant"  "test/src/eggs_variant.cpp"  ${HEADERS} "test/include/test/common.hpp" "test/include/test/visit.hpp" "test/include/test/eggs_variant.hpp")
+set(TESTING_TARGETS
+    "test_traits"
+    "test_versatile"
+    "test_variant"
+    "test_boost_variant"
+    "test_eggs_variant"
+)
 
 add_executable("test_ct_versatile"     "test/src/test_ct_versatile.cpp"     ${HEADERS} "test/include/test/deep_and_hard.hpp")
 add_executable("test_ct_variant"       "test/src/test_ct_variant.cpp"       ${HEADERS} "test/include/test/deep_and_hard.hpp")
 add_executable("test_ct_eggs_variant"  "test/src/test_ct_eggs_variant.cpp"  ${HEADERS} "test/include/test/deep_and_hard.hpp")
 add_executable("test_ct_boost_variant" "test/src/test_ct_boost_variant.cpp" ${HEADERS} "test/include/test/deep_and_hard.hpp")
-set(TEST_CT_TARGETS
+set(TESTING_CT_TARGETS
     "test_ct_versatile"
     "test_ct_variant"
     "test_ct_eggs_variant"
     "test_ct_boost_variant"
 )
-foreach(t ${TEST_CT_TARGETS})
+foreach(t ${TESTING_CT_TARGETS})
     target_compile_definitions(${t} PUBLIC "-DCOLS=4" "-DROWS=4")
     target_compile_options(${t} PUBLIC "-ftime-report")
 endforeach()
 
-# for f in `ls build/test_*` ; do du -sh ./$f ; ./$f && echo -e "\e[1;32mSuccess! \e[0m$f" || echo -e "\e[1;31mFailure! \e[0m$f" ; done ;
+set(CMAKE_INSTALL_PREFIX "/tmp/versatile/")
+install(TARGETS ${TESTING_TARGETS} ${TESTING_CT_TARGETS}
+        RUNTIME DESTINATION "bin/"
+)
+
+# for f in `ls /tmp/versatile/bin/test_*` ; do du -sh $f ; $f && echo -e "\e[1;32mSuccess! \e[0m$f" || echo -e "\e[1;31mFailure! \e[0m$f" ; done ;
 
 #[[
 message("Your C++ compiler supports these C++ features:")
