@@ -1,6 +1,6 @@
-#include "eggs_variant.hpp"
-#include "common.hpp"
-#include "visit.hpp"
+#include "test/eggs_variant.hpp"
+#include "test/common.hpp"
+#include "test/visit.hpp"
 
 #include <versatile/type_traits.hpp>
 

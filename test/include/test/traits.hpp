@@ -1,6 +1,6 @@
 #pragma once
 
-#include "prologue.hpp"
+#include "test/prologue.hpp"
 
 #include <versatile/type_traits.hpp>
 

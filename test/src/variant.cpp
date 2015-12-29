@@ -1,7 +1,7 @@
-#include "variant.hpp"
-#include "common.hpp"
-#include "wrappers.hpp"
-#include "visit.hpp"
+#include "test/variant.hpp"
+#include "test/common.hpp"
+#include "test/wrappers.hpp"
+#include "test/visit.hpp"
 
 #include <cstdlib>
 

@@ -4,7 +4,7 @@
 
 #include <versatile/type_traits.hpp>
 
-#include "prologue.hpp"
+#include "test/prologue.hpp"
 
 #include <type_traits>
 #include <utility>

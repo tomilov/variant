@@ -4,7 +4,7 @@
 
 #include <versatile/in_place.hpp>
 
-#include "prologue.hpp"
+#include "test/prologue.hpp"
 
 namespace test_eggs_variant
 {

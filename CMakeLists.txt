@@ -53,6 +53,7 @@ endif()
 #set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
 
 include_directories("include/")
+include_directories("test/include/")
 
 set(HEADERS
     "include/versatile/type_traits.hpp"
@@ -66,19 +67,19 @@ set(HEADERS
     "include/versatile/io.hpp"
     "include/versatile.hpp"
 
-    "test/prologue.hpp"
+    "test/include/test/prologue.hpp"
 )
 
-add_executable("test_traits"        "test/traits.cpp"        ${HEADERS} "test/traits.hpp")
-add_executable("test_versatile"     "test/versatile.cpp"     ${HEADERS} "test/common.hpp" "test/visit.hpp" "test/wrappers.hpp" "test/versatile.hpp")
-add_executable("test_variant"       "test/variant.cpp"       ${HEADERS} "test/common.hpp" "test/visit.hpp" "test/wrappers.hpp" "test/variant.hpp")
-add_executable("test_boost_variant" "test/boost_variant.cpp" ${HEADERS} "test/common.hpp" "test/visit.hpp" "test/boost_variant.hpp")
-add_executable("test_eggs_variant"  "test/eggs_variant.cpp"  ${HEADERS} "test/common.hpp" "test/visit.hpp" "test/eggs_variant.hpp")
+add_executable("test_traits"        "test/src/traits.cpp"        ${HEADERS} "test/include/test/traits.hpp")
+add_executable("test_versatile"     "test/src/versatile.cpp"     ${HEADERS} "test/include/test/common.hpp" "test/include/test/visit.hpp" "test/include/test/wrappers.hpp" "test/include/test/versatile.hpp")
+add_executable("test_variant"       "test/src/variant.cpp"       ${HEADERS} "test/include/test/common.hpp" "test/include/test/visit.hpp" "test/include/test/wrappers.hpp" "test/include/test/variant.hpp")
+add_executable("test_boost_variant" "test/src/boost_variant.cpp" ${HEADERS} "test/include/test/common.hpp" "test/include/test/visit.hpp" "test/include/test/boost_variant.hpp")
+add_executable("test_eggs_variant"  "test/src/eggs_variant.cpp"  ${HEADERS} "test/include/test/common.hpp" "test/include/test/visit.hpp" "test/include/test/eggs_variant.hpp")
 
-add_executable("test_ct_versatile"     "test/test_ct_versatile.cpp"     ${HEADERS} "test/deep_and_hard.hpp")
-add_executable("test_ct_variant"       "test/test_ct_variant.cpp"       ${HEADERS} "test/deep_and_hard.hpp")
-add_executable("test_ct_eggs_variant"  "test/test_ct_eggs_variant.cpp"  ${HEADERS} "test/deep_and_hard.hpp")
-add_executable("test_ct_boost_variant" "test/test_ct_boost_variant.cpp" ${HEADERS} "test/deep_and_hard.hpp")
+add_executable("test_ct_versatile"     "test/src/test_ct_versatile.cpp"     ${HEADERS} "test/include/test/deep_and_hard.hpp")
+add_executable("test_ct_variant"       "test/src/test_ct_variant.cpp"       ${HEADERS} "test/include/test/deep_and_hard.hpp")
+add_executable("test_ct_eggs_variant"  "test/src/test_ct_eggs_variant.cpp"  ${HEADERS} "test/include/test/deep_and_hard.hpp")
+add_executable("test_ct_boost_variant" "test/src/test_ct_boost_variant.cpp" ${HEADERS} "test/include/test/deep_and_hard.hpp")
 set(TEST_CT_TARGETS
     "test_ct_versatile"
     "test_ct_variant"

@@ -1,5 +1,5 @@
-#include "boost_variant.hpp"
-#include "visit.hpp"
+#include "test/boost_variant.hpp"
+#include "test/visit.hpp"
 
 #include <cstdlib>
 
