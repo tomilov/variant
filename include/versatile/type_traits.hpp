@@ -179,5 +179,4 @@ struct unwrap_type
 template< typename type >
 using unwrap_type_t = typename unwrap_type< std::decay_t< type > >::type;
 
-
 }

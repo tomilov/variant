@@ -16,12 +16,12 @@ is_active(visitable const & _visitable)
     return _visitable.template active< type >();
 }
 
-template< typename variant, typename ...arguments >
+template< typename visitable, typename ...arguments >
 constexpr
-variant
+visitable
 make_variant(arguments &&... _arguments)
 {
-    return variant{in_place_v, std::forward< arguments >(_arguments)...};
+    return visitable{in_place_v, std::forward< arguments >(_arguments)...};
 }
 
 namespace details

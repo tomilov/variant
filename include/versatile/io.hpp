@@ -1,6 +1,6 @@
 #pragma once
 
-#include <versatile/variant.hpp>
+#include <versatile/visit.hpp>
 
 #include <ostream>
 #include <istream>
@@ -8,18 +8,20 @@
 namespace versatile
 {
 
-template< typename first, typename ...rest >
-std::istream &
-operator >> (std::istream & _in, variant< first, rest... > & _variant) // http://stackoverflow.com/questions/23355117/
+template< typename visitable >
+std::enable_if_t< is_visitable< visitable >::value, std::istream & >
+operator >> (std::istream & _in, visitable & _visitable)
 {
-    return visit([&] (auto & _value) -> std::istream & { return _in >> _value; }, _variant);
+    visit([&] (auto & _value) { _in >> _value; }, _visitable);
+    return _in;
 }
 
-template< typename first, typename ...rest >
-std::ostream &
-operator << (std::ostream & _out, variant< first, rest... > const & _variant) // http://stackoverflow.com/questions/23355117/
+template< typename visitable >
+std::enable_if_t< is_visitable< visitable >::value, std::ostream & >
+operator << (std::ostream & _out, visitable const & _visitable)
 {
-    return visit([&] (auto const & _value) -> std::ostream & { return _out << _value; }, _variant);
+    visit([&] (auto const & _value) { _out << _value; }, _visitable);
+    return _out;
 }
 
 }
