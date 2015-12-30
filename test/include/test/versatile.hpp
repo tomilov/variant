@@ -2132,6 +2132,35 @@ class check_utility
         return true;
     }
 
+    CONSTEXPRF
+    static
+    bool
+    check_compare() noexcept
+    {
+        {
+            using U = V< int >;
+            CHECK(U{1} == U{1});
+            CHECK(U{1} == 1);
+            CHECK(1 == U{1});
+        }
+        {
+            using U = V< int >;
+            CHECK(U{1} < U{2});
+            CHECK(!(U{2} < U{1}));
+            CHECK(U{1} < 2);
+            CHECK(!(U{2} < 1));
+            CHECK(1 < U{2});
+            CHECK(!(2 < U{1}));
+        }
+        {
+            using U = V< int >;
+            CHECK(!(U{1} < U{1}));
+            CHECK(!(U{1} < 1));
+            CHECK(!(1 < U{1}));
+        }
+        return true;
+    }
+
 public :
 
     CONSTEXPRF
@@ -2139,6 +2168,7 @@ public :
     bool
     run() noexcept
     {
+        ASSERT (check_swap());
         ASSERT (check_swap());
         return true;
     }

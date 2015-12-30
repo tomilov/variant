@@ -30,7 +30,7 @@ struct equal_to
 
 template< typename lhs, typename rhs >
 constexpr
-std::enable_if_t< (is_visitable< lhs >::value || is_visitable< rhs >::value), bool >
+std::enable_if_t< (is_visitable_v< lhs > || is_visitable_v< rhs >), bool >
 operator == (lhs const & _lhs, rhs const & _rhs)
 {
     return multivisit(equal_to{}, _lhs, _rhs);
@@ -58,7 +58,7 @@ struct less
 
 template< typename lhs, typename rhs >
 constexpr
-std::enable_if_t< (is_visitable< lhs >::value || is_visitable< rhs >::value), bool >
+std::enable_if_t< (is_visitable_v< lhs > || is_visitable_v< rhs >), bool >
 operator < (lhs const & _lhs, rhs const & _rhs)
 {
     return multivisit(less{}, _lhs, _rhs);

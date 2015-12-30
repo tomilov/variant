@@ -86,7 +86,7 @@ visit(visitor && _visitor, visitable && _visitable, arguments &&... _arguments)
 namespace details
 {
 
-template< typename supervisitor, typename type, bool = (is_visitable< unwrap_type_t< type > >::value) >
+template< typename supervisitor, typename type, bool = is_visitable< unwrap_type_t< type > >::value >
 struct subvisitor;
 
 template< typename supervisitor, typename visitable >

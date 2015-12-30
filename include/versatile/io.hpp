@@ -9,7 +9,7 @@ namespace versatile
 {
 
 template< typename visitable >
-std::enable_if_t< is_visitable< visitable >::value, std::istream & >
+std::enable_if_t< is_visitable_v< visitable >, std::istream & >
 operator >> (std::istream & _in, visitable & _visitable)
 {
     visit([&] (auto & _value) { _in >> _value; }, _visitable);
@@ -17,7 +17,7 @@ operator >> (std::istream & _in, visitable & _visitable)
 }
 
 template< typename visitable >
-std::enable_if_t< is_visitable< visitable >::value, std::ostream & >
+std::enable_if_t< is_visitable_v< visitable >, std::ostream & >
 operator << (std::ostream & _out, visitable const & _visitable)
 {
     visit([&] (auto const & _value) { _out << _value; }, _visitable);

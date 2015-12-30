@@ -68,6 +68,7 @@ add_executable("test_versatile"     "test/src/versatile.cpp"     ${HEADERS} "tes
 add_executable("test_variant"       "test/src/variant.cpp"       ${HEADERS} "test/include/test/common.hpp" "test/include/test/visit.hpp" "test/include/test/wrappers.hpp" "test/include/test/variant.hpp")
 add_executable("test_boost_variant" "test/src/boost_variant.cpp" ${HEADERS} "test/include/test/common.hpp" "test/include/test/visit.hpp" "test/include/test/boost_variant.hpp")
 add_executable("test_eggs_variant"  "test/src/eggs_variant.cpp"  ${HEADERS} "test/include/test/common.hpp" "test/include/test/visit.hpp" "test/include/test/eggs_variant.hpp")
+add_executable("test_multivisit"    "test/src/multivisit.cpp"    ${HEADERS} "test/include/test/common.hpp" "test/include/test/visit.hpp" "test/include/test/versatile.hpp" "test/include/test/variant.hpp" "test/include/test/boost_variant.hpp" "test/include/test/eggs_variant.hpp")
 
 set(TESTING_TARGETS
     "test_traits"
@@ -75,6 +76,7 @@ set(TESTING_TARGETS
     "test_variant"
     "test_boost_variant"
     "test_eggs_variant"
+    "test_multivisit"
 )
 
 foreach(t ${TESTING_TARGETS})

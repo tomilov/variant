@@ -64,17 +64,17 @@ template< typename type >
 constexpr bool is_trivially_cmove_assignable_v = std::is_trivially_assignable_v< type &, type const && >;
 
 template< typename from, typename to >
+constexpr bool is_convertible_v = std::is_convertible< from, to >::value;
+
+template< typename from, typename to >
 struct is_explicitly_convertible // akrzemi1's answer http://stackoverflow.com/a/16894048/1430927
-        : std::bool_constant< (std::is_constructible_v< to, from > && !std::is_convertible< from, to >::value) >
+        : std::bool_constant< (std::is_constructible_v< to, from > && !is_convertible_v< from, to >) >
 {
 
 };
 
 template< typename from, typename to >
 constexpr bool is_explicitly_convertible_v = is_explicitly_convertible< from, to >::value;
-
-template< typename from, typename to >
-constexpr bool is_convertible_v = std::is_convertible< from, to >::value;
 
 template< std::size_t i = 0 >
 class literal_type
