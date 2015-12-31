@@ -5,19 +5,8 @@
 namespace versatile
 {
 
-template< typename ...types >
-struct identity;
-
-template<>
-struct identity<>
-{
-
-    using type = void;
-
-};
-
 template< typename first, typename ...rest >
-struct identity< first, rest... >
+struct identity
 {
 
     using type = first;
@@ -81,14 +70,23 @@ using copy_cv_reference_t = add_type_qualifier_t< type_qualifier_of< from >, to 
 template< type_qualifier type_qual, typename type,
           typename result_type = add_type_qualifier_t< type_qual, std::remove_reference_t< type > > >
 constexpr
-result_type
+result_type // preserve const
+forward_as(type && _value) noexcept(noexcept(static_cast< result_type >(_value)))
+{
+    return static_cast< result_type >(_value);
+}
+
+template< typename pattern, typename type,
+          typename result_type = copy_cv_reference_t< pattern, std::remove_reference_t< type > > >
+constexpr
+result_type // preserve const
 forward_as(type && _value) noexcept(noexcept(static_cast< result_type >(_value)))
 {
     return static_cast< result_type >(_value);
 }
 
 template< typename type, typename ...types >
-struct index_at // characteristic is 1-based right-to-left index of leftmost matched type
+struct index_at // characteristic is 1-based right-to-left index of leftmost matched type if any
 {
 
 };
@@ -134,7 +132,7 @@ template< std::size_t i, typename ...types >
 using at_index_t = typename at_index< i, types... >::type;
 
 template< bool ...values >
-struct get_index; // characteristic is 1-based right-to-left index of leftmost true
+struct get_index; // characteristic is 1-based right-to-left index of leftmost true if any
 
 template<>
 struct get_index<>

@@ -11,7 +11,7 @@ namespace versatile
 template< typename type, typename visitable >
 constexpr
 bool
-is_active(visitable const & _visitable)
+is_active(visitable const & _visitable) noexcept
 {
     return _visitable.template active< type >();
 }
@@ -19,7 +19,7 @@ is_active(visitable const & _visitable)
 template< typename visitable, typename ...arguments >
 constexpr
 visitable
-make_variant(arguments &&... _arguments)
+make_variant(arguments &&... _arguments) noexcept(noexcept(::new (std::declval< void * >()) visitable{in_place_v, std::declval< arguments >()...}))
 {
     return visitable{in_place_v, std::forward< arguments >(_arguments)...};
 }
