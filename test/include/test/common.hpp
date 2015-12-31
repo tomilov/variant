@@ -117,10 +117,10 @@ class check_destructible
             A() : s_{state::default_constructed} { ; }
             A(A const &) { s_ = state::copy_constructed; }
             A(A &) { s_ = state::vcopy_constructed; }
-            A(A && a) { s_ = state::move_constructed;  a.s_ = state::moved_from; }
+            A(A && a) { s_ = state::move_constructed; a.s_ = state::moved_from; }
             A & operator = (A const &) { s_ = state::copy_assigned; return *this; }
             A & operator = (A &) { s_ = state::vcopy_assigned; return *this; }
-            A & operator = (A && a) { s_ = state::move_assigned;  a.s_ = state::moved_from; return *this; }
+            A & operator = (A && a) { s_ = state::move_assigned; a.s_ = state::moved_from; return *this; }
             std::type_info const * * d_;
             void set(std::type_info const * & _d) { CHECK(!_d); d_ = &_d; }
             ~A() { if (!!d_) *d_ = &typeid(A); }
@@ -131,10 +131,10 @@ class check_destructible
             B() : s_{state::default_constructed} { ; }
             B(B const &) { s_ = state::copy_constructed; }
             B(B &) { s_ = state::vcopy_constructed; }
-            B(B && a) { s_ = state::move_constructed;  a.s_ = state::moved_from; }
+            B(B && a) { s_ = state::move_constructed; a.s_ = state::moved_from; }
             B & operator = (B const &) { s_ = state::copy_assigned; return *this; }
             B & operator = (B &) { s_ = state::vcopy_assigned; return *this; }
-            B & operator = (B && a) { s_ = state::move_assigned;  a.s_ = state::moved_from; return *this; }
+            B & operator = (B && a) { s_ = state::move_assigned; a.s_ = state::moved_from; return *this; }
             std::type_info const * * d_;
             void set(std::type_info const * & _d) { CHECK(!_d); d_ = &_d; }
             ~B() { if (!!d_) *d_ = &typeid(B); }
@@ -224,7 +224,7 @@ class check_runtime
             v = R{{A{}}};
             CHECK (is_active< R >(v));
         }
-        {  // inheritance
+        { // inheritance
             struct R;
             struct A {};
             using U = visitable< A, W< R > >;
@@ -234,7 +234,7 @@ class check_runtime
             v = R{};
             CHECK (is_active< R >(v));
         }
-        {  // inheritance
+        { // inheritance
             struct R;
             struct A {};
             using U = visitable< W< R >, A >;

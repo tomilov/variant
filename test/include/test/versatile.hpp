@@ -1114,8 +1114,8 @@ class check_triviality
             CONSTEXPRF S(S &) { ; }
             CONSTEXPRF S(S const &&) { ; }
             CONSTEXPRF S(S &&) { ; }
-            CONSTEXPRF S & operator = (S const &)  { return *this; }
-            CONSTEXPRF S & operator = (S &)  { return *this; }
+            CONSTEXPRF S & operator = (S const &) { return *this; }
+            CONSTEXPRF S & operator = (S &) { return *this; }
             CONSTEXPRF S & operator = (S const &&) { return *this; }
             CONSTEXPRF S & operator = (S &&) { return *this; }
             //~S() DESTRUCTOR

@@ -32,8 +32,8 @@ class check_common
             S(S &) { ; }
             S(S const &&) { ; }
             S(S &&) { ; }
-            S & operator = (S const &)  { return *this; }
-            S & operator = (S &)  { return *this; }
+            S & operator = (S const &) { return *this; }
+            S & operator = (S &) { return *this; }
             S & operator = (S const &&) { return *this; }
             S & operator = (S &&) { return *this; }
             //~S() DESTRUCTOR
@@ -86,7 +86,7 @@ class check_common
             ~S() = default;
         };
         SA(std::is_copy_constructible_v< S >);
-        SA(is_vcopy_constructible_v< S >   );
+        SA(is_vcopy_constructible_v< S >    );
         SA(std::is_move_constructible_v< S >);
         SA(is_cmove_constructible_v< S >    );
         struct N {};
@@ -222,7 +222,7 @@ class check_common
             //~S() DESTRUCTOR // clang bug: if destructor is user-declared and defaulted, then defaulted assignment operators become non-trivial and marked as non-constexpr
         };
         SA(std::is_copy_assignable_v< S >);
-        SA(is_vcopy_assignable_v< S >   );
+        SA(is_vcopy_assignable_v< S >    );
         SA(std::is_move_assignable_v< S >);
         SA(is_cmove_assignable_v< S >    );
         struct N {};

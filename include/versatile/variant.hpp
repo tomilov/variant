@@ -118,7 +118,7 @@ private :
     {
         assert(&_rhs != this);
         if (which() == _rhs.which()) {
-            visit(assigner{storage_},  std::forward< type >(_rhs));
+            visit(assigner{storage_}, std::forward< type >(_rhs));
         } else {
             variant(std::forward< type >(_rhs)).swap(*this);
         }

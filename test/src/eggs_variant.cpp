@@ -25,7 +25,7 @@ main()
         }
         {
             ASSERT ((perferct_forwarding< literal_type, eggs_variant_c, identity, 2, 2 >::run()));
-            CHECK ((perferct_forwarding< common_type,  eggs_variant_c, identity, 2, 2 >::run()));
+            CHECK ((perferct_forwarding< common_type, eggs_variant_c, identity, 2, 2 >::run()));
         }
     }
     return EXIT_SUCCESS;

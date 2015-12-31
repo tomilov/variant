@@ -60,8 +60,9 @@ public :
     typename result_type< arguments... >::type
     caller(visitor & _visitor, visitable & _visitable, arguments &... _arguments)
     {
-        assert(!(sizeof...(types) < _visitable.which()));
-        return (0 < _visitable.which()) ? callies_< arguments... >[sizeof...(types) - _visitable.which()](_visitor, _visitable, _arguments...) : throw std::bad_cast{};
+        std::size_t const which_ = _visitable.which();
+        assert(!(sizeof...(types) < which_));
+        return (0 < which_) ? callies_< arguments... >[sizeof...(types) - which_](_visitor, _visitable, _arguments...) : throw std::bad_cast{};
     }
 
 };
