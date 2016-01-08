@@ -87,20 +87,20 @@ public :
         : variant({in_place< i >, std::forward< arguments >(_arguments)...})
     { ; }
 
-    template< typename type, typename index = index_at_t< type >, typename ...arguments >
-    explicit
-    variant(in_place_t (&)(type), arguments &&... _arguments)
-        : variant(in_place< index >, std::forward< arguments >(_arguments)...)
-    { ; }
-
     template< typename type, typename index = index_at_t< type > >
     variant(type && _value)
         : variant(in_place< index >, std::forward< type >(_value))
     { ; }
 
+    template< typename type, typename ...arguments, typename index = index_at_t< type > >
+    explicit
+    variant(in_place_t (&)(type), arguments &&... _arguments)
+        : variant(in_place< index >, std::forward< arguments >(_arguments)...)
+    { ; }
+
     template< typename ...arguments, typename index = index_of_constructible_t< arguments... > >
     explicit
-    variant(in_place_t, arguments &&... _arguments)
+    variant(in_place_t (&)(in_place_t), arguments &&... _arguments)
         : variant(in_place< index >, std::forward< arguments >(_arguments)...)
     { ; }
 
@@ -220,18 +220,11 @@ emplace(variant< first, rest... > & _variant, arguments &&... _arguments)
     variant< first, rest... >{in_place< i >, std::forward< arguments >(_arguments)...}.swap(_variant);
 }
 
-template< typename type, typename ...arguments, typename first, typename ...rest >
+template< typename type = in_place_t, typename ...arguments, typename first, typename ...rest >
 void
 emplace(variant< first, rest... > & _variant, arguments &&... _arguments)
 {
     variant< first, rest... >{in_place< type >, std::forward< arguments >(_arguments)...}.swap(_variant);
-}
-
-template< typename ...arguments, typename first, typename ...rest >
-void
-emplace(variant< first, rest... > & _variant, arguments &&... _arguments)
-{
-    variant< first, rest... >{in_place_v, std::forward< arguments >(_arguments)...}.swap(_variant);
 }
 
 }

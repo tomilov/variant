@@ -19,9 +19,9 @@ is_active(visitable const & _visitable) noexcept
 template< typename visitable, typename ...arguments >
 constexpr
 visitable
-make_variant(arguments &&... _arguments) noexcept(noexcept(::new (std::declval< void * >()) visitable{in_place_v, std::declval< arguments >()...}))
+make_variant(arguments &&... _arguments) noexcept(noexcept(::new (std::declval< void * >()) visitable{in_place<>, std::declval< arguments >()...}))
 {
-    return visitable{in_place_v, std::forward< arguments >(_arguments)...};
+    return visitable{in_place<>, std::forward< arguments >(_arguments)...};
 }
 
 namespace details

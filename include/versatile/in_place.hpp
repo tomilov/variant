@@ -7,9 +7,7 @@ namespace versatile
 
 struct in_place_t {};
 
-constexpr in_place_t in_place_v{};
-
-template< typename type >
+template< typename type = in_place_t >
 constexpr
 in_place_t
 in_place(type)

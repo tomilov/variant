@@ -330,7 +330,7 @@ public :
 
     constexpr
     versatile()
-        : versatile(in_place_v)
+        : versatile(in_place<>)
     { ; }
 
     template< std::size_t i, typename ...arguments >
@@ -341,23 +341,23 @@ public :
         , storage_(index_t< i >{}, std::forward< arguments >(_arguments)...)
     { ; }
 
-    template< typename type, typename index = index_at_t< type >, typename ...arguments >
-    explicit
-    constexpr
-    versatile(in_place_t (&)(type), arguments &&... _arguments)
-        : versatile(in_place< index >, std::forward< arguments >(_arguments)...)
-    { ; }
-
     template< typename type, typename index = index_at_t< type > >
     constexpr
     versatile(type && _value)
         : versatile(in_place< index >, std::forward< type >(_value))
     { ; }
 
+    template< typename type, typename ...arguments, typename index = index_at_t< type > >
+    explicit
+    constexpr
+    versatile(in_place_t (&)(type), arguments &&... _arguments)
+        : versatile(in_place< index >, std::forward< arguments >(_arguments)...)
+    { ; }
+
     template< typename ...arguments, typename index = index_of_constructible_t< arguments... > >
     explicit
     constexpr
-    versatile(in_place_t, arguments &&... _arguments)
+    versatile(in_place_t (&)(in_place_t), arguments &&... _arguments)
         : versatile(in_place< index >, std::forward< arguments >(_arguments)...)
     { ; }
 
@@ -425,20 +425,12 @@ emplace(versatile< first, rest... > & _versatile, arguments &&... _arguments)
     _versatile = versatile< first, rest... >(in_place< i >, std::forward< arguments >(_arguments)...);
 }
 
-template< typename type, typename ...arguments, typename first, typename ...rest >
+template< typename type = in_place_t, typename ...arguments, typename first, typename ...rest >
 constexpr
 void
 emplace(versatile< first, rest... > & _versatile, arguments &&... _arguments)
 {
     _versatile = versatile< first, rest... >(in_place< type >, std::forward< arguments >(_arguments)...);
-}
-
-template< typename ...arguments, typename first, typename ...rest >
-constexpr
-void
-emplace(versatile< first, rest... > & _versatile, arguments &&... _arguments)
-{
-    _versatile = versatile< first, rest... >(in_place_v, std::forward< arguments >(_arguments)...);
 }
 
 }

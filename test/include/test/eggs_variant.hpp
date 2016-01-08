@@ -15,7 +15,6 @@ using ::versatile::get_index_t;
 using ::versatile::unwrap_type_t;
 using ::versatile::in_place;
 using ::versatile::in_place_t;
-using ::versatile::in_place_v;
 
 template< typename ...types >
 class eggs_variant_c // composition
@@ -41,7 +40,7 @@ public :
 
     constexpr
     eggs_variant_c()
-        : eggs_variant_c(in_place_v)
+        : eggs_variant_c(in_place<>)
     { ; }
 
     template< std::size_t i, typename ...arguments >
@@ -51,6 +50,12 @@ public :
         : storage_(::eggs::variants::in_place< (sizeof...(types) - i) >, std::forward< arguments >(_arguments)...)
     { ; }
 
+    template< typename type, typename index = index_at_t< type > >
+    constexpr
+    eggs_variant_c(type && _value)
+        : eggs_variant_c(in_place< index >, std::forward< type >(_value))
+    { ; }
+
     template< typename type, typename index = index_at_t< type >, typename ...arguments >
     explicit
     constexpr
@@ -58,16 +63,10 @@ public :
         : eggs_variant_c(in_place< index >, std::forward< arguments >(_arguments)...)
     { ; }
 
-    template< typename type, typename index = index_at_t< type > >
-    constexpr
-    eggs_variant_c(type && _value)
-        : eggs_variant_c(in_place< index >, std::forward< type >(_value))
-    { ; }
-
     template< typename ...arguments, typename index = index_of_constructible_t< arguments... > >
     explicit
     constexpr
-    eggs_variant_c(in_place_t, arguments &&... _arguments)
+    eggs_variant_c(in_place_t (&)(in_place_t), arguments &&... _arguments)
         : eggs_variant_c(in_place< index >, std::forward< arguments >(_arguments)...)
     { ; }
 
