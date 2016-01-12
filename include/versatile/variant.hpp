@@ -130,7 +130,6 @@ private :
     variant &
     assign(type && _rhs)
     {
-        assert(&_rhs != this);
         if (which() == _rhs.which()) {
             visit(assigner{storage_}, std::forward< type >(_rhs));
         } else {
