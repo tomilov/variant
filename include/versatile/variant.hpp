@@ -81,26 +81,39 @@ public :
         : variant(visit(constructor{}, std::move(_rhs.storage_)))
     { ; }
 
-    template< std::size_t i, typename ...arguments >
+    template< std::size_t i,
+              typename ...arguments >
     explicit
     variant(in_place_t (&)(index_t< i >), arguments &&... _arguments)
         : variant({in_place< i >, std::forward< arguments >(_arguments)...})
     { ; }
 
-    template< typename type, typename index = index_at_t< type > >
+    template< typename type,
+              typename index = index_at_t< type > >
     variant(type && _value)
         : variant(in_place< index >, std::forward< type >(_value))
     { ; }
 
-    template< typename type, typename ...arguments, typename index = index_at_t< type > >
+    template< typename type,
+              typename ...arguments,
+              typename index = index_at_t< type > >
     explicit
     variant(in_place_t (&)(type), arguments &&... _arguments)
         : variant(in_place< index >, std::forward< arguments >(_arguments)...)
     { ; }
 
-    template< typename ...arguments, typename index = index_of_constructible_t< arguments... > >
+    template< typename ...arguments,
+              typename index = index_of_constructible_t< arguments... > >
     explicit
     variant(in_place_t (&)(in_place_t), arguments &&... _arguments)
+        : variant(in_place< index >, std::forward< arguments >(_arguments)...)
+    { ; }
+
+    template< typename ...arguments,
+              typename = std::enable_if_t< (1 < sizeof...(arguments)) >, // experimental
+              typename index = index_of_constructible_t< arguments... > >
+    explicit
+    variant(arguments &&... _arguments)
         : variant(in_place< index >, std::forward< arguments >(_arguments)...)
     { ; }
 
@@ -164,7 +177,8 @@ public :
         return assign(std::move(_rhs));
     }
 
-    template< typename type, typename index = index_at_t< type > >
+    template< typename type,
+              typename index = index_at_t< type > >
     variant &
     operator = (type && _value)
     {
@@ -176,14 +190,16 @@ public :
         return *this;
     }
 
-    template< typename type, typename index = index_at_t< type > >
+    template< typename type,
+              typename index = index_at_t< type > >
     explicit
     operator type & ()
     {
         return storage_;
     }
 
-    template< typename type, typename index = index_at_t< type > >
+    template< typename type,
+              typename index = index_at_t< type > >
     explicit
     operator type const & () const
     {
@@ -207,19 +223,22 @@ struct is_visitable< variant< first, rest... > >
 
 template< typename first, typename ...rest >
 void
-swap(variant< first, rest... > & _lhs, variant< first, rest... > & _rhs) noexcept
+swap(variant< first, rest... > & _lhs,
+     variant< first, rest... > & _rhs) noexcept
 {
     _lhs.swap(_rhs);
 }
 
-template< std::size_t i, typename ...arguments, typename first, typename ...rest >
+template< std::size_t i, typename ...arguments,
+          typename first, typename ...rest >
 void
 emplace(variant< first, rest... > & _variant, arguments &&... _arguments)
 {
     variant< first, rest... >{in_place< i >, std::forward< arguments >(_arguments)...}.swap(_variant);
 }
 
-template< typename type = in_place_t, typename ...arguments, typename first, typename ...rest >
+template< typename type = in_place_t, typename ...arguments,
+          typename first, typename ...rest >
 void
 emplace(variant< first, rest... > & _variant, arguments &&... _arguments)
 {

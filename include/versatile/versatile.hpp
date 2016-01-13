@@ -361,6 +361,15 @@ public :
         : versatile(in_place< index >, std::forward< arguments >(_arguments)...)
     { ; }
 
+    template< typename ...arguments,
+              typename = std::enable_if_t< (1 < sizeof...(arguments)) >, // experimental
+              typename index = index_of_constructible_t< arguments... > >
+    explicit
+    constexpr
+    versatile(arguments &&... _arguments)
+        : versatile(in_place< index >, std::forward< arguments >(_arguments)...)
+    { ; }
+
     template< typename type, typename index = index_at_t< type > >
     constexpr
     versatile &
