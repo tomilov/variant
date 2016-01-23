@@ -13,7 +13,7 @@ namespace versatile
 
 template< typename ...types >
 class variant
-        : enable_default_constructor< (std::is_default_constructible_v< types > || ...) >
+        : enable_default_constructor< (is_constructible_v< types > || ...) >
 {
 
     using storage = versatile< types... >;

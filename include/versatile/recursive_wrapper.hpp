@@ -9,16 +9,6 @@
 namespace versatile
 {
 
-template< typename type, typename ...arguments >
-struct is_constructible
-    : std::true_type
-{
-
-};
-
-template< typename type, typename ...arguments >
-constexpr bool is_constructible_v = is_constructible< type, arguments... >::value;
-
 template< typename this_type >
 class recursive_wrapper
 {
@@ -27,8 +17,7 @@ class recursive_wrapper
 
 public :
 
-    template< typename ...arguments,
-              typename = std::enable_if_t< is_constructible_v< this_type, arguments... > > >
+    template< typename ...arguments >
     recursive_wrapper(arguments &&... _arguments)
         : storage_(std::make_unique< this_type >(std::forward< arguments >(_arguments)...))
     { ; }
@@ -56,6 +45,27 @@ public :
 template< typename type >
 struct unwrap_type< recursive_wrapper< type > >
         : unwrap_type< type >
+{
+
+};
+
+template< typename type >
+struct unref_type
+        : identity< type >
+{
+
+};
+
+template< typename type >
+struct unref_type< recursive_wrapper< type > >
+        : unref_type< type >
+{
+
+};
+
+template< typename type, typename ...arguments >
+struct is_constructible< recursive_wrapper< type >, arguments... > // may be specialized for incomplete types
+    : std::true_type
 {
 
 };

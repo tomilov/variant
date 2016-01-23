@@ -177,4 +177,14 @@ struct unwrap_type
 template< typename type >
 using unwrap_type_t = typename unwrap_type< std::decay_t< type > >::type;
 
+template< typename type, typename ...arguments >
+struct is_constructible
+    : std::is_constructible< type, arguments... >
+{
+
+};
+
+template< typename type, typename ...arguments >
+constexpr bool is_constructible_v = is_constructible< type, arguments... >::value;
+
 }
