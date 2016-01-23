@@ -14,13 +14,6 @@ struct aggregate_wrapper
 
     aggregate_wrapper() = default;
 
-    template< typename argument,
-              bool is_noexcept = noexcept(::new (std::declval< void * >()) type(std::declval< argument >())) >
-    constexpr
-    aggregate_wrapper(argument && _argument) noexcept(is_noexcept)
-        : type(std::forward< argument >(_argument))
-    { ; }
-
     template< typename ...arguments,
               bool is_noexcept = noexcept(::new (std::declval< void * >()) type{std::declval< arguments >()...}) >
     constexpr
