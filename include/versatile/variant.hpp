@@ -13,14 +13,15 @@ namespace versatile
 
 template< typename ...types >
 class variant
+        : enable_default_constructor< (is_constructible_v< types > || ...) >
 {
+
+    using storage = versatile< types... >;
 
     // `All problems in computer science can be solved
     // by another level of indirection,
     // except for the problem of too many layers of indirection.`
-    using storage = versatile< recursive_wrapper< unref_type_t< types > >... >;
-
-    storage storage_;
+    recursive_wrapper< storage > storage_;
 
 public :
 
@@ -33,23 +34,29 @@ public :
     std::size_t
     which() const noexcept
     {
-        return storage_.which();
+        return static_cast< storage const & >(storage_).which();
     }
 
     template< typename type >
     bool
     active() const noexcept
     {
-        return storage_.template active< type >();
+        return static_cast< storage const & >(storage_).template active< type >();
     }
 
 private :
+
+    explicit
+    variant(recursive_wrapper< storage > && _storage)
+        : variant::enabler({})
+        , storage_(std::move(_storage))
+    { ; }
 
     struct constructor
     {
 
         template< typename type >
-        storage
+        recursive_wrapper< storage >
         operator () (type && _value) const
         {
             return std::forward< type >(_value);
