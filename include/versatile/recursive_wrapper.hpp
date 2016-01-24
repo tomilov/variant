@@ -50,13 +50,6 @@ struct unwrap_type< recursive_wrapper< type > >
 };
 
 template< typename type >
-struct unref_type
-        : identity< type >
-{
-
-};
-
-template< typename type >
 struct unref_type< recursive_wrapper< type > >
         : unref_type< type >
 {

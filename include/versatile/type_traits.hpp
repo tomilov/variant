@@ -168,6 +168,16 @@ template< typename type >
 constexpr bool is_visitable_v = is_visitable< type >::value;
 
 template< typename type >
+struct unref_type
+        : identity< type >
+{
+
+};
+
+template< typename type >
+using unref_type_t = typename unref_type< type >::type;
+
+template< typename type >
 struct unwrap_type
         : identity< type >
 {

@@ -6,6 +6,7 @@
 #include <utility>
 #include <typeinfo>
 
+#include <cassert>
 #include <cstddef>
 
 namespace versatile
@@ -36,7 +37,8 @@ public :
 
     template< typename ...arguments >
     constexpr
-    constructor_dispatcher(index_t< (1 + sizeof...(rest)) >, arguments &&... _arguments)
+    constructor_dispatcher(index_t< (1 + sizeof...(rest)) >,
+                           arguments &&... _arguments)
         : head_(std::forward< arguments >(_arguments)...)
     { ; }
 
@@ -103,7 +105,8 @@ public :
 
     template< typename ...arguments >
     constexpr
-    constructor_dispatcher(index_t< (1 + sizeof...(rest)) >, arguments &&... _arguments)
+    constructor_dispatcher(index_t< (1 + sizeof...(rest)) >,
+                           arguments &&... _arguments)
         : head_(std::forward< arguments >(_arguments)...)
     { ; }
 
@@ -238,7 +241,11 @@ public :
 
     ~destructor_dispatcher() noexcept
     {
-        destructors_[sizeof...(types) - which()](storage_);
+        std::size_t const which_ = which();
+        assert(!(sizeof...(types) < which_));
+        if (0 < which_) {
+            destructors_[sizeof...(types) - which_](storage_);
+        }
     }
 
     template< typename index, typename ...arguments >
@@ -382,15 +389,6 @@ public :
         return (*this = versatile(std::forward< type >(_value))); // http://stackoverflow.com/questions/33936295/
     }
 
-    constexpr
-    void
-    swap(versatile & _other)
-    {
-        versatile other_ = std::move(_other);
-        _other = std::move(*this);
-        *this = std::move(other_);
-    }
-
     template< typename type,
               typename index = index_at_t< type > >
     explicit
@@ -429,7 +427,9 @@ constexpr
 void
 swap(versatile< first, rest... > & _lhs, versatile< first, rest... > & _rhs) noexcept
 {
-    _lhs.swap(_rhs);
+    auto lhs_ = std::move(_lhs);
+    _lhs = std::move(_rhs);
+    _rhs = std::move(lhs_);
 }
 
 template< std::size_t i, typename ...arguments, typename first, typename ...rest >

@@ -20,18 +20,18 @@ main()
     { // variant
         using ::versatile::variant;
         {
-            CHECK ((check_indexing< identity,          variant >::run()));
-            CHECK ((check_indexing< aggregate,         variant >::run()));
+            CHECK ((check_indexing< identity,  variant >::run()));
+            CHECK ((check_indexing< aggregate, variant >::run()));
             //CHECK ((check_indexing< recursive_wrapper, variant >::run()));
         }
         {
-            CHECK ((check_common< identity,          variant >::run()));
-            CHECK ((check_common< aggregate,         variant >::run()));
+            CHECK ((check_common< identity,  variant >::run()));
+            CHECK ((check_common< aggregate, variant >::run()));
             //CHECK ((check_common< recursive_wrapper, variant >::run()));
         }
         {
-            CHECK ((check_destructible< identity,          variant >::run()));
-            CHECK ((check_destructible< aggregate,         variant >::run()));
+            CHECK ((check_destructible< identity,  variant >::run()));
+            CHECK ((check_destructible< aggregate, variant >::run()));
             //CHECK ((check_destructible< recursive_wrapper, variant >::run()));
         }
         {
