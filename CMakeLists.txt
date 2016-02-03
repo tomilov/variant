@@ -5,6 +5,10 @@ cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
 set(CMAKE_VERBOSE_MAKEFILE ON)
 set(CMAKE_COLOR_MAKEFILE ON)
 
+if(NOT "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+    message(FATAL_ERROR "only clang supported currently")
+endif()
+
 include(CheckCXXCompilerFlag)
 
 CHECK_CXX_COMPILER_FLAG("-stdlib=libc++" COMPILER_SUPPORTS_LIBCXX)
@@ -23,8 +27,8 @@ add_compile_options("-std=gnu++1z")
 #set_property(TARGET ${TARGETS} PROPERTY CXX_STANDARD 17)
 #set_property(TARGET ${TARGETS} PROPERTY CXX_STANDARD_REQUIRED ON)
 add_compile_options(-fconstexpr-steps=50000000 -ftemplate-depth=150)
-add_compile_options(-ftemplate-backtrace-limit=0 -fconstexpr-backtrace-limit=0)
-add_compile_options(-W -Weverything -Wmismatched-tags -Wuninitialized -pedantic -Wfatal-errors -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded)
+add_compile_options(-ftemplate-backtrace-limit=0 -fconstexpr-backtrace-limit=0 -fdiagnostics-show-template-tree)
+add_compile_options(-W -Weverything -Wmissing-include-dirs -Wconversion -Wmismatched-tags -Wuninitialized -Wfatal-errors -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded)
 add_compile_options(-Wno-gnu-anonymous-struct -Wno-nested-anon-types)
 #add_compile_options(-ftime-report)
 

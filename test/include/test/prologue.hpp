@@ -15,8 +15,8 @@
 
 #define STR(S) #S
 // double expansion of macro argument
-#define STRN(N) STR(N)
-#define LOCATION "file '" __FILE__ "', line: " STRN(__LINE__)
+#define DEFER(D,...) D(__VA_ARGS__)
+#define LOCATION "file '" __FILE__ "', line: " DEFER(STR,__LINE__)
 #define SA(...) static_assert((__VA_ARGS__), LOCATION)
 #define CHECK(...) { assert((__VA_ARGS__)); }
 
