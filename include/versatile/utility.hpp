@@ -8,6 +8,24 @@
 namespace versatile
 {
 
+template< type_qualifier type_qual, typename type,
+          typename result_type = add_type_qualifier_t< type_qual, std::remove_reference_t< type > > >
+constexpr
+result_type // preserve const
+forward_as(type && _value) noexcept(noexcept(static_cast< result_type >(_value)))
+{
+    return static_cast< result_type >(_value);
+}
+
+template< typename pattern, typename type,
+          typename result_type = copy_cv_reference_t< pattern, std::remove_reference_t< type > > >
+constexpr
+result_type // preserve const
+forward_as(type && _value) noexcept(noexcept(static_cast< result_type >(_value)))
+{
+    return static_cast< result_type >(_value);
+}
+
 template< typename type, typename visitable >
 constexpr
 bool

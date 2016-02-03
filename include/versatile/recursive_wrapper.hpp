@@ -56,11 +56,4 @@ struct unref_type< recursive_wrapper< type > >
 
 };
 
-template< typename type, typename ...arguments >
-struct is_constructible< recursive_wrapper< type >, arguments... > // may be specialized for incomplete types
-    : std::true_type
-{
-
-};
-
 }

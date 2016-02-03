@@ -67,24 +67,6 @@ template< typename from > constexpr type_qualifier type_qualifier_of< volatile f
 template< typename from, typename to >
 using copy_cv_reference_t = add_type_qualifier_t< type_qualifier_of< from >, to >;
 
-template< type_qualifier type_qual, typename type,
-          typename result_type = add_type_qualifier_t< type_qual, std::remove_reference_t< type > > >
-constexpr
-result_type // preserve const
-forward_as(type && _value) noexcept(noexcept(static_cast< result_type >(_value)))
-{
-    return static_cast< result_type >(_value);
-}
-
-template< typename pattern, typename type,
-          typename result_type = copy_cv_reference_t< pattern, std::remove_reference_t< type > > >
-constexpr
-result_type // preserve const
-forward_as(type && _value) noexcept(noexcept(static_cast< result_type >(_value)))
-{
-    return static_cast< result_type >(_value);
-}
-
 template< typename type, typename ...types >
 struct index_at // characteristic is 1-based right-to-left index of leftmost matched type if any
 {
@@ -188,7 +170,7 @@ template< typename type >
 using unwrap_type_t = typename unwrap_type< std::decay_t< type > >::type;
 
 template< typename type, typename ...arguments >
-struct is_constructible
+struct is_constructible // may be specialized for incomplete types wrapped in recursive_wrapper
     : std::is_constructible< type, arguments... >
 {
 
