@@ -1,4 +1,4 @@
-project(versatile)
+project("versatile")
 
 cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
 
@@ -13,7 +13,7 @@ include(CheckCXXCompilerFlag)
 
 CHECK_CXX_COMPILER_FLAG("-stdlib=libc++" COMPILER_SUPPORTS_LIBCXX)
 if(NOT COMPILER_SUPPORTS_LIBCXX)
-    message(FATAL_ERROR "libc++ does not installed or compiler does not support libc++")
+    message(FATAL_ERROR "libc++ not installed or libc++ not supported by clang++")
 endif()
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
 
@@ -32,7 +32,7 @@ add_compile_options(-W -Weverything -Wmissing-include-dirs -Wconversion -Wmismat
 add_compile_options(-Wno-gnu-anonymous-struct -Wno-nested-anon-types)
 #add_compile_options(-ftime-report)
 
-set(CMAKE_CXX_FLAGS_DEBUG "-g -fno-inline -DDEBUG=1 -D_DEBUG=1 -D_GLIBCXX_DEBUG=1 -march=x86-64 -mtune=generic")
+set(CMAKE_CXX_FLAGS_DEBUG "-ggdb -fno-inline -DDEBUG=1 -D_DEBUG=1 -D_GLIBCXX_DEBUG=1 -march=x86-64 -mtune=generic")
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
     set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG=1 -march=native")
