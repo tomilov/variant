@@ -21,6 +21,10 @@ class variant
     // except for the problem of too many layers of indirection.`
     recursive_wrapper< storage > storage_;
 
+    // Change implementation to based on the next when p0135r0 will come into effect:
+    // versatile< recursive_wrapper< unref_type_t< types > >... > storage_;
+    // it save a lot of heap memory
+
 public :
 
     template< typename type >
