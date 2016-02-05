@@ -27,6 +27,8 @@ class variant
 
 public :
 
+    using types_t = variant;
+
     template< typename type >
     using index_at_t = typename storage::template index_at_t< type >;
 

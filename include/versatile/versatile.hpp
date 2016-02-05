@@ -314,6 +314,8 @@ class versatile
 
 public :
 
+    using types_t = versatile;
+
     template< typename type >
     using index_at_t = index_at_t< unwrap_type_t< type >, unwrap_type_t< types >... >;
 
