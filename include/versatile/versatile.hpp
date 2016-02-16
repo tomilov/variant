@@ -314,7 +314,10 @@ class versatile
 
 public :
 
-    using types_t = versatile;
+    using variant_type = versatile;
+
+    using types_t = identity< unwrap_type_t< types >... >;
+    using indices_t = std::index_sequence_for< types... >;
 
     template< typename type >
     using index_at_t = index_at_t< unwrap_type_t< type >, unwrap_type_t< types >... >;
