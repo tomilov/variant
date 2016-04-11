@@ -1,6 +1,7 @@
 #pragma once
 
 #include <versatile/in_place.hpp>
+#include <versatile/visit.hpp>
 
 #include <type_traits>
 #include <utility>
@@ -241,7 +242,6 @@ public :
 
     ~destructor_dispatcher() noexcept
     {
-        std::size_t const which_ = which();
         assert(!(sizeof...(types) < which_));
         if (0 < which_) {
             destructors_[sizeof...(types) - which_](storage_);
@@ -385,6 +385,15 @@ public :
         : versatile(in_place< index >, std::forward< arguments >(_arguments)...)
     { ; }
 
+    constexpr
+    void
+    swap(versatile & _that) noexcept(std::is_nothrow_move_assignable_v< versatile > && std::is_nothrow_move_constructible_v< versatile >)
+    {
+        versatile this_ = std::move(*this);
+        *this = std::move(_that);
+        _that = std::move(this_);
+    }
+
     template< typename type,
               typename index = index_at_t< type > >
     constexpr
@@ -400,7 +409,7 @@ public :
     constexpr
     operator type const & () const
     {
-        return active< type >() ? storage_ : throw std::bad_cast{};
+        return (active< type >() ? storage_ : throw std::bad_cast{});
     }
 
     template< typename type,
@@ -409,7 +418,7 @@ public :
     constexpr
     operator type & ()
     {
-        return active< type >() ? storage_ : throw std::bad_cast{};
+        return (active< type >() ? storage_ : throw std::bad_cast{});
     }
 
 };
@@ -422,7 +431,7 @@ class versatile<>
 
 template< typename first, typename ...rest >
 struct is_visitable< versatile< first, rest... > >
-        : std::true_type
+      : std::true_type
 {
 
 };
@@ -430,11 +439,10 @@ struct is_visitable< versatile< first, rest... > >
 template< typename first, typename ...rest >
 constexpr
 void
-swap(versatile< first, rest... > & _lhs, versatile< first, rest... > & _rhs) noexcept
+swap(versatile< first, rest... > & _lhs,
+     versatile< first, rest... > & _rhs) noexcept(noexcept(_lhs.swap(_rhs)))
 {
-    auto lhs_ = std::move(_lhs);
-    _lhs = std::move(_rhs);
-    _rhs = std::move(lhs_);
+    _lhs.swap(_rhs);
 }
 
 template< std::size_t i, typename ...arguments, typename first, typename ...rest >
