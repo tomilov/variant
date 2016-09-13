@@ -58,7 +58,7 @@ struct composite_visitor
     using tail::operator ();
 
     constexpr
-    composite_visitor(visitor & _visitor, visitors &... _visitors) noexcept(noexcept(::new (std::declval< void * >()) head(std::declval< visitor >())) && noexcept(tail{_visitors...}))
+    composite_visitor(visitor & _visitor, visitors &... _visitors) noexcept(noexcept(::new (std::declval< void * >()) head(std::declval< visitor >())) && noexcept(::new (std::declval< void * >()) tail{_visitors...}))
         : head(std::forward< visitor >(_visitor))
         , tail{_visitors...}
     { ; }
