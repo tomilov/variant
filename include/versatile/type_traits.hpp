@@ -5,8 +5,17 @@
 namespace versatile
 {
 
+template< typename ...types >
+struct identity;
+
+template<>
+struct identity<>
+{
+
+};
+
 template< typename first, typename ...rest >
-struct identity
+struct identity< first, rest... >
 {
 
     using type = first;
