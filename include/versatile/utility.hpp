@@ -48,11 +48,13 @@ namespace details
 template< typename visitor, typename ...visitors >
 struct composite_visitor
         : unwrap_type_t< visitor >
-        , composite_visitor< visitors... >
+        , composite_visitor< visitors... >::type
 {
 
+    using type = composite_visitor;
+
     using head = unwrap_type_t< visitor >;
-    using tail = composite_visitor< visitors... >;
+    using tail = typename composite_visitor< visitors... >::type;
 
     using head::operator ();
     using tail::operator ();
@@ -67,24 +69,16 @@ struct composite_visitor
 
 template< typename visitor >
 struct composite_visitor< visitor >
-        : unwrap_type_t< visitor >
 {
 
-    using base = unwrap_type_t< visitor >;
-
-    using base::operator ();
-
-    constexpr
-    composite_visitor(visitor & _visitor) noexcept(noexcept(::new (std::declval< void * >()) base(std::declval< visitor >())))
-        : base(std::forward< visitor >(_visitor))
-    { ; }
+    using type = unwrap_type_t< visitor >;
 
 };
 
 }
 
 template< typename visitor, typename ...visitors,
-          typename result_type = details::composite_visitor< visitor, visitors... > >
+          typename result_type = typename details::composite_visitor< visitor, visitors... >::type >
 constexpr
 result_type
 compose_visitors(visitor && _visitor, visitors &&... _visitors) noexcept(noexcept(::new (std::declval< void * >()) result_type{_visitor, _visitors...}))
