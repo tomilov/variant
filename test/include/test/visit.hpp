@@ -83,7 +83,7 @@ enumerator< F, indices... >
 make_enumerator(F & f) noexcept
 {
     SA(0 < sizeof...(indices));
-    SA(((0 < indices) && ...));
+    SA((bool(0 < indices) && ...));
     return {{f}};
 }
 
@@ -327,14 +327,14 @@ class perferct_forwarding
         using multivisitor_type = multivisitor< M, type_qual >;
         typename multivisitor_type::result_type result_{};
         using variant_type = variant< typename wrapper< type< N - j > >::type... >;
-        using result_type = multiarray_t< bool, qual_count_, (static_cast< void >(i), qual_count_)..., (static_cast< void >(i), N)... >;
+        using result_type = multiarray_t< bool, qual_count_, (void(i), qual_count_)..., (void(i), N)... >;
         fusor< multivisitor_type, variant_type [M], result_type > fusor_{{{result_}, {}, 0, {}}};
-        auto const enumerator_ = make_enumerator< qual_count_, (static_cast< void >(i), qual_count_)... >(fusor_.fuse_);
+        auto const enumerator_ = make_enumerator< qual_count_, (void(i), qual_count_)... >(fusor_.fuse_);
         variant_type const variants_[N] = {type< N - j >{N - j}...};
-        CHECK (((variants_[j].which() == (N - j)) && ...));
+        CHECK ((bool(variants_[j].which() == (N - j)) && ...));
         std::size_t indices[M] = {};
         for (;;) {
-            ((fusor_[i] = variants_[indices[i]]), ...);
+            (void(fusor_[i] = variants_[indices[i]]), ...);
             if (!enumerator_()) {
                 return false;
             }
@@ -353,7 +353,7 @@ class perferct_forwarding
                 break;
             }
         }
-        constexpr std::size_t count_ = ((static_cast< void >(i), (N * qual_count_)) * ...) * qual_count_; // N ^ M * qual_count_ ^ (M + 1)
+        constexpr std::size_t count_ = qual_count_ * (std::size_t((void(i), (N * qual_count_))) * ...); // N ^ M * qual_count_ ^ (M + 1)
         CHECK (fusor_.fuse_.counter_ == count_);
         SA(sizeof(result_type) == count_ * sizeof(bool)); // sizeof(bool) is implementation-defined
         return true;

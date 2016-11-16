@@ -35,8 +35,8 @@ class check_indexing
 
         using U = V< S< i >... >;
 
-        SA(((U::template index_at_t< S< i > >::value == (sizeof...(i) - i)) && ...));
-        SA(((U::template index_of_constructible_t< S< i > >::value == (sizeof...(i) - i)) && ...));
+        SA((bool(U::template index_at_t< S< i > >::value == (sizeof...(i) - i)) && ...));
+        SA((bool(U::template index_of_constructible_t< S< i > >::value == (sizeof...(i) - i)) && ...));
 
         template< std::size_t = 0 >
         struct N
@@ -49,7 +49,7 @@ class check_indexing
         template< std::size_t j >
         using W = V< std::conditional_t< (i < j), N< i >, S< i > >... >;
 
-        SA(((W< i >::template index_of_constructible_t<>::value == (sizeof...(i) - i)) && ...));
+        SA((bool(W< i >::template index_of_constructible_t<>::value == (sizeof...(i) - i)) && ...));
 
         CONSTEXPRF
         static
@@ -57,9 +57,9 @@ class check_indexing
         run() noexcept
         {
             CHECK ((is_active< S< i > >(U{S< i >{}}) && ...));
-            CHECK (((U{S< i >{}}.which() == (sizeof...(i) - i)) && ...));
+            CHECK ((bool(U{S< i >{}}.which() == (sizeof...(i) - i)) && ...));
             CHECK ((is_active< S< i > >(W< i >{}) && ...));
-            CHECK (((W< i >{}.which() == (sizeof...(i) - i)) && ...));
+            CHECK ((bool(W< i >{}.which() == (sizeof...(i) - i)) && ...));
             return true;
         }
 

@@ -5,17 +5,7 @@ cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
 set(CMAKE_VERBOSE_MAKEFILE ON)
 set(CMAKE_COLOR_MAKEFILE ON)
 
-if(NOT "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-    message(FATAL_ERROR "only clang supported currently")
-endif()
-
 include(CheckCXXCompilerFlag)
-
-CHECK_CXX_COMPILER_FLAG("-stdlib=libc++" COMPILER_SUPPORTS_LIBCXX)
-if(NOT COMPILER_SUPPORTS_LIBCXX)
-    message(FATAL_ERROR "libc++ not installed or libc++ not supported by clang++")
-endif()
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
 
 CHECK_CXX_COMPILER_FLAG("-std=gnu++1z" COMPILER_SUPPORTS_CXX1Z)
 if(NOT COMPILER_SUPPORTS_CXX1Z)
@@ -26,10 +16,11 @@ add_compile_options("-std=gnu++1z")
 #set(CXX_EXTENSIONS ON)
 #set_property(TARGET ${TARGETS} PROPERTY CXX_STANDARD 17)
 #set_property(TARGET ${TARGETS} PROPERTY CXX_STANDARD_REQUIRED ON)
-add_compile_options(-fconstexpr-steps=50000000 -ftemplate-depth=150)
-add_compile_options(-ftemplate-backtrace-limit=0 -fconstexpr-backtrace-limit=0 -fdiagnostics-show-template-tree)
-add_compile_options(-W -Weverything -Wmissing-include-dirs -Wconversion -Wmismatched-tags -Wuninitialized -Wfatal-errors -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded)
-add_compile_options(-Wno-gnu-anonymous-struct -Wno-nested-anon-types)
+#add_compile_options(-fconstexpr-steps=50000000 -ftemplate-depth=150)
+#add_compile_options(-ftemplate-backtrace-limit=0 -fconstexpr-backtrace-limit=0 -fdiagnostics-show-template-tree)
+#-Wmissing-include-dirs -Wconversion -Wmismatched-tags  -Weverything
+add_compile_options(-W -Wall -Wuninitialized -Wfatal-errors -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded)
+#add_compile_options(-Wno-gnu-anonymous-struct -Wno-nested-anon-types)
 add_compile_options(-ftime-report)
 
 set(CMAKE_CXX_FLAGS_DEBUG "-ggdb -fno-inline -DDEBUG=1 -D_DEBUG=1 -D_GLIBCXX_DEBUG=1")
@@ -70,7 +61,7 @@ set(HEADERS
 add_executable("test_traits"        "test/src/traits.cpp"        ${HEADERS} "test/include/test/traits.hpp")
 add_executable("test_versatile"     "test/src/versatile.cpp"     ${HEADERS} "test/include/test/common.hpp" "test/include/test/visit.hpp" "test/include/test/wrappers.hpp" "test/include/test/versatile.hpp")
 add_executable("test_variant"       "test/src/variant.cpp"       ${HEADERS} "test/include/test/common.hpp" "test/include/test/visit.hpp" "test/include/test/wrappers.hpp" "test/include/test/variant.hpp")
-add_executable("test_boost_variant" "test/src/boost_variant.cpp" ${HEADERS} "test/include/test/common.hpp" "test/include/test/visit.hpp" "test/include/test/boost_variant.hpp")
+#add_executable("test_boost_variant" "test/src/boost_variant.cpp" ${HEADERS} "test/include/test/common.hpp" "test/include/test/visit.hpp" "test/include/test/boost_variant.hpp")
 add_executable("test_eggs_variant"  "test/src/eggs_variant.cpp"  ${HEADERS} "test/include/test/common.hpp" "test/include/test/visit.hpp" "test/include/test/eggs_variant.hpp")
 add_executable("test_multivisit"    "test/src/multivisit.cpp"    ${HEADERS} "test/include/test/common.hpp" "test/include/test/visit.hpp" "test/include/test/versatile.hpp" "test/include/test/variant.hpp" "test/include/test/boost_variant.hpp" "test/include/test/eggs_variant.hpp")
 
@@ -78,10 +69,10 @@ set(TESTING_TARGETS
     "test_traits"
     "test_versatile"
     "test_variant"
-    "test_boost_variant"
     "test_eggs_variant"
     "test_multivisit"
 )
+#    "test_boost_variant"
 
 foreach(t ${TESTING_TARGETS})
     set_target_properties(${t} PROPERTIES DEBUG_POSTFIX "d")
@@ -90,14 +81,14 @@ endforeach()
 add_executable("test_ct_versatile"     "test/src/test_ct_versatile.cpp"     ${HEADERS} "test/include/test/deep_and_hard.hpp")
 add_executable("test_ct_variant"       "test/src/test_ct_variant.cpp"       ${HEADERS} "test/include/test/deep_and_hard.hpp")
 add_executable("test_ct_eggs_variant"  "test/src/test_ct_eggs_variant.cpp"  ${HEADERS} "test/include/test/deep_and_hard.hpp")
-add_executable("test_ct_boost_variant" "test/src/test_ct_boost_variant.cpp" ${HEADERS} "test/include/test/deep_and_hard.hpp")
+#add_executable("test_ct_boost_variant" "test/src/test_ct_boost_variant.cpp" ${HEADERS} "test/include/test/deep_and_hard.hpp")
 
 set(TESTING_CT_TARGETS
     "test_ct_versatile"
     "test_ct_variant"
     "test_ct_eggs_variant"
-    "test_ct_boost_variant"
 )
+#    "test_ct_boost_variant"
 
 foreach(t ${TESTING_CT_TARGETS})
     target_compile_definitions(${t} PUBLIC "-DCOLS=4" "-DROWS=4")

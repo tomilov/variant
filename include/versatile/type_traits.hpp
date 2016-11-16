@@ -90,28 +90,28 @@ struct index_at< type, first, rest... >
 template< typename type, typename ...types >
 using index_at_t = typename index_at< type, types... >::type;
 
-template< std::size_t i, typename ...types >
-struct at_index // i treated as 1-based right-to-left index
+template< typename index, typename ...types >
+struct at_index // index treated as 1-based right-to-left index
 {
 
 };
 
 template< typename first, typename ...rest >
-struct at_index< (1 + sizeof...(rest)), first, rest... >
+struct at_index< index_t< 1 + sizeof...(rest) >, first, rest... >
     : identity< first >
 {
 
 };
 
 template< std::size_t i, typename first, typename ...rest >
-struct at_index< i, first, rest... >
-        : at_index< i, rest... >
+struct at_index< index_t< i >, first, rest... >
+        : at_index< index_t< i >, rest... >
 {
 
 };
 
 template< std::size_t i, typename ...types >
-using at_index_t = typename at_index< i, types... >::type;
+using at_index_t = typename at_index< index_t< i >, types... >::type;
 
 template< bool ...values >
 struct get_index; // characteristic is 1-based right-to-left index of leftmost true if any

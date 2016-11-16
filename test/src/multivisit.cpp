@@ -11,8 +11,6 @@
 int
 main()
 {
-    using namespace ::versatile;
-    using namespace ::test_boost_variant;
     { // multivisit mixed visitables
         struct A {};
         struct B {};
@@ -28,20 +26,22 @@ main()
         A a;
         B b;
 
-        using U = versatile< A, B >;
-        using V = variant< A, B >;
+        using U = versatile::versatile< A, B >;
+        using V = versatile::variant< A, B >;
 
-        CHECK(multivisit(v, U{a}, V{a}) == 0);
-        CHECK(multivisit(v, U{a}, V{b}) == 1);
-        CHECK(multivisit(v, U{b}, V{a}) == 2);
-        CHECK(multivisit(v, U{b}, V{b}) == 3);
+        CHECK(versatile::multivisit(v, U{a}, V{a}) == 0);
+        CHECK(versatile::multivisit(v, U{a}, V{b}) == 1);
+        CHECK(versatile::multivisit(v, U{b}, V{a}) == 2);
+        CHECK(versatile::multivisit(v, U{b}, V{b}) == 3);
 
-        CHECK(multivisit(v, V{a}, U{a}) == 0);
-        CHECK(multivisit(v, V{a}, U{b}) == 1);
-        CHECK(multivisit(v, V{b}, U{a}) == 2);
-        CHECK(multivisit(v, V{b}, U{b}) == 3);
+        CHECK(versatile::multivisit(v, V{a}, U{a}) == 0);
+        CHECK(versatile::multivisit(v, V{a}, U{b}) == 1);
+        CHECK(versatile::multivisit(v, V{b}, U{a}) == 2);
+        CHECK(versatile::multivisit(v, V{b}, U{b}) == 3);
     }
     { // adapted variants mixed multivisitation
+        using namespace ::test_boost_variant;
+
         struct A {};
         struct B {};
 
@@ -59,15 +59,15 @@ main()
         using U = boost_variant_c< A, B >;
         using V = boost_variant_i< A, B >;
 
-        CHECK(multivisit(v, U{a}, V{a}) == 0);
-        CHECK(multivisit(v, U{a}, V{b}) == 1);
-        CHECK(multivisit(v, U{b}, V{a}) == 2);
-        CHECK(multivisit(v, U{b}, V{b}) == 3);
+        CHECK(versatile::multivisit(v, U{a}, V{a}) == 0);
+        CHECK(versatile::multivisit(v, U{a}, V{b}) == 1);
+        CHECK(versatile::multivisit(v, U{b}, V{a}) == 2);
+        CHECK(versatile::multivisit(v, U{b}, V{b}) == 3);
 
-        CHECK(multivisit(v, V{a}, U{a}) == 0);
-        CHECK(multivisit(v, V{a}, U{b}) == 1);
-        CHECK(multivisit(v, V{b}, U{a}) == 2);
-        CHECK(multivisit(v, V{b}, U{b}) == 3);
+        CHECK(versatile::multivisit(v, V{a}, U{a}) == 0);
+        CHECK(versatile::multivisit(v, V{a}, U{b}) == 1);
+        CHECK(versatile::multivisit(v, V{b}, U{a}) == 2);
+        CHECK(versatile::multivisit(v, V{b}, U{b}) == 3);
     }
     return EXIT_SUCCESS;
 }
